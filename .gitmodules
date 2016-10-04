@@ -1,0 +1,21 @@
+[submodule "vendor/github.com/onsi/ginkgo"]
+	path = vendor/github.com/onsi/ginkgo
+	url = https://github.com/onsi/ginkgo
+[submodule "vendor/github.com/onsi/gomega"]
+	path = vendor/github.com/onsi/gomega
+	url = https://github.com/onsi/gomega
+[submodule "vendor/github.com/golang/mock"]
+	path = vendor/github.com/golang/mock
+	url = https://github.com/golang/mock
+[submodule "vendor/github.com/kardianos/osext"]
+	path = vendor/github.com/kardianos/osext
+	url = https://github.com/kardianos/osext
+[submodule "vendor/github.com/hashicorp/go-version"]
+	path = vendor/github.com/hashicorp/go-version
+	url = https://github.com/hashicorp/go-version
+[submodule "vendor/code.cloudfoundry.org/cli"]
+	path = vendor/code.cloudfoundry.org/cli
+	url = https://github.com/cloudfoundry/cli
+[submodule "vendor/gopkg.in/yaml.v2"]
+	path = vendor/gopkg.in/yaml.v2
+	url = https://gopkg.in/yaml.v2
