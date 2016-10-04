@@ -1,60 +1,55 @@
 package plugin_test
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/sclevine/cflocal/plugin"
 	"github.com/sclevine/cflocal/plugin/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("NonTranslatingUI", func() {
-
 	var (
-		mockCtrl *gomock.Controller
-		ui       *plugin.NonTranslatingUI
-		mockCFUI *mocks.MockUI
+		mockUI *mocks.MockUI
+		ui     *plugin.NonTranslatingUI
 	)
 
 	BeforeEach(func() {
-		mockCtrl = gomock.NewController(GinkgoT())
-		mockCFUI = mocks.NewMockUI(mockCtrl)
-		ui = &plugin.NonTranslatingUI{
-			mockCFUI,
-		}
-	})
-
-	AfterEach(func() {
-		mockCtrl.Finish()
+		mockUI = mocks.NewMockUI()
+		ui = &plugin.NonTranslatingUI{UI: mockUI}
 	})
 
 	Describe("#Confirm", func() {
 		Context("when the user enters yes", func() {
 			It("should return true", func() {
-				mockCFUI.EXPECT().Ask("some-question").Return("yes")
-				Expect(ui.Confirm("some-question")).To(BeTrue())
+				mockUI.Reply["some question"] = "yes"
+				Expect(ui.Confirm("some question")).To(BeTrue())
+				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
 			})
 		})
 
 		Context("when the user enters y", func() {
 			It("should return true", func() {
-				mockCFUI.EXPECT().Ask("some-question").Return("y")
-				Expect(ui.Confirm("some-question")).To(BeTrue())
+				mockUI.Reply["some question"] = "y"
+				Expect(ui.Confirm("some question")).To(BeTrue())
+				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
 			})
 		})
 
 		Context("when the user enters Y", func() {
 			It("should return true", func() {
-				mockCFUI.EXPECT().Ask("some-question").Return("Y")
-				Expect(ui.Confirm("some-question")).To(BeTrue())
+				mockUI.Reply["some question"] = "Y"
+				Expect(ui.Confirm("some question")).To(BeTrue())
+				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
 			})
 		})
 
 		Context("when the user enters anything else", func() {
 			It("should return false", func() {
-				mockCFUI.EXPECT().Ask("some-question").Return("some-answer")
-				Expect(ui.Confirm("some-question")).To(BeFalse())
+				mockUI.Reply["some question"] = "some answer"
+				Expect(ui.Confirm("some question")).To(BeFalse())
+				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
 			})
 		})
 	})

@@ -7,13 +7,13 @@ type Plugin struct {
 	Version cfplugin.VersionType
 }
 
-//go:generate mockgen -package mocks -destination mocks/ui.go github.com/sclevine/cflocal/plugin UI
 type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
 	Ask(prompt string) (answer string)
 }
 
+//go:generate mockgen -package mocks -destination mocks/cli_connection.go code.cloudfoundry.org/cli/plugin CliConnection
 func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
