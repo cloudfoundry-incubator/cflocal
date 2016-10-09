@@ -33,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 	cfplugin.Start(&plugin.Plugin{
-		UI: &plugin.NonTranslatingUI{ui},
+		UI: &plugin.UI{ui},
 		Version: cfplugin.VersionType{
 			Major: version.Segments()[0],
 			Minor: version.Segments()[1],

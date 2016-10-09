@@ -9,15 +9,15 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("NonTranslatingUI", func() {
+var _ = Describe("UI", func() {
 	var (
 		mockUI *mocks.MockUI
-		ui     *plugin.NonTranslatingUI
+		ui     *plugin.UI
 	)
 
 	BeforeEach(func() {
 		mockUI = mocks.NewMockUI()
-		ui = &plugin.NonTranslatingUI{UI: mockUI}
+		ui = &plugin.UI{UI: mockUI}
 	})
 
 	Describe("#Confirm", func() {

@@ -4,6 +4,7 @@ import cfplugin "code.cloudfoundry.org/cli/plugin"
 
 type Plugin struct {
 	UI      UI
+	Docker  Docker
 	Version cfplugin.VersionType
 }
 
@@ -11,6 +12,9 @@ type UI interface {
 	Failed(message string, args ...interface{})
 	Say(message string, args ...interface{})
 	Ask(prompt string) (answer string)
+}
+
+type Docker interface {
 }
 
 //go:generate mockgen -package mocks -destination mocks/cli_connection.go code.cloudfoundry.org/cli/plugin CliConnection

@@ -43,3 +43,6 @@
 [submodule "vendor/github.com/docker/distribution"]
 	path = vendor/github.com/docker/distribution
 	url = https://github.com/docker/distribution
+[submodule "vendor/github.com/nu7hatch/gouuid"]
+	path = vendor/github.com/nu7hatch/gouuid
+	url = https://github.com/nu7hatch/gouuid

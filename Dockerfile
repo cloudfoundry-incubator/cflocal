@@ -1,7 +1,6 @@
 FROM cloudfoundry/cflinuxfs2
 MAINTAINER Stephen Levine <stephen.levine@gmail.com>
 
-EXPOSE 8080
 
 ENV BUILDPACKS \
   http://github.com/cloudfoundry/java-buildpack \
@@ -15,13 +14,10 @@ ENV BUILDPACKS \
 
 ENV \
   GO_VERSION=1.7 \
-  JQ_VERSION=1.5 \
   DIEGO_VERSION=0.1482.0
 
 RUN \
   curl -L "https://storage.googleapis.com/golang/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz && \
-  curl -L "https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64" -o /usr/local/bin/jq && \
-  chmod +x /usr/local/bin/jq
 
 RUN \
   mkdir -p /tmp/compile && \
@@ -42,7 +38,7 @@ RUN \
   go build -o /tmp/lifecycle/launcher code.cloudfoundry.org/buildpackapplifecycle/launcher && \
   go build -o /tmp/lifecycle/builder code.cloudfoundry.org/buildpackapplifecycle/builder
 
-COPY . /tmp/app
+USER vcap
 
 ENV \
   CF_INSTANCE_ADDR= \
@@ -64,14 +60,18 @@ ENV VCAP_APPLICATION '{ \
     "space_id": "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1" \
   }'
 
+COPY . /tmp/app
+
 RUN \
   mkdir -p /home/vcap/tmp && \
   cd /home/vcap && \
-  /tmp/lifecycle/builder -buildpackOrder "$(echo "$BUILDPACKS" | tr -s ' ' ,)" && \
+  /tmp/lifecycle/builder -buildpackOrder "$(echo "$BUILDPACKS" | tr -s ' ' ,)"
+
+EXPOSE 8080
+
+RUN \
   tar -C /home/vcap -xzf /tmp/droplet && \
   chown -R vcap:vcap /home/vcap
-
-USER vcap
 
 ENV \
   CF_INSTANCE_INDEX=0 \
@@ -83,7 +83,7 @@ ENV \
   INSTANCE_INDEX=0 \
   PORT=8080 \
   TMPDIR=/home/vcap/tmp
-  
+
 ENV VCAP_APPLICATION '{ \
     "limits": {"fds": 16384, "mem": 512, "disk": 1024}, \
     "application_name": "local", "name": "local", "space_name": "local-space", \
