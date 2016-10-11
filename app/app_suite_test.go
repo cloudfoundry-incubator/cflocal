@@ -1,4 +1,4 @@
-package droplet_test
+package app_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDroplet(t *testing.T) {
+func TestApp(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Droplet Suite")
+	RunSpecs(t, "App Suite")
 }

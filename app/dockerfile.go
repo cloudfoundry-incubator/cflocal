@@ -1,4 +1,4 @@
-package droplet
+package app
 
 const dockerfile = `
 FROM cloudfoundry/cflinuxfs2
