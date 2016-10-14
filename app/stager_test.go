@@ -61,7 +61,7 @@ var _ = Describe("Stager", func() {
 
 			Expect(fileFromTar("./app/some-file", dropletBuffer)).To(Equal("some-contents"))
 			Expect(fileFromTar("./staging_info.yml", dropletBuffer)).To(ContainSubstring("start_command"))
-			Expect(fileFromTar("./app/env", dropletBuffer)).To(Equal(envFixture))
+			Expect(fileFromTar("./app/env", dropletBuffer)).To(Equal(stagingEnvFixture))
 
 			// test that no "some-app-staging-GUID" containers exist
 		})

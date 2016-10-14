@@ -29,10 +29,13 @@ func (c *Container) Create(name string, port uint, config *container.Config) (id
 	for containerPort = range config.ExposedPorts {
 		break
 	}
-	hostConfig := &container.HostConfig{
-		PortBindings: nat.PortMap{
-			containerPort: {{HostIP: "localhost", HostPort: strconv.FormatUint(uint64(port), 10)}},
-		},
+	var hostConfig *container.HostConfig
+	if port != 0 {
+		hostConfig = &container.HostConfig{
+			PortBindings: nat.PortMap{
+				containerPort: {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
+			},
+		}
 	}
 	response, err := c.Docker.ContainerCreate(context.Background(), config, hostConfig, nil, fmt.Sprintf("%s-%s", name, uuid))
 	if err != nil {

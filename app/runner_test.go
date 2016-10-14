@@ -2,18 +2,19 @@ package app_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"strconv"
+	"strings"
 
 	docker "github.com/docker/docker/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	"github.com/docker/docker/api/types"
 	. "github.com/sclevine/cflocal/app"
 	"github.com/sclevine/cflocal/utils"
 )
@@ -61,13 +62,12 @@ var _ = Describe("Runner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer launcher.Close()
 
+			port := freePort()
+
 			go func() {
 				defer GinkgoRecover()
-				response, err := http.Get(fmt.Sprintf("http://localhost:%s/", port))
-				defer response.Body.Close()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(ioutil.ReadAll(response.Body)).To(Equal(envFixture))
-				close(exitChan)
+				defer close(exitChan)
+				Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
 			}()
 
 			config := &RunConfig{
@@ -75,7 +75,7 @@ var _ = Describe("Runner", func() {
 				DropletSize:  dropletSize,
 				Launcher:     launcher,
 				LauncherSize: launcherSize,
-				IDChan:       idChan,
+				Port:         port,
 			}
 			status, err := runner.Run("some-app", colorize, config)
 			Expect(err).NotTo(HaveOccurred())
@@ -95,11 +95,30 @@ var _ = Describe("Runner", func() {
 	})
 })
 
-func containerInfo(client *docker.Client, id string) (info types.ContainerJSON) {
-	EventuallyWithOffset(1, func() (err error) {
-		info, err = client.ContainerInspect(context.Background(), id)
-		return err
-	}, "5s").Should(Succeed())
+func get(url string) string {
+	var body io.ReadCloser
+	EventuallyWithOffset(1, func() error {
+		response, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		body = response.Body
+		return nil
+	}).Should(Succeed())
+	defer body.Close()
+	bodyBytes, err := ioutil.ReadAll(body)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return string(bodyBytes)
+}
 
-	return info
+func freePort() uint {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	defer listener.Close()
+
+	address := listener.Addr().String()
+	portStr := strings.SplitN(address, ":", 2)[1]
+	port, err := strconv.ParseUint(portStr, 10, 32)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return uint(port)
 }
