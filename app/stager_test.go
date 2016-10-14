@@ -47,9 +47,9 @@ var _ = Describe("Stager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
-			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stderr\.`))
-			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
+			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Compile message from stderr\.`))
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile arguments: /tmp/app /tmp/cache`))
+			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
 
 			Expect(size).To(BeNumerically(">", 750))
 			Expect(size).To(BeNumerically("<", 850))
@@ -84,7 +84,7 @@ var _ = Describe("Stager", func() {
 			launcherSum := fmt.Sprintf("%x", md5.Sum(launcherBytes))
 			Expect(launcherSum).To(Equal("05cd65b3ee0e98acb06bf39f7accb94d"))
 
-			// test that no "some-app-staging-GUID" containers exist
+			// test that no "some-app-launcher-GUID" containers exist
 		})
 
 		Context("on failure", func() {

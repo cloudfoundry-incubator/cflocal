@@ -3,8 +3,10 @@ package app_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
-	"time"
+	"io/ioutil"
+	"net/http"
 
 	docker "github.com/docker/docker/client"
 	. "github.com/onsi/ginkgo"
@@ -37,8 +39,8 @@ var _ = Describe("Runner", func() {
 		}
 	})
 
-	XDescribe("#Run", func() {
-		It("should run the provided droplet with the provided launcher", func(done Done) {
+	Describe("#Run", func() {
+		It("should run the provided droplet with the provided launcher", func() {
 			stager := &Stager{
 				DiegoVersion: "0.1482.0",
 				GoVersion:    "1.7",
@@ -61,16 +63,31 @@ var _ = Describe("Runner", func() {
 
 			go func() {
 				defer GinkgoRecover()
-				Expect(runner.Run("some-app", colorize, launcher, droplet, launcherSize, dropletSize)).To(Succeed())
-				close(done)
+				response, err := http.Get(fmt.Sprintf("http://localhost:%s/", port))
+				defer response.Body.Close()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ioutil.ReadAll(response.Body)).To(Equal(envFixture))
+				close(exitChan)
 			}()
-			time.Sleep(5 * time.Second)
-			close(exitChan)
 
-			//Eventually(logs, "5s").Should(gbytes.Say(`\[some-app\] % \S+ something`))
+			config := &RunConfig{
+				Droplet:      droplet,
+				DropletSize:  dropletSize,
+				Launcher:     launcher,
+				LauncherSize: launcherSize,
+				IDChan:       idChan,
+			}
+			status, err := runner.Run("some-app", colorize, config)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(status).To(Equal(137))
+
+			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stdout.`))
+			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stderr.`))
+
+			Eventually(exitChan, "5s").Should(BeClosed())
 
 			// test that no "some-app-staging-GUID" containers exist
-		}, 10)
+		})
 
 		Context("on failure", func() {
 			// test failure cases using reverse proxy
@@ -78,8 +95,11 @@ var _ = Describe("Runner", func() {
 	})
 })
 
-func containerInfo(client *docker.Client, id string) types.ContainerJSON {
-	response, err := client.ContainerInspect(context.Background(), id)
-	Expect(err).NotTo(HaveOccurred())
-	return response
+func containerInfo(client *docker.Client, id string) (info types.ContainerJSON) {
+	EventuallyWithOffset(1, func() (err error) {
+		info, err = client.ContainerInspect(context.Background(), id)
+		return err
+	}, "5s").Should(Succeed())
+
+	return info
 }

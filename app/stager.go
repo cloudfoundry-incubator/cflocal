@@ -69,7 +69,7 @@ func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, bu
 		return nil, 0, err
 	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create(name+"-stage", &container.Config{
+	id := cont.Create(name+"-stage", 0, &container.Config{
 		Hostname: "cflocal",
 		User:     "vcap",
 		Env: []string{
@@ -142,7 +142,7 @@ func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
 		return nil, 0, err
 	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create("launcher", &container.Config{
+	id := cont.Create("launcher", 0, &container.Config{
 		Image:      "cflocal",
 		Entrypoint: strslice.StrSlice{"bash"},
 	})

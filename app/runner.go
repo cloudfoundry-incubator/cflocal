@@ -21,7 +21,15 @@ type Runner struct {
 	ExitChan <-chan struct{}
 }
 
-func (r *Runner) Run(name string, logColorizer Colorizer, launcher, droplet io.Reader, launcherSize, dropletSize int64) error {
+type RunConfig struct {
+	Droplet      io.Reader
+	DropletSize  int64
+	Launcher     io.Reader
+	LauncherSize int64
+	Port         uint
+}
+
+func (r *Runner) Run(name string, logColorizer Colorizer, config *RunConfig) (status int, err error) {
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
 		ApplicationName:    name,
@@ -39,13 +47,13 @@ func (r *Runner) Run(name string, logColorizer Colorizer, launcher, droplet io.R
 		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	untarDroplet := "tar -C /home/vcap -xzf /tmp/droplet"
 	chownVCAP := "chown -R vcap:vcap /home/vcap"
 	startCommand := "$(jq -r .start_command /home/vcap/staging_info.yml)"
 	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, &container.Config{
+	id := cont.Create(name, config.Port, &container.Config{
 		Hostname:     "cflocal",
 		User:         "vcap",
 		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": struct{}{}},
@@ -79,28 +87,28 @@ func (r *Runner) Run(name string, logColorizer Colorizer, launcher, droplet io.R
 		},
 	})
 	if id == "" {
-		return err
+		return 0, err
 	}
 	defer cont.Remove(id)
 
-	launcherTar, err := utils.TarFile("./lifecycle/launcher", launcher, launcherSize, 0755)
+	launcherTar, err := utils.TarFile("./lifecycle/launcher", config.Launcher, config.LauncherSize, 0755)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", launcherTar, types.CopyToContainerOptions{}); err != nil {
-		return err
+		return 0, err
 	}
 
-	dropletTar, err := utils.TarFile("./droplet", droplet, dropletSize, 0755)
+	dropletTar, err := utils.TarFile("./droplet", config.Droplet, config.DropletSize, 0755)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", dropletTar, types.CopyToContainerOptions{}); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err := r.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		return err
+		return 0, err
 	}
 	logs, err := r.Docker.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
 		ShowStdout: true,
@@ -109,25 +117,20 @@ func (r *Runner) Run(name string, logColorizer Colorizer, launcher, droplet io.R
 		Follow:     true,
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer logs.Close()
 	go utils.CopyStream(r.Logs, logs, logColorizer(fmt.Sprintf("[%s]", name))+" ")
 
-	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		<-r.ExitChan
-		cancel()
+		cont.Remove(id)
 	}()
-	status, err := r.Docker.ContainerWait(ctx, id)
+	status, err = r.Docker.ContainerWait(context.Background(), id)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	if status != 0 {
-		return fmt.Errorf("container exited with status %d", status)
-	}
-
-	return nil
+	return status, nil
 }
 
 func uintPtr(i uint) *uint {
