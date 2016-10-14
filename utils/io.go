@@ -16,25 +16,22 @@ func CopyStream(dst io.Writer, src io.Reader, prefix string) {
 		if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
 			break
 		}
+		// bold STDERR
 		if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
 			break
 		}
 	}
 }
 
-func TarFile(name string, contents []byte) (io.Reader, error) {
+func TarFile(name string, contents io.Reader, size, mode int64) (io.Reader, error) {
 	tarBuffer := &bytes.Buffer{}
 	tarball := tar.NewWriter(tarBuffer)
 	defer tarball.Close()
-	header := &tar.Header{
-		Name: name,
-		Size: int64(len(contents)),
-		Mode: 0644,
-	}
+	header := &tar.Header{Name: name, Size: size, Mode: mode}
 	if err := tarball.WriteHeader(header); err != nil {
 		return nil, err
 	}
-	if _, err := tarball.Write(contents); err != nil {
+	if _, err := io.CopyN(tarball, contents, size); err != nil {
 		return nil, err
 	}
 	return tarBuffer, nil

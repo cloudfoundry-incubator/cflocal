@@ -17,7 +17,7 @@ import (
 	"github.com/sclevine/cflocal/utils"
 )
 
-type App struct {
+type Stager struct {
 	DiegoVersion string
 	GoVersion    string
 	UpdateRootFS bool
@@ -34,10 +34,10 @@ type vcapApplication struct {
 	ApplicationVersion string          `json:"application_version"`
 	Host               string          `json:"host,omitempty"`
 	InstanceID         string          `json:"instance_id,omitempty"`
-	InstanceIndex      string          `json:"instance_index,omitempty"`
+	InstanceIndex      *uint           `json:"instance_index,omitempty"`
 	Limits             map[string]uint `json:"limits"`
 	Name               string          `json:"name"`
-	Port               uint            `json:"port,omitempty"`
+	Port               *uint           `json:"port,omitempty"`
 	SpaceID            string          `json:"space_id"`
 	SpaceName          string          `json:"space_name"`
 	URIs               []string        `json:"uris"`
@@ -49,9 +49,9 @@ type splitReadCloser struct {
 	io.Closer
 }
 
-func (a *App) Stage(name string, logColorizer Colorizer, appTar io.Reader, buildpacks []string) (droplet io.ReadCloser, err error) {
-	if err := a.buildDockerfile(); err != nil {
-		return nil, err
+func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, buildpacks []string) (droplet io.ReadCloser, size int64, err error) {
+	if err := s.buildDockerfile(); err != nil {
+		return nil, 0, err
 	}
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -66,11 +66,12 @@ func (a *App) Stage(name string, logColorizer Colorizer, appTar io.Reader, build
 		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
 	})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	cont := utils.Container{Docker: a.Docker, Err: &err}
+	cont := utils.Container{Docker: s.Docker, Err: &err}
 	id := cont.Create(name+"-stage", &container.Config{
-		User: "vcap",
+		Hostname: "cflocal",
+		User:     "vcap",
 		Env: []string{
 			"CF_INSTANCE_ADDR=",
 			"CF_INSTANCE_IP=0.0.0.0",
@@ -78,7 +79,10 @@ func (a *App) Stage(name string, logColorizer Colorizer, appTar io.Reader, build
 			"CF_INSTANCE_PORTS=[]",
 			"CF_STACK=cflinuxfs2",
 			"HOME=/home/vcap",
+			"LANG=en_US.UTF-8",
 			"MEMORY_LIMIT=512m",
+			"PATH=/usr/local/bin:/usr/bin:/bin",
+			"USER=vcap",
 			fmt.Sprintf("VCAP_APPLICATION=%s", vcapApp),
 			"VCAP_SERVICES={}",
 		},
@@ -91,87 +95,88 @@ func (a *App) Stage(name string, logColorizer Colorizer, appTar io.Reader, build
 		},
 	})
 	if id == "" {
-		return nil, err
+		return nil, 0, err
 	}
 	defer cont.RemoveAfterCopy(id, &droplet)
 
-	if err := a.Docker.CopyToContainer(context.Background(), id, "/tmp/app", appTar, types.CopyToContainerOptions{}); err != nil {
-		return nil, err
+	if err := s.Docker.CopyToContainer(context.Background(), id, "/tmp/app", appTar, types.CopyToContainerOptions{}); err != nil {
+		return nil, 0, err
 	}
-	if err := a.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		return nil, err
+	if err := s.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
+		return nil, 0, err
 	}
-	logs, err := a.Docker.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
+	logs, err := s.Docker.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Timestamps: true,
 		Follow:     true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer logs.Close()
-	go utils.CopyStream(a.Logs, logs, logColorizer(fmt.Sprintf("[%s]", name))+" ")
+	go utils.CopyStream(s.Logs, logs, logColorizer(fmt.Sprintf("[%s]", name))+" ")
 
-	status, err := a.Docker.ContainerWait(context.Background(), id)
+	status, err := s.Docker.ContainerWait(context.Background(), id)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if status != 0 {
-		return nil, fmt.Errorf("container exited with status %d", status)
+		return nil, 0, fmt.Errorf("container exited with status %d", status)
 	}
 
-	dropletCloser, _, err := a.Docker.CopyFromContainer(context.Background(), id, "/tmp/droplet")
+	dropletCloser, dropletStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/droplet")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	droplet = dropletCloser
 	dropletReader, err := utils.FileFromTar("droplet", dropletCloser)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return splitReadCloser{dropletReader, dropletCloser}, nil
+	return splitReadCloser{dropletReader, dropletCloser}, dropletStat.Size, nil
 }
 
-func (a *App) Launcher() (launcher io.ReadCloser, err error) {
-	if err := a.buildDockerfile(); err != nil {
-		return nil, err
+func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
+	if err := s.buildDockerfile(); err != nil {
+		return nil, 0, err
 	}
-	cont := utils.Container{Docker: a.Docker, Err: &err}
+	cont := utils.Container{Docker: s.Docker, Err: &err}
 	id := cont.Create("launcher", &container.Config{
-		Image: "cflocal",
+		Image:      "cflocal",
+		Entrypoint: strslice.StrSlice{"bash"},
 	})
 	if id == "" {
-		return nil, err
+		return nil, 0, err
 	}
 	defer cont.RemoveAfterCopy(id, &launcher)
-	launcherCloser, _, err := a.Docker.CopyFromContainer(context.Background(), id, "/tmp/lifecycle/launcher")
+	launcherCloser, launcherStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/lifecycle/launcher")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	launcher = launcherCloser
 	launcherReader, err := utils.FileFromTar("launcher", launcherCloser)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return splitReadCloser{launcherReader, launcherCloser}, nil
+	return splitReadCloser{launcherReader, launcherCloser}, launcherStat.Size, nil
 }
 
-func (a *App) buildDockerfile() error {
+func (s *Stager) buildDockerfile() error {
 	dockerfileBuf := &bytes.Buffer{}
 	dockerfileTmpl := template.Must(template.New("Dockerfile").Parse(dockerfile))
-	if err := dockerfileTmpl.Execute(dockerfileBuf, a); err != nil {
+	if err := dockerfileTmpl.Execute(dockerfileBuf, s); err != nil {
 		return err
 	}
-	dockerfileTar, err := utils.TarFile("Dockerfile", dockerfileBuf.Bytes())
+	dockerfileTar, err := utils.TarFile("Dockerfile", dockerfileBuf, int64(dockerfileBuf.Len()), 0644)
 	if err != nil {
 		return err
 	}
-	response, err := a.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
+	response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
 		Tags:           []string{"cflocal"},
 		SuppressOutput: true,
-		PullParent:     a.UpdateRootFS,
+		PullParent:     s.UpdateRootFS,
 		Remove:         true,
 		ForceRemove:    true,
 	})
