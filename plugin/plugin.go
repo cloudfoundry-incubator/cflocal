@@ -3,15 +3,15 @@ package plugin
 import cfplugin "code.cloudfoundry.org/cli/plugin"
 
 type Plugin struct {
-	UI      UI
+	UI      Terminal
 	Docker  Docker
 	Version cfplugin.VersionType
 }
 
-type UI interface {
-	Failed(message string, args ...interface{})
-	Say(message string, args ...interface{})
-	Ask(prompt string) (answer string)
+type Terminal interface {
+	Prompt(prompt string) string
+	Output(format string, a ...interface{})
+	Error(err error)
 }
 
 type Docker interface {
@@ -29,18 +29,18 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	case "version", "--version":
 		p.version(cliConnection)
 	case "build":
-		p.UI.Say("Built.")
+		p.UI.Output("Built.")
 	}
 }
 
 func (p *Plugin) help(cliConnection cfplugin.CliConnection) {
 	if _, err := cliConnection.CliCommand("help", "local"); err != nil {
-		p.UI.Failed("Error: %s.", err)
+		p.UI.Error(err)
 	}
 }
 
 func (p *Plugin) version(cliConnection cfplugin.CliConnection) {
-	p.UI.Say("CF Local version %d.%d.%d", p.Version.Major, p.Version.Minor, p.Version.Build)
+	p.UI.Output("CF Local version %d.%d.%d", p.Version.Major, p.Version.Minor, p.Version.Build)
 }
 
 func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {

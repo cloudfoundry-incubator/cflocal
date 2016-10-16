@@ -3,34 +3,35 @@ package mocks
 import (
 	"fmt"
 
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gbytes"
 )
 
-// Mock of UI interface
 type MockUI struct {
-	Stdout *gbytes.Buffer
-	Stderr *gbytes.Buffer
-	Reply  map[string]string
+	Out   *gbytes.Buffer
+	Err   error
+	Reply map[string]string
 }
 
 func NewMockUI() *MockUI {
 	return &MockUI{
-		Stdout: gbytes.NewBuffer(),
-		Stderr: gbytes.NewBuffer(),
-		Reply:  map[string]string{},
+		Out:   gbytes.NewBuffer(),
+		Reply: map[string]string{},
 	}
 }
 
-func (m *MockUI) Ask(prompt string) string {
-	fmt.Fprint(m.Stdout, prompt, "\n")
+func (m *MockUI) Prompt(prompt string) string {
+	fmt.Fprint(m.Out, prompt, "\n")
 	return m.Reply[prompt]
 }
 
-func (m *MockUI) Failed(message string, args ...interface{}) {
-	fmt.Fprintf(m.Stderr, message+"\n", args...)
-	panic("UI PANIC")
+func (m *MockUI) Error(err error) {
+	if m.Err != nil {
+		ginkgo.Fail("Error should not be called twice.")
+	}
+	m.Err = err
 }
 
-func (m *MockUI) Say(message string, args ...interface{}) {
-	fmt.Fprintf(m.Stdout, message+"\n", args...)
+func (m *MockUI) Output(message string, args ...interface{}) {
+	fmt.Fprintf(m.Out, message+"\n", args...)
 }

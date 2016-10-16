@@ -25,7 +25,7 @@ type Stager struct {
 	Logs         io.Writer
 }
 
-type Colorizer func(text string) string
+type Colorizer func(string, ...interface{}) string
 
 type vcapApplication struct {
 	ApplicationID      string          `json:"application_id"`
@@ -49,7 +49,12 @@ type splitReadCloser struct {
 	io.Closer
 }
 
-func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, buildpacks []string) (droplet io.ReadCloser, size int64, err error) {
+type StageConfig struct {
+	AppTar     io.Reader
+	Buildpacks []string
+}
+
+func (s *Stager) Stage(name string, color Colorizer, config *StageConfig) (droplet io.ReadCloser, size int64, err error) {
 	if err := s.buildDockerfile(); err != nil {
 		return nil, 0, err
 	}
@@ -90,8 +95,8 @@ func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, bu
 		WorkingDir: "/home/vcap",
 		Entrypoint: strslice.StrSlice{
 			"/tmp/lifecycle/builder",
-			"-buildpackOrder", strings.Join(buildpacks, ","),
-			fmt.Sprintf("-skipDetect=%t", len(buildpacks) == 1),
+			"-buildpackOrder", strings.Join(config.Buildpacks, ","),
+			fmt.Sprintf("-skipDetect=%t", len(config.Buildpacks) == 1),
 		},
 	})
 	if id == "" {
@@ -99,7 +104,7 @@ func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, bu
 	}
 	defer cont.RemoveAfterCopy(id, &droplet)
 
-	if err := s.Docker.CopyToContainer(context.Background(), id, "/tmp/app", appTar, types.CopyToContainerOptions{}); err != nil {
+	if err := s.Docker.CopyToContainer(context.Background(), id, "/tmp/app", config.AppTar, types.CopyToContainerOptions{}); err != nil {
 		return nil, 0, err
 	}
 	if err := s.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
@@ -115,7 +120,7 @@ func (s *Stager) Stage(name string, logColorizer Colorizer, appTar io.Reader, bu
 		return nil, 0, err
 	}
 	defer logs.Close()
-	go utils.CopyStream(s.Logs, logs, logColorizer(fmt.Sprintf("[%s]", name))+" ")
+	go utils.CopyStream(s.Logs, logs, color("[%s] ", name))
 
 	status, err := s.Docker.ContainerWait(context.Background(), id)
 	if err != nil {

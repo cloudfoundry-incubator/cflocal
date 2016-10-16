@@ -40,9 +40,9 @@ var _ = Describe("Stager", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			colorize := func(text string) string { return text + " %" }
-			droplet, size, err := stager.Stage("some-app", colorize, appTar, []string{
-				"https://github.com/sclevine/cflocal-buildpack#v0.0.1",
+			droplet, size, err := stager.Stage("some-app", percentColor, &StageConfig{
+				AppTar:     appTar,
+				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()

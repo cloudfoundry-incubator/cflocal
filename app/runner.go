@@ -29,7 +29,7 @@ type RunConfig struct {
 	Port         uint
 }
 
-func (r *Runner) Run(name string, logColorizer Colorizer, config *RunConfig) (status int, err error) {
+func (r *Runner) Run(name string, color Colorizer, config *RunConfig) (status int, err error) {
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
 		ApplicationName:    name,
@@ -120,7 +120,7 @@ func (r *Runner) Run(name string, logColorizer Colorizer, config *RunConfig) (st
 		return 0, err
 	}
 	defer logs.Close()
-	go utils.CopyStream(r.Logs, logs, logColorizer(fmt.Sprintf("[%s]", name))+" ")
+	go utils.CopyStream(r.Logs, logs, color("[%s] ", name))
 
 	go func() {
 		<-r.ExitChan

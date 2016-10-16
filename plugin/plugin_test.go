@@ -44,10 +44,8 @@ var _ = Describe("Plugin", func() {
 			Context("when printing the help text fails", func() {
 				It("should print an error", func() {
 					mockCLI.EXPECT().CliCommand("help", "local").Return(nil, errors.New("some error"))
-					Expect(func() {
-						plugin.Run(mockCLI, []string{"local", "help"})
-					}).To(Panic())
-					Expect(mockUI.Stderr).To(gbytes.Say("Error: some error"))
+					plugin.Run(mockCLI, []string{"local", "help"})
+					Expect(mockUI.Err).To(MatchError("some error"))
 				})
 			})
 		})
@@ -56,9 +54,9 @@ var _ = Describe("Plugin", func() {
 			It("should output the version", func() {
 				plugin.Version = cfplugin.VersionType{100, 200, 300}
 				plugin.Run(mockCLI, []string{"local", "version"})
-				Expect(mockUI.Stdout).To(gbytes.Say("CF Local version 100.200.300"))
+				Expect(mockUI.Out).To(gbytes.Say("CF Local version 100.200.300"))
 				plugin.Run(mockCLI, []string{"local", "--version"})
-				Expect(mockUI.Stdout).To(gbytes.Say("CF Local version 100.200.300"))
+				Expect(mockUI.Out).To(gbytes.Say("CF Local version 100.200.300"))
 			})
 		})
 
@@ -68,7 +66,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("when uninstalling", func() {
-			It("should return immediately", func() {
+			It("should return immediately without panicking", func() {
 				Expect(func() {
 					plugin.Run(mockCLI, []string{"CLI-MESSAGE-UNINSTALL"})
 				}).NotTo(Panic())

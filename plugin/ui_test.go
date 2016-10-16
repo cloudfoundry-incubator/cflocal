@@ -1,8 +1,10 @@
 package plugin_test
 
 import (
+	"errors"
+	"io"
+
 	"github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/plugin/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,46 +13,46 @@ import (
 
 var _ = Describe("UI", func() {
 	var (
-		mockUI *mocks.MockUI
-		ui     *plugin.UI
+		out, err, in *gbytes.Buffer
+		ui           *plugin.UI
 	)
 
 	BeforeEach(func() {
-		mockUI = mocks.NewMockUI()
-		ui = &plugin.UI{UI: mockUI}
+		out = gbytes.NewBuffer()
+		err = gbytes.NewBuffer()
+		in = gbytes.NewBuffer()
+		ui = &plugin.UI{Out: out, Err: err, In: in}
 	})
 
-	Describe("#Confirm", func() {
-		Context("when the user enters yes", func() {
-			It("should return true", func() {
-				mockUI.Reply["some question"] = "yes"
-				Expect(ui.Confirm("some question")).To(BeTrue())
-				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
-			})
+	Describe("#Prompt", func() {
+		It("should output the prompt and return the user's entry", func() {
+			io.WriteString(in, "some answer\n")
+			response := ui.Prompt("some question")
+			Expect(out).To(gbytes.Say("some question"))
+			Expect(response).To(Equal("some answer"))
 		})
 
-		Context("when the user enters y", func() {
-			It("should return true", func() {
-				mockUI.Reply["some question"] = "y"
-				Expect(ui.Confirm("some question")).To(BeTrue())
-				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
+		Context("when the input cannot be read", func() {
+			It("should output the prompt and return an empty string", func() {
+				response := ui.Prompt("some question")
+				Expect(out).To(gbytes.Say("some question"))
+				Expect(response).To(BeEmpty())
 			})
 		})
+	})
 
-		Context("when the user enters Y", func() {
-			It("should return true", func() {
-				mockUI.Reply["some question"] = "Y"
-				Expect(ui.Confirm("some question")).To(BeTrue())
-				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
-			})
+	Describe("#Output", func() {
+		It("should output the provided format string", func() {
+			ui.Output("%s format", "some")
+			Expect(out).To(gbytes.Say("some format"))
 		})
+	})
 
-		Context("when the user enters anything else", func() {
-			It("should return false", func() {
-				mockUI.Reply["some question"] = "some answer"
-				Expect(ui.Confirm("some question")).To(BeFalse())
-				Expect(mockUI.Stdout).To(gbytes.Say("some question"))
-			})
+	Describe("#Error", func() {
+		It("should output the provided error as an error followed by FAILED", func() {
+			ui.Error(errors.New("some error"))
+			Expect(err).To(gbytes.Say("Error: some error"))
+			Expect(out).To(gbytes.Say("FAILED"))
 		})
 	})
 })

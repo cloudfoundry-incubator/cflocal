@@ -69,7 +69,8 @@ var _ = Describe("CF Local", func() {
 			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m").Should(gexec.Exit(1))
-			Expect(session).To(gbytes.Say("Failed to determine cf CLI version."))
+			Expect(session.Err).To(gbytes.Say("Error: failed to determine cf CLI version"))
+			Expect(session.Out).To(gbytes.Say("FAILED"))
 		})
 	})
 
