@@ -74,22 +74,15 @@ var _ = Describe("CF Local", func() {
 		})
 	})
 
-	It("should build a Docker image that launches the app in the current directory", func() {
-		pcfdevCommand := exec.Command("cf", "local", "build")
-		session, err := gexec.Start(pcfdevCommand, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "10m").Should(gexec.Exit(0))
-		Expect(session).To(gbytes.Say("Built."))
-	})
-
-	It("should respond to 'version' and '--version' commands", func() {
-		output, err := exec.Command("cf", "local", "version").Output()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(output)).To(Equal("CF Local version 100.200.300\n"))
-
-		output, err = exec.Command("cf", "local", "--version").Output()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(output)).To(Equal("CF Local version 100.200.300\n"))
+	Describe("cf local stage", func() {
+		It("should build a Docker image that launches the app in the current directory", func() {
+			pluginCommand := exec.Command("cf", "local", "stage", "some-app")
+			pluginCommand.Dir = "./fixtures/go-app"
+			session, err := gexec.Start(pluginCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "10m").Should(gexec.Exit(0))
+			Expect(session).To(gbytes.Say("Staging of some-app successful."))
+		})
 	})
 })
 

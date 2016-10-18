@@ -30,6 +30,7 @@ var _ = Describe("Stager", func() {
 		stager = &Stager{
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
+			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         io.MultiWriter(logs, GinkgoWriter),
 		}

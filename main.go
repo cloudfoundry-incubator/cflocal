@@ -8,14 +8,17 @@ import (
 	"strconv"
 	"strings"
 
-	goversion "github.com/hashicorp/go-version"
+	"github.com/sclevine/cflocal/app"
 	"github.com/sclevine/cflocal/plugin"
+	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
+	docker "github.com/docker/docker/client"
+	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
 )
 
-var Version string
+var Version = "0.0.0"
 
 func main() {
 	ui := &plugin.UI{
@@ -31,8 +34,26 @@ func main() {
 		ui.Error(err)
 		os.Exit(1)
 	}
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		ui.Error(err)
+		os.Exit(1)
+	}
 	cfplugin.Start(&plugin.Plugin{
 		UI: ui,
+		Stager: &app.Stager{
+			DiegoVersion: "0.1482.0",
+			GoVersion:    "1.7",
+			UpdateRootFS: true,
+			Docker:       client,
+			Logs:         os.Stdout,
+		},
+		Runner: &app.Runner{
+			Docker:   client,
+			Logs:     os.Stdout,
+			ExitChan: make(chan struct{}),
+		},
+		FS: &utils.FS{},
 		Version: cfplugin.VersionType{
 			Major: version.Segments()[0],
 			Minor: version.Segments()[1],

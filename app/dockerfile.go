@@ -18,13 +18,12 @@ RUN \
     src/code.cloudfoundry.org/bytefmt \
     src/code.cloudfoundry.org/cacheddownloader \
     src/github.com/cloudfoundry-incubator/candiedyaml \
-    src/github.com/cloudfoundry/systemcerts
-
-RUN \
+    src/github.com/cloudfoundry/systemcerts && \
   export PATH=/usr/local/go/bin:$PATH && \
   export GOPATH=/tmp/compile/diego-release && \
   go build -o /tmp/lifecycle/launcher code.cloudfoundry.org/buildpackapplifecycle/launcher && \
-  go build -o /tmp/lifecycle/builder code.cloudfoundry.org/buildpackapplifecycle/builder
+  go build -o /tmp/lifecycle/builder code.cloudfoundry.org/buildpackapplifecycle/builder && \
+  rm -rf /tmp/compile
 
 USER vcap
 
