@@ -49,10 +49,21 @@ var _ = Describe("UI", func() {
 	})
 
 	Describe("#Error", func() {
-		It("should output the provided error as an error followed by FAILED", func() {
-			ui.Error(errors.New("some error"))
-			Expect(err).To(gbytes.Say("Error: some error"))
-			Expect(out).To(gbytes.Say("FAILED"))
+		Context("when stderr is connected", func() {
+			It("should output the provided error as to stderr followed by FAILED", func() {
+				ui.ErrTerm = true
+				ui.Error(errors.New("some error"))
+				Expect(err).To(gbytes.Say("Error: some error"))
+				Expect(out).To(gbytes.Say("FAILED"))
+			})
+		})
+
+		Context("when stderr is not connected", func() {
+			It("should output the provided error to stdout followed by FAILED", func() {
+				ui.Error(errors.New("some error"))
+				Expect(out).To(gbytes.Say("Error: some error"))
+				Expect(out).To(gbytes.Say("FAILED"))
+			})
 		})
 	})
 })

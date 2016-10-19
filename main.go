@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sclevine/cflocal/app"
+	"golang.org/x/crypto/ssh/terminal"
+
+	goversion "github.com/hashicorp/go-version"
 	"github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
-	docker "github.com/docker/docker/client"
-	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
 )
 
@@ -22,47 +21,27 @@ var Version = "0.0.0"
 
 func main() {
 	ui := &plugin.UI{
-		Out: os.Stdout,
-		Err: os.Stdout,
-		In:  os.Stdin,
+		Out:     os.Stdout,
+		Err:     os.Stderr,
+		In:      os.Stdin,
+		ErrTerm: terminal.IsTerminal(int(os.Stderr.Fd())),
 	}
 
-	confirmInstalled(ui)
-
-	// needs to move into plugin (optionally)
 	version, err := goversion.NewVersion(Version)
 	if err != nil {
 		ui.Error(err)
 		os.Exit(1)
 	}
-	// needs to move into plugin
-	client, err := docker.NewEnvClient()
-	if err != nil {
-		ui.Error(err)
-		os.Exit(1)
-	}
-	exitChan := make(chan struct{})
+
+	confirmInstalled(ui)
+
 	cfplugin.Start(&plugin.Plugin{
 		UI: ui,
-		Stager: &app.Stager{
-			DiegoVersion: "0.1482.0",
-			GoVersion:    "1.7",
-			UpdateRootFS: true,
-			Docker:       client,
-			Logs:         os.Stdout,
-		},
-		Runner: &app.Runner{
-			Docker:   client,
-			Logs:     os.Stdout,
-			ExitChan: exitChan,
-		},
-		FS: &utils.FS{},
 		Version: cfplugin.VersionType{
 			Major: version.Segments()[0],
 			Minor: version.Segments()[1],
 			Build: version.Segments()[2],
 		},
-		ExitChan: exitChan,
 	})
 }
 

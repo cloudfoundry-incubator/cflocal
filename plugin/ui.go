@@ -10,9 +10,10 @@ import (
 )
 
 type UI struct {
-	Out io.Writer
-	Err io.Writer
-	In  io.Reader
+	Out     io.Writer
+	Err     io.Writer
+	In      io.Reader
+	ErrTerm bool
 }
 
 func (u *UI) Prompt(message string) string {
@@ -30,6 +31,11 @@ func (u *UI) Output(format string, a ...interface{}) {
 }
 
 func (u *UI) Error(err error) {
-	fmt.Fprintf(u.Err, "Error: %s\n", err)
+	writer := u.Err
+	if !u.ErrTerm {
+		// use u.Out with pre-6.22.0 cf CLI
+		writer = u.Out
+	}
+	fmt.Fprintf(writer, "Error: %s\n", err)
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
 }
