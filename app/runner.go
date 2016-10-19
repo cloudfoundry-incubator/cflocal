@@ -22,9 +22,9 @@ type Runner struct {
 }
 
 type RunConfig struct {
-	Droplet      io.Reader
+	Droplet      io.ReadCloser
 	DropletSize  int64
-	Launcher     io.Reader
+	Launcher     io.ReadCloser
 	LauncherSize int64
 	Port         uint
 }
@@ -98,12 +98,18 @@ func (r *Runner) Run(name string, color Colorizer, config *RunConfig) (status in
 	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", launcherTar, types.CopyToContainerOptions{}); err != nil {
 		return 0, err
 	}
+	if err := config.Launcher.Close(); err != nil {
+		return 0, err
+	}
 
 	dropletTar, err := utils.TarFile("./droplet", config.Droplet, config.DropletSize, 0755)
 	if err != nil {
 		return 0, err
 	}
 	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", dropletTar, types.CopyToContainerOptions{}); err != nil {
+		return 0, err
+	}
+	if err := config.Droplet.Close(); err != nil {
 		return 0, err
 	}
 

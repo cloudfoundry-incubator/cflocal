@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sclevine/cflocal/app"
 
@@ -12,11 +15,12 @@ import (
 )
 
 type Plugin struct {
-	UI      UserInterface
-	Stager  Stager
-	Runner  Runner
-	FS      FS
-	Version cfplugin.VersionType
+	UI       UserInterface
+	Stager   Stager
+	Runner   Runner
+	FS       FS
+	Version  cfplugin.VersionType
+	ExitChan chan struct{}
 }
 
 type UserInterface interface {
@@ -49,6 +53,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
+	signal.Notify(make(chan os.Signal), syscall.SIGHUP)
+	quitChan := make(chan os.Signal, 1)
+	signal.Notify(quitChan, syscall.SIGINT)
+	go func() {
+		<-quitChan
+		close(p.ExitChan)
+	}()
+
 	switch args[1] {
 	case "help":
 		p.help(cliConnection)
@@ -58,6 +70,8 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		p.stage(cliConnection, args[2:])
 	case "run":
 		p.run(cliConnection, args[2:])
+	default:
+		p.UI.Error(errors.New("invalid command"))
 	}
 }
 

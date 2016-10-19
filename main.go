@@ -23,22 +23,25 @@ var Version = "0.0.0"
 func main() {
 	ui := &plugin.UI{
 		Out: os.Stdout,
-		Err: os.Stderr,
+		Err: os.Stdout,
 		In:  os.Stdin,
 	}
 
 	confirmInstalled(ui)
 
+	// needs to move into plugin (optionally)
 	version, err := goversion.NewVersion(Version)
 	if err != nil {
 		ui.Error(err)
 		os.Exit(1)
 	}
+	// needs to move into plugin
 	client, err := docker.NewEnvClient()
 	if err != nil {
 		ui.Error(err)
 		os.Exit(1)
 	}
+	exitChan := make(chan struct{})
 	cfplugin.Start(&plugin.Plugin{
 		UI: ui,
 		Stager: &app.Stager{
@@ -51,7 +54,7 @@ func main() {
 		Runner: &app.Runner{
 			Docker:   client,
 			Logs:     os.Stdout,
-			ExitChan: make(chan struct{}),
+			ExitChan: exitChan,
 		},
 		FS: &utils.FS{},
 		Version: cfplugin.VersionType{
@@ -59,6 +62,7 @@ func main() {
 			Minor: version.Segments()[1],
 			Build: version.Segments()[2],
 		},
+		ExitChan: exitChan,
 	})
 }
 

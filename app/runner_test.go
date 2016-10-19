@@ -86,6 +86,8 @@ var _ = Describe("Runner", func() {
 
 			Eventually(exitChan, "5s").Should(BeClosed())
 
+			// test that droplet and launcher are closed
+
 			// test that no "some-app-staging-GUID" containers exist
 		})
 

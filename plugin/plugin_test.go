@@ -47,6 +47,14 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Describe("#Run", func() {
+		Context("when uninstalling", func() {
+			It("should return immediately", func() {
+				plugin.Run(mockCLI, []string{"CLI-MESSAGE-UNINSTALL"})
+				Expect(len(mockUI.Out.Contents())).To(BeZero())
+				Expect(mockUI.Err).NotTo(HaveOccurred())
+			})
+		})
+
 		Context("when the subcommand is 'help'", func() {
 			It("should run `cf local help`", func() {
 				mockCLI.EXPECT().CliCommand("help", "local")
@@ -123,14 +131,6 @@ var _ = Describe("Plugin", func() {
 				plugin.Run(mockCLI, []string{"local", "run", "some-app"})
 				Expect(mockUI.Err).NotTo(HaveOccurred())
 				Expect(mockUI.Out).To(gbytes.Say("Running some-app..."))
-			})
-		})
-
-		Context("when uninstalling", func() {
-			It("should return immediately", func() {
-				plugin.Run(mockCLI, []string{"CLI-MESSAGE-UNINSTALL"})
-				Expect(len(mockUI.Out.Contents())).To(BeZero())
-				Expect(mockUI.Err).NotTo(HaveOccurred())
 			})
 		})
 	})
