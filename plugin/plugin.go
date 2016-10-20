@@ -1,21 +1,28 @@
 package plugin
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
-	docker "github.com/docker/docker/client"
 	"github.com/sclevine/cflocal/app"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
+	docker "github.com/docker/docker/client"
+	goversion "github.com/hashicorp/go-version"
+	"github.com/kardianos/osext"
 )
 
 type Plugin struct {
 	UI      UserInterface
-	Version cfplugin.VersionType
+	Version string
+	RunErr  error
 }
 
 type UserInterface interface {
@@ -40,14 +47,15 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 
 	client, err := docker.NewEnvClient()
 	if err != nil {
-		p.UI.Error(err)
-		os.Exit(1)
+		p.RunErr = err
+		return
 	}
 	cf := &local.CF{
 		UI: p.UI,
 		Stager: &app.Stager{
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
+			StackVersion: "latest",
 			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         os.Stdout,
@@ -61,13 +69,21 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		CLI:     cliConnection,
 		Version: p.Version,
 	}
-	cf.Run(args[1:])
+	if err := cf.Run(args[1:]); err != nil {
+		p.RunErr = err
+		return
+	}
 }
 
 func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
+	version := goversion.Must(goversion.NewVersion(p.Version))
 	return cfplugin.PluginMetadata{
-		Name:    "cflocal",
-		Version: p.Version,
+		Name: "cflocal",
+		Version: cfplugin.VersionType{
+			Major: version.Segments()[0],
+			Minor: version.Segments()[1],
+			Build: version.Segments()[2],
+		},
 		Commands: []cfplugin.Command{
 			cfplugin.Command{
 				Name:     "local",
@@ -83,4 +99,51 @@ SUBCOMMANDS:
 			},
 		},
 	}
+}
+
+func (p *Plugin) Help(name string) {
+	p.UI.Output("Usage: %s", name)
+	p.UI.Output("Running this binary directly will automatically install the CF Local cf CLI plugin.")
+	p.UI.Output("You must have the latest version of the cf CLI and Docker installed to use CF Local.")
+	p.UI.Output("After installing, run: cf local help")
+}
+
+func (p *Plugin) Install() error {
+	plugin, err := osext.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to determine plugin path: %s", err)
+	}
+
+	operation := "upgraded"
+	if err := exec.Command("cf", "uninstall-plugin", "cflocal").Run(); err != nil {
+		operation = "installed"
+	}
+
+	cliVersion, err := cliVersion()
+	if err != nil {
+		return err
+	}
+	installOpts := []string{"install-plugin", plugin}
+	if !cliVersion.LessThan(goversion.Must(goversion.NewVersion("6.13.0"))) {
+		installOpts = append(installOpts, "-f")
+	}
+	if output, err := exec.Command("cf", installOpts...).CombinedOutput(); err != nil {
+		return errors.New(strings.TrimSpace(string(output)))
+	}
+
+	p.UI.Output("Plugin successfully %s. Current version: %s", operation, p.Version)
+	return nil
+}
+
+func cliVersion() (*goversion.Version, error) {
+	versionLine, err := exec.Command("cf", "--version").Output()
+	if err != nil {
+		return nil, errors.New("failed to determine cf CLI version")
+	}
+	versionStr := strings.TrimPrefix(strings.TrimSpace(string(versionLine)), "cf version ")
+	version, err := goversion.NewVersion(versionStr)
+	if err != nil || version.LessThan(goversion.Must(goversion.NewVersion("6.7.0"))) {
+		return nil, errors.New("cf CLI version too old")
+	}
+	return version, nil
 }

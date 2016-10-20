@@ -8,7 +8,6 @@ import (
 	. "github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/local/mocks"
 
-	cfplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -40,7 +39,7 @@ var _ = Describe("CF", func() {
 			Runner:  mockRunner,
 			FS:      mockFS,
 			CLI:     mockCLI,
-			Version: cfplugin.VersionType{100, 200, 300},
+			Version: "some-version",
 		}
 	})
 
@@ -52,24 +51,24 @@ var _ = Describe("CF", func() {
 		Context("when the subcommand is 'help'", func() {
 			It("should run `cf local help`", func() {
 				mockCLI.EXPECT().CliCommand("help", "local")
-				cf.Run([]string{"help"})
+				Expect(cf.Run([]string{"help"})).To(Succeed())
 			})
 
 			Context("when printing the help text fails", func() {
 				It("should print an error", func() {
 					mockCLI.EXPECT().CliCommand("help", "local").Return(nil, errors.New("some error"))
-					cf.Run([]string{"help"})
-					Expect(mockUI.Err).To(MatchError("some error"))
+					err := cf.Run([]string{"help"})
+					Expect(err).To(MatchError("some error"))
 				})
 			})
 		})
 
 		Context("when the subcommand is '[--]version'", func() {
 			It("should output the version", func() {
-				cf.Run([]string{"version"})
-				Expect(mockUI.Out).To(gbytes.Say("CF Local version 100.200.300"))
-				cf.Run([]string{"--version"})
-				Expect(mockUI.Out).To(gbytes.Say("CF Local version 100.200.300"))
+				Expect(cf.Run([]string{"version"})).To(Succeed())
+				Expect(mockUI.Out).To(gbytes.Say("CF Local version some-version"))
+				Expect(cf.Run([]string{"--version"})).To(Succeed())
+				Expect(mockUI.Out).To(gbytes.Say("CF Local version some-version"))
 			})
 		})
 
@@ -93,9 +92,8 @@ var _ = Describe("CF", func() {
 					droplet.EXPECT().Close(),
 					appTar.EXPECT().Close(),
 				)
-				cf.Run([]string{"stage", "some-app"})
+				Expect(cf.Run([]string{"stage", "some-app"})).To(Succeed())
 				Expect(file.String()).To(Equal("some-droplet"))
-				Expect(mockUI.Err).NotTo(HaveOccurred())
 				Expect(mockUI.Out).To(gbytes.Say("Staging of some-app successful."))
 			})
 		})
@@ -121,8 +119,7 @@ var _ = Describe("CF", func() {
 					launcher.EXPECT().Close(),
 					droplet.EXPECT().Close(),
 				)
-				cf.Run([]string{"run", "some-app"})
-				Expect(mockUI.Err).NotTo(HaveOccurred())
+				Expect(cf.Run([]string{"run", "some-app"})).To(Succeed())
 				Expect(mockUI.Out).To(gbytes.Say("Running some-app..."))
 			})
 		})

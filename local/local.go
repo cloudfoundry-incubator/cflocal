@@ -12,12 +12,12 @@ import (
 )
 
 type CF struct {
-	UI       UI
-	Stager   Stager
-	Runner   Runner
-	FS       FS
-	CLI      cfplugin.CliConnection
-	Version  cfplugin.VersionType
+	UI      UI
+	Stager  Stager
+	Runner  Runner
+	FS      FS
+	CLI     cfplugin.CliConnection
+	Version string
 }
 
 type UI interface {
@@ -46,46 +46,47 @@ type FS interface {
 
 //go:generate mockgen -package mocks -destination mocks/cli_connection.go code.cloudfoundry.org/cli/plugin CliConnection
 
-func (c *CF) Run(args []string) {
+func (c *CF) Run(args []string) error {
+	var err error
 	switch args[0] {
 	case "help":
-		c.help()
+		err = c.help()
 	case "version", "--version":
 		c.version()
 	case "stage":
-		c.stage(args[1:])
+		err = c.stage(args[1:])
 	case "run":
-		c.run(args[1:])
+		err = c.run(args[1:])
 	default:
-		c.UI.Error(errors.New("invalid command"))
+		return errors.New("invalid command")
 	}
+	return err
 }
 
-func (c *CF) help() {
+func (c *CF) help() error {
 	// move cliCommand into plugin.UI, add UI.Help()
 	// downloader should live in plugin package as plugin.DropletDownloader
 	// if a nil downloader is passed, assume non-plugin version (and eventually allow URL to droplet)
-	if _, err := c.CLI.CliCommand("help", "local"); err != nil {
-		c.UI.Error(err)
-	}
+	_, err := c.CLI.CliCommand("help", "local")
+	return err
 }
 
 func (c *CF) version() {
-	c.UI.Output("CF Local version %d.%d.%d", c.Version.Major, c.Version.Minor, c.Version.Build)
+	c.UI.Output("CF Local version %s", c.Version)
 }
 
 //go:generate mockgen -package mocks -destination mocks/closer.go io Closer
-func (c *CF) stage(args []string) {
+func (c *CF) stage(args []string) error {
 	if len(args) != 1 {
-		c.help()
-		c.UI.Error(errors.New("invalid arguments"))
-		return
+		if err := c.help(); err != nil {
+			c.UI.Error(err)
+		}
+		return errors.New("invalid arguments")
 	}
 	name := args[0]
 	appTar, err := c.FS.Tar(".")
 	if err != nil {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	defer appTar.Close()
 	droplet, size, err := c.Stager.Stage(name, color.GreenString, &app.StageConfig{
@@ -93,40 +94,37 @@ func (c *CF) stage(args []string) {
 		Buildpacks: Buildpacks,
 	})
 	if err != nil {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	defer droplet.Close()
 	file, err := c.FS.WriteFile(fmt.Sprintf("./%s.droplet", name))
 	if err != nil {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	defer file.Close()
 	if _, err := io.CopyN(file, droplet, size); err != nil && err != io.EOF {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	c.UI.Output("Staging of %s successful.", name)
+	return nil
 }
 
-func (c *CF) run(args []string) {
+func (c *CF) run(args []string) error {
 	if len(args) != 1 {
-		c.help()
-		c.UI.Error(errors.New("invalid arguments"))
-		return
+		if err := c.help(); err != nil {
+			c.UI.Error(err)
+		}
+		return errors.New("invalid arguments")
 	}
 	name := args[0]
 	droplet, dropletSize, err := c.FS.ReadFile(fmt.Sprintf("./%s.droplet", name))
 	if err != nil {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	defer droplet.Close()
 	launcher, launcherSize, err := c.Stager.Launcher()
 	if err != nil {
-		c.UI.Error(err)
-		return
+		return err
 	}
 	defer launcher.Close()
 	c.UI.Output("Running %s...", name)
@@ -137,8 +135,5 @@ func (c *CF) run(args []string) {
 		LauncherSize: launcherSize,
 		Port:         3000,
 	})
-	if err != nil {
-		c.UI.Error(err)
-		return
-	}
+	return err
 }

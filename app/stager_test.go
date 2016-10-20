@@ -3,8 +3,6 @@ package app_test
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/md5"
-	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -30,6 +28,7 @@ var _ = Describe("Stager", func() {
 		stager = &Stager{
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
+			StackVersion: "1.86.0",
 			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         io.MultiWriter(logs, GinkgoWriter),
@@ -82,8 +81,7 @@ var _ = Describe("Stager", func() {
 
 			launcherBytes, err := ioutil.ReadAll(launcher)
 			Expect(err).NotTo(HaveOccurred())
-			launcherSum := fmt.Sprintf("%x", md5.Sum(launcherBytes))
-			Expect(launcherSum).To(Equal("05cd65b3ee0e98acb06bf39f7accb94d"))
+			Expect(launcherBytes).To(HaveLen(3053594))
 
 			// test that no "some-app-launcher-GUID" containers exist
 		})

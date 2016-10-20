@@ -24,7 +24,7 @@ var _ = Describe("Plugin", func() {
 		mockCLI = mocks.NewMockCliConnection(mockCtrl)
 		plugin = &Plugin{
 			UI:      mockUI,
-			Version: cfplugin.VersionType{100, 200, 300},
+			Version: "100.200.300",
 		}
 	})
 
@@ -38,6 +38,12 @@ var _ = Describe("Plugin", func() {
 				plugin.Run(mockCLI, []string{"CLI-MESSAGE-UNINSTALL"})
 				Expect(len(mockUI.Out.Contents())).To(BeZero())
 				Expect(mockUI.Err).NotTo(HaveOccurred())
+				Expect(plugin.RunErr).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the Docker daemon cannot be reached", func() {
+			It("should return immediately", func() {
 			})
 		})
 

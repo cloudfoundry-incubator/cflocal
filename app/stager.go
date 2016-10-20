@@ -20,6 +20,7 @@ import (
 type Stager struct {
 	DiegoVersion string
 	GoVersion    string
+	StackVersion string
 	UpdateRootFS bool
 	Docker       *docker.Client
 	Logs         io.Writer

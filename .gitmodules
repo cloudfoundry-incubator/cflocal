@@ -55,3 +55,6 @@
 [submodule "vendor/github.com/mattn/go-isatty"]
 	path = vendor/github.com/mattn/go-isatty
 	url = https://github.com/mattn/go-isatty
+[submodule "vendor/golang.org/x/crypto"]
+	path = vendor/golang.org/x/crypto
+	url = https://github.com/golang/crypto

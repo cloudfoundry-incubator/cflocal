@@ -45,6 +45,7 @@ var _ = Describe("Runner", func() {
 			stager := &Stager{
 				DiegoVersion: "0.1482.0",
 				GoVersion:    "1.7",
+				StackVersion: "1.86.0",
 				Docker:       client,
 				Logs:         GinkgoWriter,
 			}

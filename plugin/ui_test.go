@@ -51,7 +51,7 @@ var _ = Describe("UI", func() {
 	Describe("#Error", func() {
 		Context("when stderr is connected", func() {
 			It("should output the provided error as to stderr followed by FAILED", func() {
-				ui.ErrTerm = true
+				ui.ErrIsTerm = true
 				ui.Error(errors.New("some error"))
 				Expect(err).To(gbytes.Say("Error: some error"))
 				Expect(out).To(gbytes.Say("FAILED"))
