@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/sclevine/cflocal/app"
-	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
@@ -50,7 +50,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		p.RunErr = err
 		return
 	}
-	cf := &local.CF{
+	cf := &cf.CF{
 		UI: p.UI,
 		Stager: &app.Stager{
 			DiegoVersion: "0.1482.0",

@@ -1,12 +1,12 @@
-package local_test
+package cf_test
 
 import (
 	"bytes"
 	"errors"
 
 	"github.com/sclevine/cflocal/app"
-	. "github.com/sclevine/cflocal/local"
-	"github.com/sclevine/cflocal/local/mocks"
+	. "github.com/sclevine/cflocal/cf"
+	"github.com/sclevine/cflocal/cf/mocks"
 
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"

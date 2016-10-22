@@ -1,4 +1,4 @@
-package local
+package cf
 
 import (
 	"errors"
@@ -25,25 +25,25 @@ type UI interface {
 	Error(err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/local Stager
+//go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf Stager
 type Stager interface {
 	Stage(name string, color app.Colorizer, config *app.StageConfig) (droplet io.ReadCloser, size int64, err error)
 	Launcher() (launcher io.ReadCloser, size int64, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/local Runner
+//go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf Runner
 type Runner interface {
 	Run(name string, color app.Colorizer, config *app.RunConfig) (status int, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/local FS
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf FS
 type FS interface {
 	Tar(path string) (io.ReadCloser, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/local Help
+//go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf Help
 type Help interface {
 	Show() error
 }

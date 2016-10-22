@@ -1,4 +1,4 @@
-package local
+package cf
 
 var Buildpacks = []string{
 	"http://github.com/cloudfoundry/java-buildpack",

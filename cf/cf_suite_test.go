@@ -1,4 +1,4 @@
-package local_test
+package cf_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestLocal(t *testing.T) {
+func TestCF(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Local Suite")
+	RunSpecs(t, "CF Suite")
 }
