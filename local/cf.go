@@ -7,7 +7,6 @@ import (
 
 	"github.com/sclevine/cflocal/app"
 
-	cfplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/fatih/color"
 )
 
@@ -16,7 +15,7 @@ type CF struct {
 	Stager  Stager
 	Runner  Runner
 	FS      FS
-	CLI     cfplugin.CliConnection
+	Help    Help
 	Version string
 }
 
@@ -26,31 +25,34 @@ type UI interface {
 	Error(err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/plugin Stager
+//go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/local Stager
 type Stager interface {
 	Stage(name string, color app.Colorizer, config *app.StageConfig) (droplet io.ReadCloser, size int64, err error)
 	Launcher() (launcher io.ReadCloser, size int64, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/plugin Runner
+//go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/local Runner
 type Runner interface {
 	Run(name string, color app.Colorizer, config *app.RunConfig) (status int, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/plugin FS
+//go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/local FS
 type FS interface {
 	Tar(path string) (io.ReadCloser, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/cli_connection.go code.cloudfoundry.org/cli/plugin CliConnection
+//go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/local Help
+type Help interface {
+	Show() error
+}
 
 func (c *CF) Run(args []string) error {
 	var err error
 	switch args[0] {
 	case "help":
-		err = c.help()
+		err = c.Help.Show()
 	case "version", "--version":
 		c.version()
 	case "stage":
@@ -63,14 +65,6 @@ func (c *CF) Run(args []string) error {
 	return err
 }
 
-func (c *CF) help() error {
-	// move cliCommand into plugin.UI, add UI.Help()
-	// downloader should live in plugin package as plugin.DropletDownloader
-	// if a nil downloader is passed, assume non-plugin version (and eventually allow URL to droplet)
-	_, err := c.CLI.CliCommand("help", "local")
-	return err
-}
-
 func (c *CF) version() {
 	c.UI.Output("CF Local version %s", c.Version)
 }
@@ -78,7 +72,7 @@ func (c *CF) version() {
 //go:generate mockgen -package mocks -destination mocks/closer.go io Closer
 func (c *CF) stage(args []string) error {
 	if len(args) != 1 {
-		if err := c.help(); err != nil {
+		if err := c.Help.Show(); err != nil {
 			c.UI.Error(err)
 		}
 		return errors.New("invalid arguments")
@@ -111,7 +105,7 @@ func (c *CF) stage(args []string) error {
 
 func (c *CF) run(args []string) error {
 	if len(args) != 1 {
-		if err := c.help(); err != nil {
+		if err := c.Help.Show(); err != nil {
 			c.UI.Error(err)
 		}
 		return errors.New("invalid arguments")

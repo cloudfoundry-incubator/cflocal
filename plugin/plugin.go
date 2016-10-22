@@ -66,7 +66,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			ExitChan: exitChan,
 		},
 		FS:      &utils.FS{},
-		CLI:     cliConnection,
+		Help:    &Help{CLI: cliConnection},
 		Version: p.Version,
 	}
 	if err := cf.Run(args[1:]); err != nil {

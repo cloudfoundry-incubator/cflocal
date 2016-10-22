@@ -19,26 +19,26 @@ var _ = Describe("CF", func() {
 	var (
 		mockCtrl   *gomock.Controller
 		mockUI     *mocks.MockUI
-		mockCLI    *mocks.MockCliConnection
 		mockStager *mocks.MockStager
 		mockRunner *mocks.MockRunner
 		mockFS     *mocks.MockFS
+		mockHelp   *mocks.MockHelp
 		cf         *CF
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = mocks.NewMockUI()
-		mockCLI = mocks.NewMockCliConnection(mockCtrl)
 		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRunner = mocks.NewMockRunner(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
+		mockHelp = mocks.NewMockHelp(mockCtrl)
 		cf = &CF{
 			UI:      mockUI,
 			Stager:  mockStager,
 			Runner:  mockRunner,
 			FS:      mockFS,
-			CLI:     mockCLI,
+			Help:    mockHelp,
 			Version: "some-version",
 		}
 	})
@@ -49,14 +49,14 @@ var _ = Describe("CF", func() {
 
 	Describe("#Run", func() {
 		Context("when the subcommand is 'help'", func() {
-			It("should run `cf local help`", func() {
-				mockCLI.EXPECT().CliCommand("help", "local")
+			It("should show the help text", func() {
+				mockHelp.EXPECT().Show()
 				Expect(cf.Run([]string{"help"})).To(Succeed())
 			})
 
 			Context("when printing the help text fails", func() {
 				It("should print an error", func() {
-					mockCLI.EXPECT().CliCommand("help", "local").Return(nil, errors.New("some error"))
+					mockHelp.EXPECT().Show().Return(errors.New("some error"))
 					err := cf.Run([]string{"help"})
 					Expect(err).To(MatchError("some error"))
 				})

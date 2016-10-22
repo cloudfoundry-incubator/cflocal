@@ -16,7 +16,7 @@ func CopyStream(dst io.Writer, src io.Reader, prefix string) {
 		if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
 			break
 		}
-		// bold STDERR
+		// TODO: bold STDERR
 		if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
 			break
 		}
