@@ -1,4 +1,4 @@
-package app_test
+package local_test
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	. "github.com/sclevine/cflocal/app"
+	. "github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -107,7 +107,7 @@ func get(url string) string {
 		}
 		body = response.Body
 		return nil
-	}).Should(Succeed())
+	}, "2s").Should(Succeed())
 	defer body.Close()
 	bodyBytes, err := ioutil.ReadAll(body)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())

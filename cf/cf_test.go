@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/sclevine/cflocal/app"
 	. "github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/mocks"
+	"github.com/sclevine/cflocal/local"
 
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
@@ -79,12 +79,12 @@ var _ = Describe("CF", func() {
 				file := newMockBufferCloser(mockCtrl)
 				gomock.InOrder(
 					mockFS.EXPECT().Tar(".").Return(appTar, nil),
-					mockStager.EXPECT().Stage("some-app", gomock.Any(), &app.StageConfig{
+					mockStager.EXPECT().Stage("some-app", gomock.Any(), &local.StageConfig{
 						AppTar:     appTar,
 						Buildpacks: Buildpacks,
 					}).Return(
 						droplet, int64(100), nil,
-					).Do(func(_ string, c app.Colorizer, _ *app.StageConfig) {
+					).Do(func(_ string, c local.Colorizer, _ *local.StageConfig) {
 						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					}),
 					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
@@ -105,7 +105,7 @@ var _ = Describe("CF", func() {
 				gomock.InOrder(
 					mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
 					mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
-					mockRunner.EXPECT().Run("some-app", gomock.Any(), &app.RunConfig{
+					mockRunner.EXPECT().Run("some-app", gomock.Any(), &local.RunConfig{
 						Droplet:      droplet,
 						DropletSize:  int64(100),
 						Launcher:     launcher,
@@ -113,7 +113,7 @@ var _ = Describe("CF", func() {
 						Port:         3000,
 					}).Return(
 						0, nil,
-					).Do(func(_ string, c app.Colorizer, _ *app.RunConfig) {
+					).Do(func(_ string, c local.Colorizer, _ *local.RunConfig) {
 						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					}),
 					launcher.EXPECT().Close(),

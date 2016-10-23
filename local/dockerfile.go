@@ -1,4 +1,4 @@
-package app
+package local
 
 const dockerfile = `
 FROM cloudfoundry/cflinuxfs2:{{.StackVersion}}

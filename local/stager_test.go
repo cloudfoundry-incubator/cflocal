@@ -1,4 +1,4 @@
-package app_test
+package local_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	. "github.com/sclevine/cflocal/app"
+	. "github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/utils"
 )
 

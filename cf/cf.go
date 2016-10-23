@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sclevine/cflocal/app"
+	"github.com/sclevine/cflocal/local"
 
 	"github.com/fatih/color"
 )
@@ -27,13 +27,13 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf Stager
 type Stager interface {
-	Stage(name string, color app.Colorizer, config *app.StageConfig) (droplet io.ReadCloser, size int64, err error)
+	Stage(name string, color local.Colorizer, config *local.StageConfig) (droplet io.ReadCloser, size int64, err error)
 	Launcher() (launcher io.ReadCloser, size int64, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf Runner
 type Runner interface {
-	Run(name string, color app.Colorizer, config *app.RunConfig) (status int, err error)
+	Run(name string, color local.Colorizer, config *local.RunConfig) (status int, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf FS
@@ -83,7 +83,7 @@ func (c *CF) stage(args []string) error {
 		return err
 	}
 	defer appTar.Close()
-	droplet, size, err := c.Stager.Stage(name, color.GreenString, &app.StageConfig{
+	droplet, size, err := c.Stager.Stage(name, color.GreenString, &local.StageConfig{
 		AppTar:     appTar,
 		Buildpacks: Buildpacks,
 	})
@@ -122,7 +122,7 @@ func (c *CF) run(args []string) error {
 	}
 	defer launcher.Close()
 	c.UI.Output("Running %s...", name)
-	_, err = c.Runner.Run(name, color.GreenString, &app.RunConfig{
+	_, err = c.Runner.Run(name, color.GreenString, &local.RunConfig{
 		Droplet:      droplet,
 		DropletSize:  dropletSize,
 		Launcher:     launcher,

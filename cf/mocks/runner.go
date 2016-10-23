@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	app "github.com/sclevine/cflocal/app"
+	local "github.com/sclevine/cflocal/local"
 )
 
 // Mock of Runner interface
@@ -29,7 +29,7 @@ func (_m *MockRunner) EXPECT() *_MockRunnerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockRunner) Run(_param0 string, _param1 app.Colorizer, _param2 *app.RunConfig) (int, error) {
+func (_m *MockRunner) Run(_param0 string, _param1 local.Colorizer, _param2 *local.RunConfig) (int, error) {
 	ret := _m.ctrl.Call(_m, "Run", _param0, _param1, _param2)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)

@@ -1,4 +1,4 @@
-package app_test
+package local_test
 
 const stagingEnvFixture = `CF_INSTANCE_ADDR=
 CF_INSTANCE_IP=0.0.0.0

@@ -1,4 +1,4 @@
-package app_test
+package local_test
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-func TestApp(t *testing.T) {
+func TestLocal(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "App Suite")
+	RunSpecs(t, "Local Suite")
 }
 
 func percentColor(format string, a ...interface{}) string {
