@@ -9,8 +9,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/sclevine/cflocal/app"
 	"github.com/sclevine/cflocal/cf"
+	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
@@ -52,7 +52,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 	cf := &cf.CF{
 		UI: p.UI,
-		Stager: &app.Stager{
+		Stager: &local.Stager{
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
 			StackVersion: "latest",
@@ -60,7 +60,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			Docker:       client,
 			Logs:         os.Stdout,
 		},
-		Runner: &app.Runner{
+		Runner: &local.Runner{
 			Docker:   client,
 			Logs:     os.Stdout,
 			ExitChan: exitChan,
