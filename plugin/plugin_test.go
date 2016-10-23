@@ -3,8 +3,8 @@ package plugin_test
 import (
 	"os"
 
+	"github.com/sclevine/cflocal/mocks"
 	. "github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/plugin/mocks"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/golang/mock/gomock"

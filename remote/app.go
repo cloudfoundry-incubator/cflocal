@@ -1,4 +1,4 @@
-package plugin
+package remote
 
 import (
 	"encoding/json"

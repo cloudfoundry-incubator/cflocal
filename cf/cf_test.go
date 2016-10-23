@@ -7,6 +7,7 @@ import (
 	. "github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/mocks"
 	"github.com/sclevine/cflocal/local"
+	sharedmocks "github.com/sclevine/cflocal/mocks"
 
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
@@ -18,7 +19,7 @@ import (
 var _ = Describe("CF", func() {
 	var (
 		mockCtrl   *gomock.Controller
-		mockUI     *mocks.MockUI
+		mockUI     *sharedmocks.MockUI
 		mockStager *mocks.MockStager
 		mockRunner *mocks.MockRunner
 		mockFS     *mocks.MockFS
@@ -28,7 +29,7 @@ var _ = Describe("CF", func() {
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
-		mockUI = mocks.NewMockUI()
+		mockUI = sharedmocks.NewMockUI()
 		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRunner = mocks.NewMockRunner(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)

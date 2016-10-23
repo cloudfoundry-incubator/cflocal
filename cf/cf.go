@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/remote"
 
 	"github.com/fatih/color"
 )
@@ -14,6 +15,7 @@ type CF struct {
 	UI      UI
 	Stager  Stager
 	Runner  Runner
+	App     App
 	FS      FS
 	Help    Help
 	Version string
@@ -34,6 +36,12 @@ type Stager interface {
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf Runner
 type Runner interface {
 	Run(name string, color local.Colorizer, config *local.RunConfig) (status int, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf App
+type App interface {
+	Droplet(name string) (io.ReadCloser, error)
+	Env(name string) (*remote.AppEnv, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf FS
@@ -59,6 +67,8 @@ func (c *CF) Run(args []string) error {
 		err = c.stage(args[1:])
 	case "run":
 		err = c.run(args[1:])
+	case "pull":
+		err = c.pull(args[1:])
 	default:
 		return errors.New("invalid command")
 	}
@@ -130,4 +140,9 @@ func (c *CF) run(args []string) error {
 		Port:         3000,
 	})
 	return err
+}
+
+func (c *CF) pull(args []string) error {
+	//c.App.Pull()
+	return nil
 }

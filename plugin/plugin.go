@@ -11,6 +11,7 @@ import (
 
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/utils"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
@@ -65,6 +66,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			Logs:     os.Stdout,
 			ExitChan: exitChan,
 		},
+		App:     &remote.App{},
 		FS:      &utils.FS{},
 		Help:    &Help{CLI: cliConnection},
 		Version: p.Version,

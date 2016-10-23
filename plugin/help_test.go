@@ -3,8 +3,8 @@ package plugin_test
 import (
 	"errors"
 
+	"github.com/sclevine/cflocal/mocks"
 	. "github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/plugin/mocks"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"

@@ -1,12 +1,12 @@
-package plugin_test
+package remote_test
 
 import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
-	. "github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/plugin/mocks"
+	"github.com/sclevine/cflocal/mocks"
+	. "github.com/sclevine/cflocal/remote"
 
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/golang/mock/gomock"
@@ -24,9 +24,7 @@ var _ = Describe("App", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockCLI = mocks.NewMockCliConnection(mockCtrl)
-		app = &App{
-			CLI: mockCLI,
-		}
+		app = &App{CLI: mockCLI}
 	})
 
 	AfterEach(func() {
