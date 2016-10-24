@@ -22,6 +22,7 @@ var _ = Describe("CF", func() {
 		mockUI     *sharedmocks.MockUI
 		mockStager *mocks.MockStager
 		mockRunner *mocks.MockRunner
+		mockApp    *mocks.MockApp
 		mockFS     *mocks.MockFS
 		mockHelp   *mocks.MockHelp
 		cf         *CF
@@ -32,12 +33,14 @@ var _ = Describe("CF", func() {
 		mockUI = sharedmocks.NewMockUI()
 		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRunner = mocks.NewMockRunner(mockCtrl)
+		mockApp = mocks.NewMockApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		cf = &CF{
 			UI:      mockUI,
 			Stager:  mockStager,
 			Runner:  mockRunner,
+			App:     mockApp,
 			FS:      mockFS,
 			Help:    mockHelp,
 			Version: "some-version",
@@ -95,12 +98,12 @@ var _ = Describe("CF", func() {
 				)
 				Expect(cf.Run([]string{"stage", "some-app"})).To(Succeed())
 				Expect(file.String()).To(Equal("some-droplet"))
-				Expect(mockUI.Out).To(gbytes.Say("Staging of some-app successful."))
+				Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 			})
 		})
 
 		Context("when the subcommand is 'run'", func() {
-			It("should build a droplet", func() {
+			It("should run a droplet", func() {
 				droplet := newMockBufferCloser(mockCtrl)
 				launcher := newMockBufferCloser(mockCtrl)
 				gomock.InOrder(
@@ -122,6 +125,22 @@ var _ = Describe("CF", func() {
 				)
 				Expect(cf.Run([]string{"run", "some-app"})).To(Succeed())
 				Expect(mockUI.Out).To(gbytes.Say("Running some-app..."))
+			})
+		})
+
+		Context("when the subcommand is 'pull'", func() {
+			It("should download a droplet", func() {
+				droplet := newMockBufferCloser(mockCtrl, "some-droplet")
+				file := newMockBufferCloser(mockCtrl)
+				gomock.InOrder(
+					mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil),
+					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
+					file.EXPECT().Close(),
+					droplet.EXPECT().Close(),
+				)
+				Expect(cf.Run([]string{"pull", "some-app"})).To(Succeed())
+				Expect(file.String()).To(Equal("some-droplet"))
+				Expect(mockUI.Out).To(gbytes.Say("Successfully downloaded: some-app"))
 			})
 		})
 	})

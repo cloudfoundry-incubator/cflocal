@@ -55,10 +55,11 @@ var _ = Describe("App", func() {
 		It("should return the app's droplet", func() {
 			req := handleAppEndpoint("some-name", "some-droplet")
 
-			droplet, err := app.Droplet("some-name")
+			droplet, size, err := app.Droplet("some-name")
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
+			Expect(size).To(Equal(int64(12)))
 			Expect(ioutil.ReadAll(droplet)).To(Equal([]byte("some-droplet")))
 			Expect(req.authToken).To(Equal("some-access-token"))
 			Expect(req.path).To(Equal("/v2/apps/some-guid/droplet/download"))

@@ -24,6 +24,7 @@ type Stager struct {
 	UpdateRootFS bool
 	Docker       *docker.Client
 	Logs         io.Writer
+	ExitChan     <-chan struct{}
 }
 
 type Colorizer func(string, ...interface{}) string
@@ -123,6 +124,10 @@ func (s *Stager) Stage(name string, color Colorizer, config *StageConfig) (dropl
 	defer logs.Close()
 	go utils.CopyStream(s.Logs, logs, color("[%s] ", name))
 
+	go func() {
+		<-s.ExitChan
+		cont.Remove(id)
+	}()
 	status, err := s.Docker.ContainerWait(context.Background(), id)
 	if err != nil {
 		return nil, 0, err

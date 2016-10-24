@@ -40,7 +40,7 @@ type Runner interface {
 
 //go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf App
 type App interface {
-	Droplet(name string) (io.ReadCloser, error)
+	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
 	Env(name string) (*remote.AppEnv, error)
 }
 
@@ -109,7 +109,7 @@ func (c *CF) stage(args []string) error {
 	if _, err := io.CopyN(file, droplet, size); err != nil && err != io.EOF {
 		return err
 	}
-	c.UI.Output("Staging of %s successful.", name)
+	c.UI.Output("Successfully staged: %s", name)
 	return nil
 }
 
@@ -143,6 +143,26 @@ func (c *CF) run(args []string) error {
 }
 
 func (c *CF) pull(args []string) error {
-	//c.App.Pull()
+	if len(args) != 1 {
+		if err := c.Help.Show(); err != nil {
+			c.UI.Error(err)
+		}
+		return errors.New("invalid arguments")
+	}
+	name := args[0]
+	droplet, size, err := c.App.Droplet(name)
+	if err != nil {
+		return err
+	}
+	defer droplet.Close()
+	file, err := c.FS.WriteFile(fmt.Sprintf("./%s.droplet", name))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := io.CopyN(file, droplet, size); err != nil && err != io.EOF {
+		return err
+	}
+	c.UI.Output("Successfully downloaded: %s", name)
 	return nil
 }

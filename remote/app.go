@@ -15,12 +15,12 @@ type App struct {
 	CLI cfplugin.CliConnection
 }
 
-func (a *App) Droplet(name string) (io.ReadCloser, error) {
+func (a *App) Droplet(name string) (droplet io.ReadCloser, size int64, err error) {
 	return a.get(name, "/droplet/download")
 }
 
 func (a *App) Env(name string) (*AppEnv, error) {
-	appEnvJSON, err := a.get(name, "/env")
+	appEnvJSON, _, err := a.get(name, "/env")
 	if err != nil {
 		return nil, err
 	}
@@ -38,39 +38,38 @@ type AppEnv struct {
 	App     map[string]string `json:"environment_json"`
 }
 
-func (a *App) get(name, endpoint string) (io.ReadCloser, error) {
+func (a *App) get(name, endpoint string) (io.ReadCloser, int64, error) {
 	loggedIn, err := a.CLI.IsLoggedIn()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if !loggedIn {
-		return nil, errors.New("must be authenticated with API")
-
+		return nil, 0, errors.New("must be authenticated with API")
 	}
 	model, err := a.CLI.GetApp(name)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	target, err := a.CLI.ApiEndpoint()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	url := fmt.Sprintf("%s/v2/apps/%s", target, path.Join(model.Guid, endpoint))
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	token, err := a.CLI.AccessToken()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	request.Header.Add("Authorization", token)
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return response.Body, nil
+	return response.Body, response.ContentLength, nil
 
 }

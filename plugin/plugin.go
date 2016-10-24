@@ -40,6 +40,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	signal.Notify(make(chan os.Signal), syscall.SIGHUP)
 	quitChan := make(chan os.Signal, 1)
 	signal.Notify(quitChan, syscall.SIGINT)
+	signal.Notify(quitChan, syscall.SIGTERM)
 	exitChan := make(chan struct{})
 	go func() {
 		<-quitChan
@@ -60,13 +61,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         os.Stdout,
+			ExitChan:     exitChan,
 		},
 		Runner: &local.Runner{
 			Docker:   client,
 			Logs:     os.Stdout,
 			ExitChan: exitChan,
 		},
-		App:     &remote.App{},
+		App:     &remote.App{CLI: cliConnection},
 		FS:      &utils.FS{},
 		Help:    &Help{CLI: cliConnection},
 		Version: p.Version,

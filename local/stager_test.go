@@ -64,6 +64,8 @@ var _ = Describe("Stager", func() {
 			Expect(fileFromTar("./app/env", dropletBuffer)).To(Equal(stagingEnvFixture))
 
 			// test that no "some-app-staging-GUID" containers exist
+
+			// test that termination via ExitChan works
 		})
 
 		Context("on failure", func() {

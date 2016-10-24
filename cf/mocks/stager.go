@@ -4,10 +4,9 @@
 package mocks
 
 import (
-	io "io"
-
 	gomock "github.com/golang/mock/gomock"
 	local "github.com/sclevine/cflocal/local"
+	io "io"
 )
 
 // Mock of Stager interface
