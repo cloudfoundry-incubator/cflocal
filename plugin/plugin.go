@@ -71,6 +71,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		App:     &remote.App{CLI: cliConnection},
 		FS:      &utils.FS{},
 		Help:    &Help{CLI: cliConnection},
+		Config:  &local.Config{Path: "./local.yml"},
 		Version: p.Version,
 	}
 	if err := cf.Run(args[1:]); err != nil {

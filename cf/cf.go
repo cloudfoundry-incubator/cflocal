@@ -18,6 +18,7 @@ type CF struct {
 	App     App
 	FS      FS
 	Help    Help
+	Config  Config
 	Version string
 }
 
@@ -54,6 +55,12 @@ type FS interface {
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf Help
 type Help interface {
 	Show() error
+}
+
+//go:generate mockgen -package mocks -destination mocks/config.go github.com/sclevine/cflocal/cf Config
+type Config interface {
+	Load() (*local.LocalYML, error)
+	Save(localYML *local.LocalYML) error
 }
 
 func (c *CF) Run(args []string) error {
@@ -150,6 +157,17 @@ func (c *CF) pull(args []string) error {
 		return errors.New("invalid arguments")
 	}
 	name := args[0]
+	if err := c.saveDroplet(name); err != nil {
+		return err
+	}
+	if err := c.saveLocalYML(name); err != nil {
+		return err
+	}
+	c.UI.Output("Successfully downloaded: %s", name)
+	return nil
+}
+
+func (c *CF) saveDroplet(name string) error {
 	droplet, size, err := c.App.Droplet(name)
 	if err != nil {
 		return err
@@ -163,6 +181,38 @@ func (c *CF) pull(args []string) error {
 	if _, err := io.CopyN(file, droplet, size); err != nil && err != io.EOF {
 		return err
 	}
-	c.UI.Output("Successfully downloaded: %s", name)
 	return nil
+}
+
+func (c *CF) saveLocalYML(name string) error {
+	localYML, err := c.Config.Load()
+	if err != nil {
+		return err
+	}
+	app := getApp(name, localYML)
+	env, err := c.App.Env(name)
+	if err != nil {
+		return err
+	}
+	app.StagingEnv = env.Staging
+	app.RunningEnv = env.Running
+	app.Env = env.App
+	if err := c.Config.Save(localYML); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getApp(name string, localYML *local.LocalYML) *local.AppConfig {
+	var app *local.AppConfig
+	for _, appConfig := range localYML.Applications {
+		if appConfig.Name == name {
+			app = appConfig
+		}
+	}
+	if app == nil {
+		app = &local.AppConfig{}
+		localYML.Applications = append(localYML.Applications, app)
+	}
+	return app
 }

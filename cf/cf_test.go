@@ -8,6 +8,7 @@ import (
 	"github.com/sclevine/cflocal/cf/mocks"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/cflocal/remote"
 
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
@@ -25,6 +26,7 @@ var _ = Describe("CF", func() {
 		mockApp    *mocks.MockApp
 		mockFS     *mocks.MockFS
 		mockHelp   *mocks.MockHelp
+		mockConfig *mocks.MockConfig
 		cf         *CF
 	)
 
@@ -36,6 +38,7 @@ var _ = Describe("CF", func() {
 		mockApp = mocks.NewMockApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
+		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cf = &CF{
 			UI:      mockUI,
 			Stager:  mockStager,
@@ -43,6 +46,7 @@ var _ = Describe("CF", func() {
 			App:     mockApp,
 			FS:      mockFS,
 			Help:    mockHelp,
+			Config:  mockConfig,
 			Version: "some-version",
 		}
 	})
@@ -129,14 +133,44 @@ var _ = Describe("CF", func() {
 		})
 
 		Context("when the subcommand is 'pull'", func() {
-			It("should download a droplet", func() {
+			It("should download a droplet and save its env vars", func() {
 				droplet := newMockBufferCloser(mockCtrl, "some-droplet")
 				file := newMockBufferCloser(mockCtrl)
+				env := &remote.AppEnv{
+					Staging: map[string]string{"a": "b"},
+					Running: map[string]string{"c": "d"},
+					App:     map[string]string{"e": "f"},
+				}
+				oldLocalYML := &local.LocalYML{
+					Applications: []*local.AppConfig{
+						{Name: "some-other-app"},
+						{
+							Name:       "some-app",
+							StagingEnv: map[string]string{"g": "h"},
+							RunningEnv: map[string]string{"i": "j"},
+							Env:        map[string]string{"k": "l"},
+						},
+					},
+				}
+				newLocalYML := &local.LocalYML{
+					Applications: []*local.AppConfig{
+						{Name: "some-other-app"},
+						{
+							Name:       "some-app",
+							StagingEnv: map[string]string{"a": "b"},
+							RunningEnv: map[string]string{"c": "d"},
+							Env:        map[string]string{"e": "f"},
+						},
+					},
+				}
 				gomock.InOrder(
 					mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil),
 					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
 					file.EXPECT().Close(),
 					droplet.EXPECT().Close(),
+					mockConfig.EXPECT().Load().Return(oldLocalYML, nil),
+					mockApp.EXPECT().Env("some-app").Return(env, nil),
+					mockConfig.EXPECT().Save(newLocalYML).Return(nil),
 				)
 				Expect(cf.Run([]string{"pull", "some-app"})).To(Succeed())
 				Expect(file.String()).To(Equal("some-droplet"))
