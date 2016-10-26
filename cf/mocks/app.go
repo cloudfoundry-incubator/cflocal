@@ -30,6 +30,17 @@ func (_m *MockApp) EXPECT() *_MockAppRecorder {
 	return _m.recorder
 }
 
+func (_m *MockApp) Command(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "Command", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockAppRecorder) Command(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Command", arg0)
+}
+
 func (_m *MockApp) Droplet(_param0 string) (io.ReadCloser, int64, error) {
 	ret := _m.ctrl.Call(_m, "Droplet", _param0)
 	ret0, _ := ret[0].(io.ReadCloser)

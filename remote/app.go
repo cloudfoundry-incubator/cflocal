@@ -15,8 +15,28 @@ type App struct {
 	CLI cfplugin.CliConnection
 }
 
+type AppEnv struct {
+	Staging map[string]string `json:"staging_env_json"`
+	Running map[string]string `json:"running_env_json"`
+	App     map[string]string `json:"environment_json"`
+}
+
 func (a *App) Droplet(name string) (droplet io.ReadCloser, size int64, err error) {
 	return a.get(name, "/droplet/download")
+}
+
+func (a *App) Command(name string) (string, error) {
+	appJSON, _, err := a.get(name, "")
+	if err != nil {
+		return "", err
+	}
+	defer appJSON.Close()
+
+	var app struct{ Entity struct{ Command string } }
+	if err := json.NewDecoder(appJSON).Decode(&app); err != nil {
+		return "", err
+	}
+	return app.Entity.Command, nil
 }
 
 func (a *App) Env(name string) (*AppEnv, error) {
@@ -30,12 +50,6 @@ func (a *App) Env(name string) (*AppEnv, error) {
 		return nil, err
 	}
 	return &env, nil
-}
-
-type AppEnv struct {
-	Staging map[string]string `json:"staging_env_json"`
-	Running map[string]string `json:"running_env_json"`
-	App     map[string]string `json:"environment_json"`
 }
 
 func (a *App) get(name, endpoint string) (io.ReadCloser, int64, error) {

@@ -42,6 +42,7 @@ type Runner interface {
 //go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf App
 type App interface {
 	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
+	Command(name string) (string, error)
 	Env(name string) (*remote.AppEnv, error)
 }
 
@@ -200,6 +201,7 @@ func (c *CF) saveLocalYML(name string) error {
 		return err
 	}
 	app := getAppConfig(name, localYML)
+
 	env, err := c.App.Env(name)
 	if err != nil {
 		return err
@@ -207,6 +209,13 @@ func (c *CF) saveLocalYML(name string) error {
 	app.StagingEnv = env.Staging
 	app.RunningEnv = env.Running
 	app.Env = env.App
+
+	command, err := c.App.Command(name)
+	if err != nil {
+		return err
+	}
+	app.Command = command
+
 	if err := c.Config.Save(localYML); err != nil {
 		return err
 	}

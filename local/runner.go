@@ -30,6 +30,20 @@ type RunConfig struct {
 	AppConfig    *AppConfig
 }
 
+const runner = `
+	set -e
+
+	tar -C /home/vcap -xzf /tmp/droplet
+	chown -R vcap:vcap /home/vcap
+
+	command=$1
+	if [[ -z $command ]]; then
+		command=$(jq -r .start_command /home/vcap/staging_info.yml)
+	fi
+
+	exec /tmp/lifecycle/launcher /home/vcap/app "$command" ''
+`
+
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
@@ -70,9 +84,6 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 		"VCAP_APPLICATION":  string(vcapApp),
 		"VCAP_SERVICES":     "{}",
 	}
-	untarDroplet := "tar -C /home/vcap -xzf /tmp/droplet"
-	chownVCAP := "chown -R vcap:vcap /home/vcap"
-	startCommand := "$(jq -r .start_command /home/vcap/staging_info.yml)"
 	cont := utils.Container{Docker: r.Docker, Err: &err}
 	id := cont.Create(name, config.Port, &container.Config{
 		Hostname:     "cflocal",
@@ -82,11 +93,7 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 		Image:        "cloudfoundry/cflinuxfs2",
 		WorkingDir:   "/home/vcap/app",
 		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c",
-			fmt.Sprintf(
-				`%s && %s && /tmp/lifecycle/launcher /home/vcap/app "%s" ''`,
-				untarDroplet, chownVCAP, startCommand,
-			),
+			"/bin/bash", "-c", runner, config.AppConfig.Command,
 		},
 	})
 	if id == "" {

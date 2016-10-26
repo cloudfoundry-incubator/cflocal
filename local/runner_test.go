@@ -105,6 +105,8 @@ var _ = Describe("Runner", func() {
 			// test that droplet and launcher are closed
 
 			// test that no "some-app-staging-GUID" containers exist
+
+			// test with custom start command
 		})
 
 		Context("on failure", func() {

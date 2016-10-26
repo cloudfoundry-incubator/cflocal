@@ -174,6 +174,7 @@ var _ = Describe("CF", func() {
 						{Name: "some-other-app"},
 						{
 							Name:       "some-app",
+							Command:    "some-old-command",
 							StagingEnv: map[string]string{"g": "h"},
 							RunningEnv: map[string]string{"i": "j"},
 							Env:        map[string]string{"k": "l"},
@@ -185,6 +186,7 @@ var _ = Describe("CF", func() {
 						{Name: "some-other-app"},
 						{
 							Name:       "some-app",
+							Command:    "some-command",
 							StagingEnv: map[string]string{"a": "b"},
 							RunningEnv: map[string]string{"c": "d"},
 							Env:        map[string]string{"e": "f"},
@@ -198,6 +200,7 @@ var _ = Describe("CF", func() {
 					droplet.EXPECT().Close(),
 					mockConfig.EXPECT().Load().Return(oldLocalYML, nil),
 					mockApp.EXPECT().Env("some-app").Return(env, nil),
+					mockApp.EXPECT().Command("some-app").Return("some-command", nil),
 					mockConfig.EXPECT().Save(newLocalYML).Return(nil),
 				)
 				Expect(cf.Run([]string{"pull", "some-app"})).To(Succeed())

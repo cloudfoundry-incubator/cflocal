@@ -66,6 +66,20 @@ var _ = Describe("App", func() {
 		})
 	})
 
+	Describe("#Command", func() {
+		It("should return the app's environment variables", func() {
+			req := handleAppEndpoint("some-name", `{
+				"entity": {"command": "some-command"}
+			}`)
+			command, err := app.Command("some-name")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(command).To(Equal("some-command"))
+			Expect(req.authToken).To(Equal("some-access-token"))
+			Expect(req.path).To(Equal("/v2/apps/some-guid"))
+		})
+	})
+
 	Describe("#Env", func() {
 		It("should return the app's environment variables", func() {
 			req := handleAppEndpoint("some-name", `{
