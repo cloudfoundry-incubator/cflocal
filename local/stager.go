@@ -54,9 +54,11 @@ type splitReadCloser struct {
 type StageConfig struct {
 	AppTar     io.Reader
 	Buildpacks []string
+	AppConfig  *AppConfig
 }
 
-func (s *Stager) Stage(name string, color Colorizer, config *StageConfig) (droplet io.ReadCloser, size int64, err error) {
+func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadCloser, size int64, err error) {
+	name := config.AppConfig.Name
 	if err := s.buildDockerfile(); err != nil {
 		return nil, 0, err
 	}
@@ -75,24 +77,25 @@ func (s *Stager) Stage(name string, color Colorizer, config *StageConfig) (dropl
 	if err != nil {
 		return nil, 0, err
 	}
+	env := map[string]string{
+		"CF_INSTANCE_ADDR":  "",
+		"CF_INSTANCE_IP":    "0.0.0.0",
+		"CF_INSTANCE_PORT":  "",
+		"CF_INSTANCE_PORTS": "[]",
+		"CF_STACK":          "cflinuxfs2",
+		"HOME":              "/home/vcap",
+		"LANG":              "en_US.UTF-8",
+		"MEMORY_LIMIT":      "512m",
+		"PATH":              "/usr/local/bin:/usr/bin:/bin",
+		"USER":              "vcap",
+		"VCAP_APPLICATION":  string(vcapApp),
+		"VCAP_SERVICES":     "{}",
+	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
 	id := cont.Create(name+"-stage", 0, &container.Config{
-		Hostname: "cflocal",
-		User:     "vcap",
-		Env: []string{
-			"CF_INSTANCE_ADDR=",
-			"CF_INSTANCE_IP=0.0.0.0",
-			"CF_INSTANCE_PORT=",
-			"CF_INSTANCE_PORTS=[]",
-			"CF_STACK=cflinuxfs2",
-			"HOME=/home/vcap",
-			"LANG=en_US.UTF-8",
-			"MEMORY_LIMIT=512m",
-			"PATH=/usr/local/bin:/usr/bin:/bin",
-			"USER=vcap",
-			fmt.Sprintf("VCAP_APPLICATION=%s", vcapApp),
-			"VCAP_SERVICES={}",
-		},
+		Hostname:   "cflocal",
+		User:       "vcap",
+		Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
 		Image:      "cflocal",
 		WorkingDir: "/home/vcap",
 		Entrypoint: strslice.StrSlice{

@@ -40,10 +40,24 @@ var _ = Describe("Stager", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			droplet, size, err := stager.Stage("some-app", percentColor, &StageConfig{
+			droplet, size, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
-			})
+				AppConfig: &AppConfig{
+					Name: "some-app",
+					StagingEnv: map[string]string{
+						"TEST_STAGING_ENV_KEY": "test-staging-env-value",
+						"MEMORY_LIMIT":         "256m",
+					},
+					RunningEnv: map[string]string{
+						"SOME_NA_KEY": "some-na-value",
+					},
+					Env: map[string]string{
+						"TEST_ENV_KEY": "test-env-value",
+						"MEMORY_LIMIT": "1024m",
+					},
+				},
+			}, percentColor)
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
@@ -51,8 +65,8 @@ var _ = Describe("Stager", func() {
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile arguments: /tmp/app /tmp/cache`))
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
 
-			Expect(size).To(BeNumerically(">", 750))
-			Expect(size).To(BeNumerically("<", 850))
+			Expect(size).To(BeNumerically(">", 500))
+			Expect(size).To(BeNumerically("<", 1000))
 
 			dropletTar, err := gzip.NewReader(droplet)
 			Expect(err).NotTo(HaveOccurred())

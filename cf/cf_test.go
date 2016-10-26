@@ -85,14 +85,28 @@ var _ = Describe("CF", func() {
 				appTar := newMockBufferCloser(mockCtrl)
 				droplet := newMockBufferCloser(mockCtrl, "some-droplet")
 				file := newMockBufferCloser(mockCtrl)
+				localYML := &local.LocalYML{
+					Applications: []*local.AppConfig{
+						{Name: "some-other-app"},
+						{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().Tar(".").Return(appTar, nil),
-					mockStager.EXPECT().Stage("some-app", gomock.Any(), &local.StageConfig{
+					mockConfig.EXPECT().Load().Return(localYML, nil),
+					mockStager.EXPECT().Stage(&local.StageConfig{
 						AppTar:     appTar,
 						Buildpacks: Buildpacks,
-					}).Return(
+						AppConfig: &local.AppConfig{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					}, gomock.Any()).Return(
 						droplet, int64(100), nil,
-					).Do(func(_ string, c local.Colorizer, _ *local.StageConfig) {
+					).Do(func(_ *local.StageConfig, c local.Colorizer) {
 						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					}),
 					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
@@ -110,18 +124,32 @@ var _ = Describe("CF", func() {
 			It("should run a droplet", func() {
 				droplet := newMockBufferCloser(mockCtrl)
 				launcher := newMockBufferCloser(mockCtrl)
+				localYML := &local.LocalYML{
+					Applications: []*local.AppConfig{
+						{Name: "some-other-app"},
+						{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					},
+				}
 				gomock.InOrder(
 					mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
 					mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
-					mockRunner.EXPECT().Run("some-app", gomock.Any(), &local.RunConfig{
+					mockConfig.EXPECT().Load().Return(localYML, nil),
+					mockRunner.EXPECT().Run(&local.RunConfig{
 						Droplet:      droplet,
 						DropletSize:  int64(100),
 						Launcher:     launcher,
 						LauncherSize: int64(200),
 						Port:         3000,
-					}).Return(
+						AppConfig: &local.AppConfig{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					}, gomock.Any()).Return(
 						0, nil,
-					).Do(func(_ string, c local.Colorizer, _ *local.RunConfig) {
+					).Do(func(_ *local.RunConfig, c local.Colorizer) {
 						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					}),
 					launcher.EXPECT().Close(),
@@ -176,6 +204,8 @@ var _ = Describe("CF", func() {
 				Expect(file.String()).To(Equal("some-droplet"))
 				Expect(mockUI.Out).To(gbytes.Say("Successfully downloaded: some-app"))
 			})
+
+			// test when app isn't in local.yml
 		})
 	})
 })

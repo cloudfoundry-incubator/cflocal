@@ -2,6 +2,7 @@ package local
 
 import (
 	"io/ioutil"
+	"os"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -11,11 +12,14 @@ type Config struct {
 }
 
 func (c *Config) Load() (*LocalYML, error) {
+	localYML := &LocalYML{}
 	yamlBytes, err := ioutil.ReadFile(c.Path)
+	if pathErr, ok := err.(*os.PathError); ok && pathErr.Op == "open" {
+		return localYML, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	localYML := &LocalYML{}
 	if err := yaml.Unmarshal(yamlBytes, localYML); err != nil {
 		return nil, err
 	}
@@ -23,7 +27,7 @@ func (c *Config) Load() (*LocalYML, error) {
 
 }
 
-func (c *Config) Set(localYML *LocalYML) error {
+func (c *Config) Save(localYML *LocalYML) error {
 	yamlBytes, err := yaml.Marshal(localYML)
 	if err != nil {
 		return err

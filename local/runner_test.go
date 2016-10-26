@@ -52,10 +52,11 @@ var _ = Describe("Runner", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			droplet, dropletSize, err := stager.Stage("some-app", percentColor, &StageConfig{
+			droplet, dropletSize, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
-			})
+				AppConfig:  &AppConfig{Name: "some-app"},
+			}, percentColor)
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
@@ -77,8 +78,22 @@ var _ = Describe("Runner", func() {
 				Launcher:     launcher,
 				LauncherSize: launcherSize,
 				Port:         port,
+				AppConfig: &AppConfig{
+					Name: "some-app",
+					StagingEnv: map[string]string{
+						"SOME_NA_KEY": "some-na-value",
+					},
+					RunningEnv: map[string]string{
+						"TEST_RUNNING_ENV_KEY": "test-running-env-value",
+						"MEMORY_LIMIT":         "256m",
+					},
+					Env: map[string]string{
+						"TEST_ENV_KEY": "test-env-value",
+						"MEMORY_LIMIT": "1024m",
+					},
+				},
 			}
-			status, err := runner.Run("some-app", percentColor, config)
+			status, err := runner.Run(config, percentColor)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(137))
 

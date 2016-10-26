@@ -30,13 +30,13 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf Stager
 type Stager interface {
-	Stage(name string, color local.Colorizer, config *local.StageConfig) (droplet io.ReadCloser, size int64, err error)
+	Stage(config *local.StageConfig, color local.Colorizer) (droplet io.ReadCloser, size int64, err error)
 	Launcher() (launcher io.ReadCloser, size int64, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf Runner
 type Runner interface {
-	Run(name string, color local.Colorizer, config *local.RunConfig) (status int, err error)
+	Run(config *local.RunConfig, color local.Colorizer) (status int, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf App
@@ -100,10 +100,15 @@ func (c *CF) stage(args []string) error {
 		return err
 	}
 	defer appTar.Close()
-	droplet, size, err := c.Stager.Stage(name, color.GreenString, &local.StageConfig{
+	localYML, err := c.Config.Load()
+	if err != nil {
+		return err
+	}
+	droplet, size, err := c.Stager.Stage(&local.StageConfig{
 		AppTar:     appTar,
 		Buildpacks: Buildpacks,
-	})
+		AppConfig:  getAppConfig(name, localYML),
+	}, color.GreenString)
 	if err != nil {
 		return err
 	}
@@ -138,14 +143,19 @@ func (c *CF) run(args []string) error {
 		return err
 	}
 	defer launcher.Close()
+	localYML, err := c.Config.Load()
+	if err != nil {
+		return err
+	}
 	c.UI.Output("Running %s...", name)
-	_, err = c.Runner.Run(name, color.GreenString, &local.RunConfig{
+	_, err = c.Runner.Run(&local.RunConfig{
 		Droplet:      droplet,
 		DropletSize:  dropletSize,
 		Launcher:     launcher,
 		LauncherSize: launcherSize,
 		Port:         3000,
-	})
+		AppConfig:    getAppConfig(name, localYML),
+	}, color.GreenString)
 	return err
 }
 
@@ -189,7 +199,7 @@ func (c *CF) saveLocalYML(name string) error {
 	if err != nil {
 		return err
 	}
-	app := getApp(name, localYML)
+	app := getAppConfig(name, localYML)
 	env, err := c.App.Env(name)
 	if err != nil {
 		return err
@@ -203,7 +213,7 @@ func (c *CF) saveLocalYML(name string) error {
 	return nil
 }
 
-func getApp(name string, localYML *local.LocalYML) *local.AppConfig {
+func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {
 	var app *local.AppConfig
 	for _, appConfig := range localYML.Applications {
 		if appConfig.Name == name {
@@ -211,7 +221,7 @@ func getApp(name string, localYML *local.LocalYML) *local.AppConfig {
 		}
 	}
 	if app == nil {
-		app = &local.AppConfig{}
+		app = &local.AppConfig{Name: name}
 		localYML.Applications = append(localYML.Applications, app)
 	}
 	return app
