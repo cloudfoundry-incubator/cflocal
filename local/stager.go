@@ -143,8 +143,8 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 	if err != nil {
 		return nil, 0, err
 	}
-	droplet = dropletCloser
-	dropletReader, err := utils.FileFromTar("droplet", dropletCloser)
+	droplet = dropletCloser // enables removal in error case
+	dropletReader, err := utils.FileFromTar("droplet", droplet)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -168,8 +168,8 @@ func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	launcher = launcherCloser
-	launcherReader, err := utils.FileFromTar("launcher", launcherCloser)
+	launcher = launcherCloser // enables removal in error case
+	launcherReader, err := utils.FileFromTar("launcher", launcher)
 	if err != nil {
 		return nil, 0, err
 	}

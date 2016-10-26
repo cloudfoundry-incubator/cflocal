@@ -21,9 +21,10 @@ import (
 )
 
 type Plugin struct {
-	UI      UserInterface
-	Version string
-	RunErr  error
+	UI       UserInterface
+	Version  string
+	RunErr   error
+	ExitChan chan struct{}
 }
 
 type UserInterface interface {
@@ -38,13 +39,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 
 	signal.Notify(make(chan os.Signal), syscall.SIGHUP)
-	quitChan := make(chan os.Signal, 1)
-	signal.Notify(quitChan, syscall.SIGINT)
-	signal.Notify(quitChan, syscall.SIGTERM)
-	exitChan := make(chan struct{})
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT)
+	signal.Notify(signalChan, syscall.SIGTERM)
 	go func() {
-		<-quitChan
-		close(exitChan)
+		<-signalChan
+		close(p.ExitChan)
 	}()
 
 	client, err := docker.NewEnvClient()
@@ -61,12 +61,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         os.Stdout,
-			ExitChan:     exitChan,
+			ExitChan:     p.ExitChan,
 		},
 		Runner: &local.Runner{
 			Docker:   client,
 			Logs:     os.Stdout,
-			ExitChan: exitChan,
+			ExitChan: p.ExitChan,
 		},
 		App:     &remote.App{CLI: cliConnection},
 		FS:      &utils.FS{},
