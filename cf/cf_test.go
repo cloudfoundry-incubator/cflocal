@@ -99,7 +99,7 @@ var _ = Describe("CF", func() {
 					mockConfig.EXPECT().Load().Return(localYML, nil),
 					mockStager.EXPECT().Stage(&local.StageConfig{
 						AppTar:     appTar,
-						Buildpacks: Buildpacks,
+						Buildpacks: []string{"some-buildpack"},
 						AppConfig: &local.AppConfig{
 							Name: "some-app",
 							Env:  map[string]string{"a": "b"},
@@ -114,10 +114,12 @@ var _ = Describe("CF", func() {
 					droplet.EXPECT().Close(),
 					appTar.EXPECT().Close(),
 				)
-				Expect(cf.Run([]string{"stage", "some-app"})).To(Succeed())
+				Expect(cf.Run([]string{"stage", "-b", "some-buildpack", "some-app"})).To(Succeed())
 				Expect(file.String()).To(Equal("some-droplet"))
 				Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 			})
+
+			// test not providing a buildpack
 		})
 
 		Context("when the subcommand is 'run'", func() {
@@ -155,9 +157,11 @@ var _ = Describe("CF", func() {
 					launcher.EXPECT().Close(),
 					droplet.EXPECT().Close(),
 				)
-				Expect(cf.Run([]string{"run", "some-app"})).To(Succeed())
-				Expect(mockUI.Out).To(gbytes.Say("Running some-app..."))
+				Expect(cf.Run([]string{"run", "-p", "3000", "some-app"})).To(Succeed())
+				Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 			})
+
+			// test free port picker when port is unspecified (currently tested by integration)
 		})
 
 		Context("when the subcommand is 'pull'", func() {

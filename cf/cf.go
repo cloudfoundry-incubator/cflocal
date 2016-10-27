@@ -2,8 +2,12 @@ package cf
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"net"
+	"strconv"
+	"strings"
 
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
@@ -89,13 +93,13 @@ func (c *CF) version() {
 
 //go:generate mockgen -package mocks -destination mocks/closer.go io Closer
 func (c *CF) stage(args []string) error {
-	if len(args) != 1 {
+	name, buildpack, err := stageFlags(args)
+	if err != nil {
 		if err := c.Help.Show(); err != nil {
 			c.UI.Error(err)
 		}
-		return errors.New("invalid arguments")
+		return err
 	}
-	name := args[0]
 	appTar, err := c.FS.Tar(".")
 	if err != nil {
 		return err
@@ -105,9 +109,13 @@ func (c *CF) stage(args []string) error {
 	if err != nil {
 		return err
 	}
+	buildpacks := Buildpacks
+	if buildpack != "" {
+		buildpacks = []string{buildpack}
+	}
 	droplet, size, err := c.Stager.Stage(&local.StageConfig{
 		AppTar:     appTar,
-		Buildpacks: Buildpacks,
+		Buildpacks: buildpacks,
 		AppConfig:  getAppConfig(name, localYML),
 	}, color.GreenString)
 	if err != nil {
@@ -126,14 +134,26 @@ func (c *CF) stage(args []string) error {
 	return nil
 }
 
+func stageFlags(args []string) (name string, buildpack string, err error) {
+	set := &flag.FlagSet{}
+	set.StringVar(&buildpack, "b", "", "")
+	if err := set.Parse(args); err != nil {
+		return "", "", err
+	}
+	if set.NArg() != 1 {
+		return "", "", errors.New("invalid arguments")
+	}
+	return set.Arg(0), buildpack, nil
+}
+
 func (c *CF) run(args []string) error {
-	if len(args) != 1 {
+	name, port, err := runFlags(args)
+	if err != nil {
 		if err := c.Help.Show(); err != nil {
 			c.UI.Error(err)
 		}
-		return errors.New("invalid arguments")
+		return err
 	}
-	name := args[0]
 	droplet, dropletSize, err := c.FS.ReadFile(fmt.Sprintf("./%s.droplet", name))
 	if err != nil {
 		return err
@@ -148,16 +168,48 @@ func (c *CF) run(args []string) error {
 	if err != nil {
 		return err
 	}
-	c.UI.Output("Running %s...", name)
+	c.UI.Output("Running %s on port %d...", name, port)
 	_, err = c.Runner.Run(&local.RunConfig{
 		Droplet:      droplet,
 		DropletSize:  dropletSize,
 		Launcher:     launcher,
 		LauncherSize: launcherSize,
-		Port:         3000,
+		Port:         port,
 		AppConfig:    getAppConfig(name, localYML),
 	}, color.GreenString)
 	return err
+}
+
+func runFlags(args []string) (name string, port uint, err error) {
+	set := &flag.FlagSet{}
+	defaultPort, err := freePort()
+	if err != nil {
+		return "", 0, err
+	}
+	set.UintVar(&port, "p", defaultPort, "")
+	if err := set.Parse(args); err != nil {
+		return "", 0, err
+	}
+	if set.NArg() != 1 {
+		return "", 0, errors.New("invalid arguments")
+	}
+	return set.Arg(0), port, nil
+}
+
+func freePort() (uint, error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	address := listener.Addr().String()
+	portStr := strings.SplitN(address, ":", 2)[1]
+	port, err := strconv.ParseUint(portStr, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint(port), nil
 }
 
 func (c *CF) pull(args []string) error {

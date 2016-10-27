@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"syscall"
 
 	"github.com/docker/docker/pkg/archive"
@@ -112,11 +114,15 @@ var _ = Describe("CF Local", func() {
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(get("http://localhost:3000/some-path", "8s")).To(Equal("Path: /some-path"))
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				url := fmt.Sprintf("http://localhost:%s/some-path", port)
+
+				Expect(get(url, "10s")).To(Equal("Path: /some-path"))
 				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
 
 				Eventually(session, "5s").Should(gexec.Exit(130))
-				Expect(session).To(gbytes.Say("Running some-app..."))
 			})
 		})
 
@@ -138,11 +144,15 @@ var _ = Describe("CF Local", func() {
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(get("http://localhost:3000/some-path", "8s")).To(Equal("Path: /some-path"))
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				url := fmt.Sprintf("http://localhost:%s/some-path", port)
+
+				Expect(get(url, "10s")).To(Equal("Path: /some-path"))
 				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
 
 				Eventually(session, "5s").Should(gexec.Exit(130))
-				Expect(session).To(gbytes.Say("Running some-app..."))
 			})
 		})
 	})

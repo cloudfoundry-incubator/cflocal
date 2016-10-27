@@ -80,6 +80,8 @@ var _ = Describe("Stager", func() {
 			// test that no "some-app-staging-GUID" containers exist
 
 			// test that termination via ExitChan works
+
+			// test skipping detection when only one buildpack
 		})
 
 		Context("on failure", func() {

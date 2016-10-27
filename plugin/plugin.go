@@ -92,14 +92,16 @@ func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
 		Commands: []cfplugin.Command{
 			cfplugin.Command{
 				Name:     "local",
-				HelpText: "Build and launch Cloud Foundry applications locally",
+				HelpText: "Build, download, and launch Cloud Foundry applications locally",
 				UsageDetails: cfplugin.Usage{
 					Usage: `cf local SUBCOMMAND
 
 SUBCOMMANDS:
-   stage <name>  Build a droplet from the app in the current directory.
-   help          Output this help text.
-   version       Output the CF Local version.`,
+   stage [-b <buildpack URL>] <name>  Build a droplet from the app in the current directory and local.yml.
+   pull                       <name>  Download the droplet for the named app and update local.yml with its settings.
+   run   [-p <port>]          <name>  Run a droplet using the settings specified in local.yml.
+   help                               Output this help text.
+   version                            Output the CF Local version.`,
 				},
 			},
 		},

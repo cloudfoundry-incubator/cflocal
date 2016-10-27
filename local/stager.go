@@ -139,16 +139,16 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		return nil, 0, fmt.Errorf("container exited with status %d", status)
 	}
 
-	dropletCloser, dropletStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/droplet")
+	dropletTar, dropletStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/droplet")
 	if err != nil {
 		return nil, 0, err
 	}
-	droplet = dropletCloser // enables removal in error case
-	dropletReader, err := utils.FileFromTar("droplet", droplet)
+	droplet = dropletTar // allows removal in error case
+	dropletReader, err := utils.FileFromTar("droplet", dropletTar)
 	if err != nil {
 		return nil, 0, err
 	}
-	return splitReadCloser{dropletReader, dropletCloser}, dropletStat.Size, nil
+	return splitReadCloser{dropletReader, dropletTar}, dropletStat.Size, nil
 }
 
 func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
@@ -164,17 +164,17 @@ func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
 		return nil, 0, err
 	}
 	defer cont.RemoveAfterCopy(id, &launcher)
-	launcherCloser, launcherStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/lifecycle/launcher")
+	launcherTar, launcherStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/lifecycle/launcher")
 	if err != nil {
 		return nil, 0, err
 	}
-	launcher = launcherCloser // enables removal in error case
-	launcherReader, err := utils.FileFromTar("launcher", launcher)
+	launcher = launcherTar // allows removal in error case
+	launcherReader, err := utils.FileFromTar("launcher", launcherTar)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return splitReadCloser{launcherReader, launcherCloser}, launcherStat.Size, nil
+	return splitReadCloser{launcherReader, launcherTar}, launcherStat.Size, nil
 }
 
 func (s *Stager) buildDockerfile() error {
