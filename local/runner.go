@@ -46,80 +46,18 @@ const runner = `
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
-	vcapApp, err := json.Marshal(&vcapApplication{
-		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
-		ApplicationName:    name,
-		ApplicationURIs:    []string{"localhost"},
-		ApplicationVersion: "2b860df9-a0a1-474c-b02f-5985f53ea0bb",
-		Host:               "0.0.0.0",
-		InstanceID:         "999db41a-508b-46eb-74d8-6f9c06c006da",
-		InstanceIndex:      uintPtr(0),
-		Limits:             map[string]uint{"fds": 16384, "mem": 512, "disk": 1024},
-		Name:               name,
-		Port:               uintPtr(8080),
-		SpaceID:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
-		SpaceName:          "cflocal-space",
-		URIs:               []string{"localhost"},
-		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
-	})
+	containerConfig, err := buildContainerConfig(config.AppConfig)
 	if err != nil {
 		return 0, err
 	}
-	env := map[string]string{
-		"CF_INSTANCE_ADDR":  "0.0.0.0:8080",
-		"CF_INSTANCE_GUID":  "999db41a-508b-46eb-74d8-6f9c06c006da",
-		"CF_INSTANCE_INDEX": "0",
-		"CF_INSTANCE_IP":    "0.0.0.0",
-		"CF_INSTANCE_PORT":  "8080",
-		"CF_INSTANCE_PORTS": `[{"external":8080,"internal":8080}]`,
-		"HOME":              "/home/vcap",
-		"INSTANCE_GUID":     "999db41a-508b-46eb-74d8-6f9c06c006da",
-		"INSTANCE_INDEX":    "0",
-		"LANG":              "en_US.UTF-8",
-		"MEMORY_LIMIT":      "512m",
-		"PATH":              "/usr/local/bin:/usr/bin:/bin",
-		"PORT":              "8080",
-		"TMPDIR":            "/home/vcap/tmp",
-		"USER":              "vcap",
-		"VCAP_APPLICATION":  string(vcapApp),
-		"VCAP_SERVICES":     "{}",
-	}
 	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, config.Port, &container.Config{
-		Hostname:     "cflocal",
-		User:         "vcap",
-		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": struct{}{}},
-		Env:          mapToEnv(mergeMaps(env, config.AppConfig.RunningEnv, config.AppConfig.Env)),
-		Image:        "cloudfoundry/cflinuxfs2",
-		WorkingDir:   "/home/vcap/app",
-		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", runner, config.AppConfig.Command,
-		},
-	})
+	id := cont.Create(name, config.Port, containerConfig)
 	if id == "" {
 		return 0, err
 	}
 	defer cont.Remove(id)
 
-	launcherTar, err := utils.TarFile("./lifecycle/launcher", config.Launcher, config.LauncherSize, 0755)
-	if err != nil {
-		return 0, err
-	}
-	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", launcherTar, types.CopyToContainerOptions{}); err != nil {
-		return 0, err
-	}
-	if err := config.Launcher.Close(); err != nil {
-		return 0, err
-	}
-
-	dropletTar, err := utils.TarFile("./droplet", config.Droplet, config.DropletSize, 0755)
-	if err != nil {
-		return 0, err
-	}
-	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", dropletTar, types.CopyToContainerOptions{}); err != nil {
-		return 0, err
-	}
-	if err := config.Droplet.Close(); err != nil {
+	if err := r.prepareContainer(id, config); err != nil {
 		return 0, err
 	}
 
@@ -147,6 +85,113 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 		return 0, err
 	}
 	return status, nil
+}
+
+func (r *Runner) Export(config *RunConfig, reference string) (imageID string, err error) {
+	name := config.AppConfig.Name
+	containerConfig, err := buildContainerConfig(config.AppConfig)
+	if err != nil {
+		return "", err
+	}
+	cont := utils.Container{Docker: r.Docker, Err: &err}
+	id := cont.Create(name, config.Port, containerConfig)
+	if id == "" {
+		return "", err
+	}
+	defer cont.Remove(id)
+
+	if err := r.prepareContainer(id, config); err != nil {
+		return "", err
+	}
+
+	response, err := r.Docker.ContainerCommit(context.Background(), id, types.ContainerCommitOptions{
+		Reference: reference,
+		Author:    "CF Local",
+		Pause:     true,
+		Config:    containerConfig,
+	})
+	if err != nil {
+		return "", err
+	}
+	return response.ID, nil
+}
+
+func buildContainerConfig(config *AppConfig) (*container.Config, error) {
+	name := config.Name
+	vcapApp, err := json.Marshal(&vcapApplication{
+		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
+		ApplicationName:    name,
+		ApplicationURIs:    []string{"localhost"},
+		ApplicationVersion: "2b860df9-a0a1-474c-b02f-5985f53ea0bb",
+		Host:               "0.0.0.0",
+		InstanceID:         "999db41a-508b-46eb-74d8-6f9c06c006da",
+		InstanceIndex:      uintPtr(0),
+		Limits:             map[string]uint{"fds": 16384, "mem": 512, "disk": 1024},
+		Name:               name,
+		Port:               uintPtr(8080),
+		SpaceID:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
+		SpaceName:          "cflocal-space",
+		URIs:               []string{"localhost"},
+		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
+	})
+	if err != nil {
+		return nil, err
+	}
+	env := map[string]string{
+		"CF_INSTANCE_ADDR":  "0.0.0.0:8080",
+		"CF_INSTANCE_GUID":  "999db41a-508b-46eb-74d8-6f9c06c006da",
+		"CF_INSTANCE_INDEX": "0",
+		"CF_INSTANCE_IP":    "0.0.0.0",
+		"CF_INSTANCE_PORT":  "8080",
+		"CF_INSTANCE_PORTS": `[{"external":8080,"internal":8080}]`,
+		"HOME":              "/home/vcap",
+		"INSTANCE_GUID":     "999db41a-508b-46eb-74d8-6f9c06c006da",
+		"INSTANCE_INDEX":    "0",
+		"LANG":              "en_US.UTF-8",
+		"MEMORY_LIMIT":      "512m",
+		"PATH":              "/usr/local/bin:/usr/bin:/bin",
+		"PORT":              "8080",
+		"TMPDIR":            "/home/vcap/tmp",
+		"USER":              "vcap",
+		"VCAP_APPLICATION":  string(vcapApp),
+		"VCAP_SERVICES":     "{}",
+	}
+	return &container.Config{
+		Hostname:     "cflocal",
+		User:         "vcap",
+		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": struct{}{}},
+		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
+		Image:        "cloudfoundry/cflinuxfs2",
+		WorkingDir:   "/home/vcap/app",
+		Entrypoint: strslice.StrSlice{
+			"/bin/bash", "-c", runner, config.Command,
+		},
+	}, nil
+}
+
+func (r *Runner) prepareContainer(id string, config *RunConfig) error {
+	launcherTar, err := utils.TarFile("./lifecycle/launcher", config.Launcher, config.LauncherSize, 0755)
+	if err != nil {
+		return err
+	}
+	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", launcherTar, types.CopyToContainerOptions{}); err != nil {
+		return err
+	}
+	if err := config.Launcher.Close(); err != nil {
+		return err
+	}
+
+	dropletTar, err := utils.TarFile("./droplet", config.Droplet, config.DropletSize, 0755)
+	if err != nil {
+		return err
+	}
+	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", dropletTar, types.CopyToContainerOptions{}); err != nil {
+		return err
+	}
+	if err := config.Droplet.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

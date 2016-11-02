@@ -103,6 +103,8 @@ SUBCOMMANDS:
                                         and update local.yml with its settings.
    run [-p <port>] <name>             Run a droplet using the settings
                                         specified in local.yml.
+   export [-r <reference>] <name>     Export a droplet as a Docker image using
+                                        the settings specified in local.yml.
    help                               Output this help text.
    version                            Output the CF Local version.`,
 				},

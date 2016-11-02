@@ -14,6 +14,8 @@ SUBCOMMANDS:
                                         and update local.yml with its settings.
    run [-p <port>] <name>             Run a droplet using the settings
                                         specified in local.yml.
+   export [-r <reference>] <name>     Export a droplet as a Docker image using
+                                        the settings specified in local.yml.
    help                               Output this help text.
    version                            Output the CF Local version.
 ```
@@ -27,8 +29,8 @@ If no buildpack is specified during staging, the latest standard buildpacks are 
 TODO:
  - `cf local push` - upload apps to a CF installation
  - Support for mounting a local directory in the app container to allow for faster iteration.
- - Support for connecting to local services via `VCAP_SERVICES`
- - Support for connecting to CF app services via `cf ssh` tunnel
+ - Improved support for connecting to local services via `VCAP_SERVICES`
+ - Improved support for connecting to CF app services via `cf ssh` tunnel
  - Memory quotas, disk quotas, and multiple app instances
  - Support for running multiple apps in the same command
  - Support for running apps in the background

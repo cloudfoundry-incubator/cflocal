@@ -41,6 +41,7 @@ type Stager interface {
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf Runner
 type Runner interface {
 	Run(config *local.RunConfig, color local.Colorizer) (status int, err error)
+	Export(config *local.RunConfig, reference string) (imageID string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf App
@@ -81,6 +82,8 @@ func (c *CF) Run(args []string) error {
 		err = c.run(args[1:])
 	case "pull":
 		err = c.pull(args[1:])
+	case "export":
+		err = c.export(args[1:])
 	default:
 		return errors.New("invalid command")
 	}
@@ -272,6 +275,61 @@ func (c *CF) saveLocalYML(name string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *CF) export(args []string) error {
+	name, reference, err := exportFlags(args)
+	if err != nil {
+		if err := c.Help.Show(); err != nil {
+			c.UI.Error(err)
+		}
+		return err
+	}
+	droplet, dropletSize, err := c.FS.ReadFile(fmt.Sprintf("./%s.droplet", name))
+	if err != nil {
+		return err
+	}
+	defer droplet.Close()
+	launcher, launcherSize, err := c.Stager.Launcher()
+	if err != nil {
+		return err
+	}
+	defer launcher.Close()
+	localYML, err := c.Config.Load()
+	if err != nil {
+		return err
+	}
+	id, err := c.Runner.Export(&local.RunConfig{
+		Droplet:      droplet,
+		DropletSize:  dropletSize,
+		Launcher:     launcher,
+		LauncherSize: launcherSize,
+		AppConfig:    getAppConfig(name, localYML),
+	}, reference)
+	if err != nil {
+		return err
+	}
+	if reference != "" {
+		c.UI.Output("Exported %s as %s with ID: %s", name, reference, id)
+	} else {
+		c.UI.Output("Exported %s with ID: %s", name, id)
+	}
+	return nil
+}
+
+func exportFlags(args []string) (name, reference string, err error) {
+	set := &flag.FlagSet{}
+	if err != nil {
+		return "", "", err
+	}
+	set.StringVar(&reference, "r", "", "")
+	if err := set.Parse(args); err != nil {
+		return "", "", err
+	}
+	if set.NArg() != 1 {
+		return "", "", errors.New("invalid arguments")
+	}
+	return set.Arg(0), reference, nil
 }
 
 func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {

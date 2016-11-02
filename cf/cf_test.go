@@ -214,6 +214,43 @@ var _ = Describe("CF", func() {
 
 			// test when app isn't in local.yml
 		})
+
+		Context("when the subcommand is 'export'", func() {
+			It("should export a droplet as a Docker image", func() {
+				droplet := newMockBufferCloser(mockCtrl)
+				launcher := newMockBufferCloser(mockCtrl)
+				localYML := &local.LocalYML{
+					Applications: []*local.AppConfig{
+						{Name: "some-other-app"},
+						{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					},
+				}
+				gomock.InOrder(
+					mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
+					mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
+					mockConfig.EXPECT().Load().Return(localYML, nil),
+					mockRunner.EXPECT().Export(&local.RunConfig{
+						Droplet:      droplet,
+						DropletSize:  int64(100),
+						Launcher:     launcher,
+						LauncherSize: int64(200),
+						AppConfig: &local.AppConfig{
+							Name: "some-app",
+							Env:  map[string]string{"a": "b"},
+						},
+					}, "some-reference").Return("some-id", nil),
+					launcher.EXPECT().Close(),
+					droplet.EXPECT().Close(),
+				)
+				Expect(cf.Run([]string{"export", "-r", "some-reference", "some-app"})).To(Succeed())
+				Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
+			})
+
+			// test without reference
+		})
 	})
 })
 

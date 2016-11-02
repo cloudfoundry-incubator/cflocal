@@ -29,6 +29,17 @@ func (_m *MockRunner) EXPECT() *_MockRunnerRecorder {
 	return _m.recorder
 }
 
+func (_m *MockRunner) Export(_param0 *local.RunConfig, _param1 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "Export", _param0, _param1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockRunnerRecorder) Export(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Export", arg0, arg1)
+}
+
 func (_m *MockRunner) Run(_param0 *local.RunConfig, _param1 local.Colorizer) (int, error) {
 	ret := _m.ctrl.Call(_m, "Run", _param0, _param1)
 	ret0, _ := ret[0].(int)
