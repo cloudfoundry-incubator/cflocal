@@ -44,8 +44,13 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	buildpacks := Buildpacks
-	if options.buildpack != "" {
+	var buildpacks []string
+	switch options.buildpack {
+	case "":
+		s.UI.Output("Downloading all buildpacks...")
+		buildpacks = Buildpacks
+	default:
+		s.UI.Output("Downloading %s...", options.buildpack)
 		buildpacks = []string{options.buildpack}
 	}
 	droplet, size, err := s.Stager.Stage(&local.StageConfig{

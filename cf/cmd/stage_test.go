@@ -89,6 +89,7 @@ var _ = Describe("Stage", func() {
 			)
 			Expect(cmd.Run([]string{"stage", "-b", "some-buildpack", "some-app"})).To(Succeed())
 			Expect(file.String()).To(Equal("some-droplet"))
+			Expect(mockUI.Out).To(gbytes.Say("Downloading some-buildpack..."))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
