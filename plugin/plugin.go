@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/sclevine/cflocal/cf"
+	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/utils"
@@ -52,26 +53,59 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		p.RunErr = err
 		return
 	}
+	stager := &local.Stager{
+		DiegoVersion: "0.1482.0",
+		GoVersion:    "1.7",
+		StackVersion: "latest",
+		UpdateRootFS: true,
+		Docker:       client,
+		Logs:         os.Stdout,
+		ExitChan:     p.ExitChan,
+	}
+	runner := &local.Runner{
+		Docker:   client,
+		Logs:     os.Stdout,
+		ExitChan: p.ExitChan,
+	}
+	app := &remote.App{CLI: cliConnection}
+	fs := &utils.FS{}
+	config := &local.Config{Path: "./local.yml"}
+	help := &Help{CLI: cliConnection}
 	cf := &cf.CF{
-		UI: p.UI,
-		Stager: &local.Stager{
-			DiegoVersion: "0.1482.0",
-			GoVersion:    "1.7",
-			StackVersion: "latest",
-			UpdateRootFS: true,
-			Docker:       client,
-			Logs:         os.Stdout,
-			ExitChan:     p.ExitChan,
+		UI:   p.UI,
+		Help: help,
+		Cmds: []cf.Cmd{
+			&cmd.Export{
+				UI:     p.UI,
+				Stager: stager,
+				Runner: runner,
+				FS:     fs,
+				Help:   help,
+				Config: config,
+			},
+			&cmd.Pull{
+				UI:     p.UI,
+				App:    app,
+				FS:     fs,
+				Help:   help,
+				Config: config,
+			},
+			&cmd.Run{
+				UI:     p.UI,
+				Stager: stager,
+				Runner: runner,
+				FS:     fs,
+				Help:   help,
+				Config: config,
+			},
+			&cmd.Stage{
+				UI:     p.UI,
+				Stager: stager,
+				FS:     fs,
+				Help:   help,
+				Config: config,
+			},
 		},
-		Runner: &local.Runner{
-			Docker:   client,
-			Logs:     os.Stdout,
-			ExitChan: p.ExitChan,
-		},
-		App:     &remote.App{CLI: cliConnection},
-		FS:      &utils.FS{},
-		Help:    &Help{CLI: cliConnection},
-		Config:  &local.Config{Path: "./local.yml"},
 		Version: p.Version,
 	}
 	if err := cf.Run(args[1:]); err != nil {

@@ -1,16 +1,12 @@
 package cf_test
 
 import (
-	"bytes"
 	"errors"
 
 	. "github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/mocks"
-	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
-	"github.com/sclevine/cflocal/remote"
 
-	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,32 +17,21 @@ var _ = Describe("CF", func() {
 	var (
 		mockCtrl   *gomock.Controller
 		mockUI     *sharedmocks.MockUI
-		mockStager *mocks.MockStager
-		mockRunner *mocks.MockRunner
-		mockApp    *mocks.MockApp
-		mockFS     *mocks.MockFS
 		mockHelp   *mocks.MockHelp
-		mockConfig *mocks.MockConfig
+		cmd1, cmd2 *mocks.MockCmd
 		cf         *CF
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
-		mockStager = mocks.NewMockStager(mockCtrl)
-		mockRunner = mocks.NewMockRunner(mockCtrl)
-		mockApp = mocks.NewMockApp(mockCtrl)
-		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
-		mockConfig = mocks.NewMockConfig(mockCtrl)
+		cmd1 = mocks.NewMockCmd(mockCtrl)
+		cmd2 = mocks.NewMockCmd(mockCtrl)
 		cf = &CF{
 			UI:      mockUI,
-			Stager:  mockStager,
-			Runner:  mockRunner,
-			App:     mockApp,
-			FS:      mockFS,
 			Help:    mockHelp,
-			Config:  mockConfig,
+			Cmds:    []Cmd{cmd1, cmd2},
 			Version: "some-version",
 		}
 	})
@@ -80,189 +65,35 @@ var _ = Describe("CF", func() {
 			})
 		})
 
-		Context("when the subcommand is 'stage'", func() {
-			It("should build a droplet", func() {
-				appTar := newMockBufferCloser(mockCtrl)
-				droplet := newMockBufferCloser(mockCtrl, "some-droplet")
-				file := newMockBufferCloser(mockCtrl)
-				localYML := &local.LocalYML{
-					Applications: []*local.AppConfig{
-						{Name: "some-other-app"},
-						{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					},
-				}
-				gomock.InOrder(
-					mockFS.EXPECT().Tar(".").Return(appTar, nil),
-					mockConfig.EXPECT().Load().Return(localYML, nil),
-					mockStager.EXPECT().Stage(&local.StageConfig{
-						AppTar:     appTar,
-						Buildpacks: []string{"some-buildpack"},
-						AppConfig: &local.AppConfig{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					}, gomock.Any()).Return(
-						droplet, int64(100), nil,
-					).Do(func(_ *local.StageConfig, c local.Colorizer) {
-						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
-					}),
-					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
-					file.EXPECT().Close(),
-					droplet.EXPECT().Close(),
-					appTar.EXPECT().Close(),
-				)
-				Expect(cf.Run([]string{"stage", "-b", "some-buildpack", "some-app"})).To(Succeed())
-				Expect(file.String()).To(Equal("some-droplet"))
-				Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
+		Context("when the subcommand matches a command", func() {
+			It("should run only that command", func() {
+				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
+				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(true)
+				cmd2.EXPECT().Run([]string{"some-cmd"}).Return(nil)
+
+				Expect(cf.Run([]string{"some-cmd"})).To(Succeed())
 			})
 
-			// test not providing a buildpack
+			Context("when the command returns an error", func() {
+				It("should return the command error", func() {
+					cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
+					cmd2.EXPECT().Match([]string{"some-cmd"}).Return(true)
+					cmd2.EXPECT().Run([]string{"some-cmd"}).Return(errors.New("some error"))
+
+					err := cf.Run([]string{"some-cmd"})
+					Expect(err).To(MatchError("some error"))
+				})
+			})
 		})
 
-		Context("when the subcommand is 'run'", func() {
-			It("should run a droplet", func() {
-				droplet := newMockBufferCloser(mockCtrl)
-				launcher := newMockBufferCloser(mockCtrl)
-				localYML := &local.LocalYML{
-					Applications: []*local.AppConfig{
-						{Name: "some-other-app"},
-						{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					},
-				}
-				gomock.InOrder(
-					mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-					mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
-					mockConfig.EXPECT().Load().Return(localYML, nil),
-					mockRunner.EXPECT().Run(&local.RunConfig{
-						Droplet:      droplet,
-						DropletSize:  int64(100),
-						Launcher:     launcher,
-						LauncherSize: int64(200),
-						Port:         3000,
-						AppConfig: &local.AppConfig{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					}, gomock.Any()).Return(
-						0, nil,
-					).Do(func(_ *local.RunConfig, c local.Colorizer) {
-						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
-					}),
-					launcher.EXPECT().Close(),
-					droplet.EXPECT().Close(),
-				)
-				Expect(cf.Run([]string{"run", "-p", "3000", "some-app"})).To(Succeed())
-				Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
+		Context("when the subcommand doesn't match a command", func() {
+			It("should return an error", func() {
+				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
+				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(false)
+
+				err := cf.Run([]string{"some-cmd"})
+				Expect(err).To(MatchError("invalid command"))
 			})
-
-			// test free port picker when port is unspecified (currently tested by integration)
-		})
-
-		Context("when the subcommand is 'pull'", func() {
-			It("should download a droplet and save its env vars", func() {
-				droplet := newMockBufferCloser(mockCtrl, "some-droplet")
-				file := newMockBufferCloser(mockCtrl)
-				env := &remote.AppEnv{
-					Staging: map[string]string{"a": "b"},
-					Running: map[string]string{"c": "d"},
-					App:     map[string]string{"e": "f"},
-				}
-				oldLocalYML := &local.LocalYML{
-					Applications: []*local.AppConfig{
-						{Name: "some-other-app"},
-						{
-							Name:       "some-app",
-							Command:    "some-old-command",
-							StagingEnv: map[string]string{"g": "h"},
-							RunningEnv: map[string]string{"i": "j"},
-							Env:        map[string]string{"k": "l"},
-						},
-					},
-				}
-				newLocalYML := &local.LocalYML{
-					Applications: []*local.AppConfig{
-						{Name: "some-other-app"},
-						{
-							Name:       "some-app",
-							Command:    "some-command",
-							StagingEnv: map[string]string{"a": "b"},
-							RunningEnv: map[string]string{"c": "d"},
-							Env:        map[string]string{"e": "f"},
-						},
-					},
-				}
-				gomock.InOrder(
-					mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil),
-					mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
-					file.EXPECT().Close(),
-					droplet.EXPECT().Close(),
-					mockConfig.EXPECT().Load().Return(oldLocalYML, nil),
-					mockApp.EXPECT().Env("some-app").Return(env, nil),
-					mockApp.EXPECT().Command("some-app").Return("some-command", nil),
-					mockConfig.EXPECT().Save(newLocalYML).Return(nil),
-				)
-				Expect(cf.Run([]string{"pull", "some-app"})).To(Succeed())
-				Expect(file.String()).To(Equal("some-droplet"))
-				Expect(mockUI.Out).To(gbytes.Say("Successfully downloaded: some-app"))
-			})
-
-			// test when app isn't in local.yml
-		})
-
-		Context("when the subcommand is 'export'", func() {
-			It("should export a droplet as a Docker image", func() {
-				droplet := newMockBufferCloser(mockCtrl)
-				launcher := newMockBufferCloser(mockCtrl)
-				localYML := &local.LocalYML{
-					Applications: []*local.AppConfig{
-						{Name: "some-other-app"},
-						{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					},
-				}
-				gomock.InOrder(
-					mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-					mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
-					mockConfig.EXPECT().Load().Return(localYML, nil),
-					mockRunner.EXPECT().Export(&local.RunConfig{
-						Droplet:      droplet,
-						DropletSize:  int64(100),
-						Launcher:     launcher,
-						LauncherSize: int64(200),
-						AppConfig: &local.AppConfig{
-							Name: "some-app",
-							Env:  map[string]string{"a": "b"},
-						},
-					}, "some-reference").Return("some-id", nil),
-					launcher.EXPECT().Close(),
-					droplet.EXPECT().Close(),
-				)
-				Expect(cf.Run([]string{"export", "-r", "some-reference", "some-app"})).To(Succeed())
-				Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
-			})
-
-			// test without reference
 		})
 	})
 })
-
-type mockBufferCloser struct {
-	*mocks.MockCloser
-	*bytes.Buffer
-}
-
-func newMockBufferCloser(ctrl *gomock.Controller, contents ...string) *mockBufferCloser {
-	bc := &mockBufferCloser{mocks.NewMockCloser(ctrl), &bytes.Buffer{}}
-	for _, v := range contents {
-		bc.Buffer.Write([]byte(v))
-	}
-	return bc
-}
