@@ -1,9 +1,11 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"strconv"
 
@@ -28,13 +30,15 @@ type RunConfig struct {
 	Launcher     io.ReadCloser
 	LauncherSize int64
 	Port         uint
+	AppDir       string
+	AppDirEmpty  bool
 	AppConfig    *AppConfig
 }
 
-const runner = `
+const runnerScript = `
 	set -e
 
-	tar -C /home/vcap -xzf /tmp/droplet
+	tar --exclude={{.Exclude}} -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
 
 	command=$1
@@ -47,11 +51,11 @@ const runner = `
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig)
+	containerConfig, err := buildContainerConfig(config.AppConfig, config.AppDir != "" && !config.AppDirEmpty)
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := buildHostConfig(config.Port)
+	hostConfig := buildHostConfig(config.Port, config.AppDir)
 	cont := utils.Container{Docker: r.Docker, Err: &err}
 	id := cont.Create(name, containerConfig, hostConfig)
 	if id == "" {
@@ -91,11 +95,11 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 
 func (r *Runner) Export(config *RunConfig, reference string) (imageID string, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig)
+	containerConfig, err := buildContainerConfig(config.AppConfig, false)
 	if err != nil {
 		return "", err
 	}
-	hostConfig := buildHostConfig(config.Port)
+	hostConfig := buildHostConfig(config.Port, "")
 	cont := utils.Container{Docker: r.Docker, Err: &err}
 	id := cont.Create(name, containerConfig, hostConfig)
 	if id == "" {
@@ -118,14 +122,20 @@ func (r *Runner) Export(config *RunConfig, reference string) (imageID string, er
 	}
 	return response.ID, nil
 }
-func buildHostConfig(port uint) *container.HostConfig {
-	return &container.HostConfig{
+
+func buildHostConfig(port uint, appDir string) *container.HostConfig {
+	config := &container.HostConfig{
 		PortBindings: nat.PortMap{
 			"8080/tcp": {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
 		},
 	}
+	if appDir != "" {
+		config.Binds = []string{appDir + ":/home/vcap/app"}
+	}
+	return config
 }
-func buildContainerConfig(config *AppConfig) (*container.Config, error) {
+
+func buildContainerConfig(config *AppConfig, excludeApp bool) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -165,6 +175,15 @@ func buildContainerConfig(config *AppConfig) (*container.Config, error) {
 		"VCAP_APPLICATION":  string(vcapApp),
 		"VCAP_SERVICES":     "{}",
 	}
+	var options struct{ Exclude string }
+	if excludeApp {
+		options.Exclude = "./app"
+	}
+	scriptBuffer := &bytes.Buffer{}
+	err = template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options)
+	if err != nil {
+		return nil, err
+	}
 	return &container.Config{
 		Hostname:     "cflocal",
 		User:         "vcap",
@@ -173,7 +192,7 @@ func buildContainerConfig(config *AppConfig) (*container.Config, error) {
 		Image:        "cloudfoundry/cflinuxfs2",
 		WorkingDir:   "/home/vcap/app",
 		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", runner, config.Command,
+			"/bin/bash", "-c", scriptBuffer.String(), config.Command,
 		},
 	}, nil
 }

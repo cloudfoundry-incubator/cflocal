@@ -37,6 +37,9 @@ type FS interface {
 	Tar(path string) (io.ReadCloser, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
+	MakeDirAll(path string) error
+	IsDirEmpty(path string) (bool, error)
+	Abs(path string) (string, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf/cmd Help

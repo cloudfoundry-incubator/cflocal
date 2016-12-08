@@ -131,16 +131,16 @@ func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
 					Usage: `cf local SUBCOMMAND
 
 SUBCOMMANDS:
-   stage [-b <buildpack URL>] <name>  Build a droplet from the app in the
-                                        current directory and local.yml.
-   pull <name>                        Download the droplet for the named app
-                                        and update local.yml with its settings.
-   run [-p <port>] <name>             Run a droplet using the settings
-                                        specified in local.yml.
-   export [-r <reference>] <name>     Export a droplet as a Docker image using
-                                        the settings specified in local.yml.
-   help                               Output this help text.
-   version                            Output the CF Local version.`,
+   stage [-b <buildpack URL>] <name>      Build a droplet from the app in the
+                                            current directory and local.yml.
+   pull <name>                            Download the droplet for the named app
+                                            and update local.yml with its settings.
+   run [-p <port>] [-d <app-dir>] <name>  Run a droplet using the settings
+                                            specified in local.yml.
+   export [-r <reference>] <name>         Export a droplet as a Docker image using
+                                            the settings specified in local.yml.
+   help                                   Output this help text.
+   version                                Output the CF Local version.`,
 				},
 			},
 		},

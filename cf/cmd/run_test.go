@@ -70,6 +70,9 @@ var _ = Describe("Run", func() {
 				},
 			}
 			gomock.InOrder(
+				mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil),
+				mockFS.EXPECT().MakeDirAll("some-abs-dir").Return(nil),
+				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
 				mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
@@ -79,6 +82,8 @@ var _ = Describe("Run", func() {
 					Launcher:     launcher,
 					LauncherSize: int64(200),
 					Port:         3000,
+					AppDir:       "some-abs-dir",
+					AppDirEmpty:  true,
 					AppConfig: &local.AppConfig{
 						Name: "some-app",
 						Env:  map[string]string{"a": "b"},
@@ -91,10 +96,11 @@ var _ = Describe("Run", func() {
 				launcher.EXPECT().Close(),
 				droplet.EXPECT().Close(),
 			)
-			Expect(cmd.Run([]string{"run", "-p", "3000", "some-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"run", "-p", "3000", "-d", "some-dir", "some-app"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 
+		// test app dir when app dir is unspecified (currently tested by integration)
 		// test free port picker when port is unspecified (currently tested by integration)
 	})
 })

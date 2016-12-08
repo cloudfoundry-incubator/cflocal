@@ -29,6 +29,38 @@ func (_m *MockFS) EXPECT() *_MockFSRecorder {
 	return _m.recorder
 }
 
+func (_m *MockFS) Abs(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "Abs", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) Abs(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Abs", arg0)
+}
+
+func (_m *MockFS) IsDirEmpty(_param0 string) (bool, error) {
+	ret := _m.ctrl.Call(_m, "IsDirEmpty", _param0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFSRecorder) IsDirEmpty(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsDirEmpty", arg0)
+}
+
+func (_m *MockFS) MakeDirAll(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "MakeDirAll", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockFSRecorder) MakeDirAll(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "MakeDirAll", arg0)
+}
+
 func (_m *MockFS) ReadFile(_param0 string) (io.ReadCloser, int64, error) {
 	ret := _m.ctrl.Call(_m, "ReadFile", _param0)
 	ret0, _ := ret[0].(io.ReadCloser)

@@ -23,8 +23,8 @@ type Run struct {
 }
 
 type runOptions struct {
-	name string
-	port uint
+	name, appDir string
+	port         uint
 }
 
 func (r *Run) Match(args []string) bool {
@@ -39,6 +39,19 @@ func (r *Run) Run(args []string) error {
 		}
 		return err
 	}
+	absAppDir, appDirEmpty := "", false
+	if options.appDir != "" {
+		if absAppDir, err = r.FS.Abs(options.appDir); err != nil {
+			return err
+		}
+		if err := r.FS.MakeDirAll(absAppDir); err != nil {
+			return err
+		}
+		if appDirEmpty, err = r.FS.IsDirEmpty(absAppDir); err != nil {
+			return err
+		}
+	}
+
 	droplet, dropletSize, err := r.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
 		return err
@@ -60,6 +73,8 @@ func (r *Run) Run(args []string) error {
 		Launcher:     launcher,
 		LauncherSize: launcherSize,
 		Port:         options.port,
+		AppDir:       absAppDir,
+		AppDirEmpty:  appDirEmpty,
 		AppConfig:    getAppConfig(options.name, localYML),
 	}, color.GreenString)
 	return err
@@ -73,6 +88,7 @@ func (*Run) options(args []string) (*runOptions, error) {
 	}
 	options := &runOptions{}
 	set.UintVar(&options.port, "p", defaultPort, "")
+	set.StringVar(&options.appDir, "d", "", "")
 	if err := set.Parse(args[1:]); err != nil {
 		return nil, err
 	}

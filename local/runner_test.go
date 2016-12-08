@@ -109,6 +109,7 @@ var _ = Describe("Runner", func() {
 		})
 
 		// test with custom start command
+		// test with mounted app dir
 
 		Context("on failure", func() {
 			// test failure cases using reverse proxy
