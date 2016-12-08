@@ -92,7 +92,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		"VCAP_SERVICES":     "{}",
 	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create(name+"-stage", 0, &container.Config{
+	id := cont.Create(name+"-stage", &container.Config{
 		Hostname:   "cflocal",
 		User:       "vcap",
 		Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
@@ -103,7 +103,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 			"-buildpackOrder", strings.Join(config.Buildpacks, ","),
 			fmt.Sprintf("-skipDetect=%t", len(config.Buildpacks) == 1),
 		},
-	})
+	}, nil)
 	if id == "" {
 		return nil, 0, err
 	}
@@ -156,10 +156,10 @@ func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
 		return nil, 0, err
 	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create("launcher", 0, &container.Config{
+	id := cont.Create("launcher", &container.Config{
 		Image:      "cflocal",
 		Entrypoint: strslice.StrSlice{"bash"},
-	})
+	}, nil)
 	if id == "" {
 		return nil, 0, err
 	}

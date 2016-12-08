@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -50,8 +51,9 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 	if err != nil {
 		return 0, err
 	}
+	hostConfig := buildHostConfig(config.Port)
 	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, config.Port, containerConfig)
+	id := cont.Create(name, containerConfig, hostConfig)
 	if id == "" {
 		return 0, err
 	}
@@ -93,8 +95,9 @@ func (r *Runner) Export(config *RunConfig, reference string) (imageID string, er
 	if err != nil {
 		return "", err
 	}
+	hostConfig := buildHostConfig(config.Port)
 	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, config.Port, containerConfig)
+	id := cont.Create(name, containerConfig, hostConfig)
 	if id == "" {
 		return "", err
 	}
@@ -115,7 +118,13 @@ func (r *Runner) Export(config *RunConfig, reference string) (imageID string, er
 	}
 	return response.ID, nil
 }
-
+func buildHostConfig(port uint) *container.HostConfig {
+	return &container.HostConfig{
+		PortBindings: nat.PortMap{
+			"8080/tcp": {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
+		},
+	}
+}
 func buildContainerConfig(config *AppConfig) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
