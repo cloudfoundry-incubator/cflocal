@@ -5,6 +5,18 @@ FROM cloudfoundry/cflinuxfs2:{{.StackVersion}}
 MAINTAINER CF Local <cflocal@sclevine.org>
 
 RUN \
+  apt-get update && \
+  apt-get -y install iptables python-setuptools && \
+  apt-get clean
+
+RUN \
+  git -C /tmp clone --single-branch https://github.com/sclevine/sshuttle && \
+  cd /tmp/sshuttle && \
+  git checkout "v{{.ShuttleVersion}}" && \
+  ./setup.py install && \
+  rm -rf /tmp/sshuttle
+
+RUN \
   curl -L "https://storage.googleapis.com/golang/go{{.GoVersion}}.linux-amd64.tar.gz" | tar -C /usr/local -xz
 
 RUN \
