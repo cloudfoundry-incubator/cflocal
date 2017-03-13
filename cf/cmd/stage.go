@@ -14,13 +14,15 @@ import (
 type Stage struct {
 	UI     UI
 	Stager Stager
+	App    App
 	FS     FS
 	Help   Help
 	Config Config
 }
 
 type stageOptions struct {
-	name, buildpack string
+	name, buildpack        string
+	serviceApp, forwardApp string
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -35,15 +37,30 @@ func (s *Stage) Run(args []string) error {
 		}
 		return err
 	}
+
+	localYML, err := s.Config.Load()
+	if err != nil {
+		return err
+	}
+	appConfig := getAppConfig(options.name, localYML)
+
+	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
+	if err != nil {
+		return err
+	}
+	if remoteServices != nil {
+		appConfig.Services = remoteServices
+	}
+	if sApp, fApp := options.serviceApp, options.forwardApp; sApp != fApp && sApp != "" && fApp != "" {
+		s.UI.Warn("'%s' app selected for service forwarding will not be used", fApp)
+	}
+
 	appTar, err := s.FS.Tar(".")
 	if err != nil {
 		return err
 	}
 	defer appTar.Close()
-	localYML, err := s.Config.Load()
-	if err != nil {
-		return err
-	}
+
 	var buildpacks []string
 	switch options.buildpack {
 	case "":
@@ -56,7 +73,7 @@ func (s *Stage) Run(args []string) error {
 	droplet, size, err := s.Stager.Stage(&local.StageConfig{
 		AppTar:     appTar,
 		Buildpacks: buildpacks,
-		AppConfig:  getAppConfig(options.name, localYML),
+		AppConfig:  appConfig,
 	}, color.GreenString)
 	if err != nil {
 		return err

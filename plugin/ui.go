@@ -30,6 +30,15 @@ func (u *UI) Output(format string, a ...interface{}) {
 	fmt.Fprintf(u.Out, format+"\n", a...)
 }
 
+func (u *UI) Warn(format string, a ...interface{}) {
+	writer := u.Err
+	if !u.ErrIsTerm {
+		// use u.Out with pre-6.22.0 cf CLI
+		writer = u.Out
+	}
+	fmt.Fprintf(writer, "Warning: "+format+"\n", a...)
+}
+
 func (u *UI) Error(err error) {
 	writer := u.Err
 	if !u.ErrIsTerm {

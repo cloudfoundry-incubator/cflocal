@@ -48,6 +48,23 @@ var _ = Describe("UI", func() {
 		})
 	})
 
+	Describe("#Warning", func() {
+		Context("when stderr is connected", func() {
+			It("should output the provided warning as to stderr", func() {
+				ui.ErrIsTerm = true
+				ui.Warn("%s warning", "some")
+				Expect(err).To(gbytes.Say("Warning: some warning"))
+			})
+		})
+
+		Context("when stderr is not connected", func() {
+			It("should output the provided warning to stdout", func() {
+				ui.Warn("%s warning", "some")
+				Expect(out).To(gbytes.Say("Warning: some warning"))
+			})
+		})
+	})
+
 	Describe("#Error", func() {
 		Context("when stderr is connected", func() {
 			It("should output the provided error as to stderr followed by FAILED", func() {

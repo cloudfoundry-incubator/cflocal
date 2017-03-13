@@ -9,16 +9,16 @@ import (
 	"strings"
 	"syscall"
 
+	cfplugin "code.cloudfoundry.org/cli/plugin"
+	docker "github.com/docker/docker/client"
+	goversion "github.com/hashicorp/go-version"
+	"github.com/kardianos/osext"
+
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/utils"
-
-	cfplugin "code.cloudfoundry.org/cli/plugin"
-	docker "github.com/docker/docker/client"
-	goversion "github.com/hashicorp/go-version"
-	"github.com/kardianos/osext"
 )
 
 type Plugin struct {
@@ -31,6 +31,7 @@ type Plugin struct {
 type UserInterface interface {
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
+	Warn(format string, a ...interface{})
 	Error(err error)
 }
 
@@ -67,7 +68,10 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Logs:     os.Stdout,
 		ExitChan: p.ExitChan,
 	}
-	app := &remote.App{CLI: cliConnection}
+	app := &remote.App{
+		CLI: cliConnection,
+		UI:  p.UI,
+	}
 	fs := &utils.FS{}
 	config := &local.Config{Path: "./local.yml"}
 	help := &Help{CLI: cliConnection}
@@ -94,6 +98,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				UI:     p.UI,
 				Stager: stager,
 				Runner: runner,
+				App:    app,
 				FS:     fs,
 				Help:   help,
 				Config: config,
@@ -101,6 +106,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			&cmd.Stage{
 				UI:     p.UI,
 				Stager: stager,
+				App:    app,
 				FS:     fs,
 				Help:   help,
 				Config: config,

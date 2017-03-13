@@ -5,16 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"strconv"
+	"text/template"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
-
 	"github.com/docker/go-connections/nat"
+
+	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -25,18 +26,21 @@ type Runner struct {
 }
 
 type RunConfig struct {
-	Droplet      io.ReadCloser
-	DropletSize  int64
-	Launcher     io.ReadCloser
-	LauncherSize int64
-	Port         uint
-	AppDir       string
-	AppDirEmpty  bool
-	AppConfig    *AppConfig
+	Droplet         io.ReadCloser
+	DropletSize     int64
+	Launcher        io.ReadCloser
+	LauncherSize    int64
+	Port            uint
+	AppDir          string
+	AppDirEmpty     bool
+	AppConfig       *AppConfig
+	ServiceSetupCmd string
 }
 
 const runnerScript = `
 	set -e
+
+	{{.ServiceSetupCmd}}
 
 	tar --exclude={{.Exclude}} -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
@@ -51,7 +55,7 @@ const runnerScript = `
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, config.AppDir != "" && !config.AppDirEmpty)
+	containerConfig, err := buildContainerConfig(config.AppConfig, config.AppDir != "" && !config.AppDirEmpty, config.ServiceSetupCmd)
 	if err != nil {
 		return 0, err
 	}
@@ -95,7 +99,7 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 
 func (r *Runner) Export(config *RunConfig, reference string) (imageID string, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, false)
+	containerConfig, err := buildContainerConfig(config.AppConfig, false, "")
 	if err != nil {
 		return "", err
 	}
@@ -135,7 +139,7 @@ func buildHostConfig(port uint, appDir string) *container.HostConfig {
 	return config
 }
 
-func buildContainerConfig(config *AppConfig, excludeApp bool) (*container.Config, error) {
+func buildContainerConfig(config *AppConfig, excludeApp bool, serviceSetupCmd string) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -156,6 +160,16 @@ func buildContainerConfig(config *AppConfig, excludeApp bool) (*container.Config
 	if err != nil {
 		return nil, err
 	}
+
+	services := config.Services
+	if services == nil {
+		services = remote.Services{}
+	}
+	vcapServices, err := json.Marshal(services)
+	if err != nil {
+		return nil, err
+	}
+
 	env := map[string]string{
 		"CF_INSTANCE_ADDR":  "0.0.0.0:8080",
 		"CF_INSTANCE_GUID":  "999db41a-508b-46eb-74d8-6f9c06c006da",
@@ -173,21 +187,27 @@ func buildContainerConfig(config *AppConfig, excludeApp bool) (*container.Config
 		"TMPDIR":            "/home/vcap/tmp",
 		"USER":              "vcap",
 		"VCAP_APPLICATION":  string(vcapApp),
-		"VCAP_SERVICES":     "{}",
+		"VCAP_SERVICES":     string(vcapServices),
 	}
-	var options struct{ Exclude string }
+
+	options := struct {
+		Exclude         string
+		ServiceSetupCmd string
+	}{"", serviceSetupCmd}
 	if excludeApp {
 		options.Exclude = "./app"
 	}
+
 	scriptBuffer := &bytes.Buffer{}
 	err = template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options)
 	if err != nil {
 		return nil, err
 	}
+
 	return &container.Config{
 		Hostname:     "cflocal",
 		User:         "vcap",
-		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": struct{}{}},
+		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": {}},
 		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
 		Image:        "cloudfoundry/cflinuxfs2",
 		WorkingDir:   "/home/vcap/app",

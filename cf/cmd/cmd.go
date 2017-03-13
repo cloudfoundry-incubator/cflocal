@@ -10,6 +10,7 @@ import (
 type UI interface {
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
+	Warn(format string, a ...interface{})
 	Error(err error)
 }
 
@@ -18,6 +19,8 @@ type App interface {
 	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
 	Command(name string) (string, error)
 	Env(name string) (*remote.AppEnv, error)
+	Services(name string) (remote.Services, error)
+	Forward(name string, services remote.Services) (forwarded remote.Services, command string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
@@ -67,4 +70,19 @@ func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {
 		localYML.Applications = append(localYML.Applications, app)
 	}
 	return app
+}
+
+func getRemoteServices(app App, serviceApp, forwardApp string) (services remote.Services, forwardCmd string, err error) {
+	if serviceApp == "" {
+		serviceApp = forwardApp
+	}
+	if serviceApp != "" {
+		if services, err = app.Services(serviceApp); err != nil {
+			return nil, "", err
+		}
+	}
+	if forwardApp != "" {
+		return app.Forward(forwardApp, services)
+	}
+	return services, "", nil
 }

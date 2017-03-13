@@ -17,14 +17,16 @@ type Run struct {
 	UI     UI
 	Stager Stager
 	Runner Runner
+	App    App
 	FS     FS
 	Help   Help
 	Config Config
 }
 
 type runOptions struct {
-	name, appDir string
-	port         uint
+	name, appDir           string
+	serviceApp, forwardApp string
+	port                   uint
 }
 
 func (r *Run) Match(args []string) bool {
@@ -52,6 +54,20 @@ func (r *Run) Run(args []string) error {
 		}
 	}
 
+	localYML, err := r.Config.Load()
+	if err != nil {
+		return err
+	}
+	appConfig := getAppConfig(options.name, localYML)
+
+	remoteServices, forwardCmd, err := getRemoteServices(r.App, options.serviceApp, options.forwardApp)
+	if err != nil {
+		return err
+	}
+	if remoteServices != nil {
+		appConfig.Services = remoteServices
+	}
+
 	droplet, dropletSize, err := r.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
 		return err
@@ -62,20 +78,17 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	defer launcher.Close()
-	localYML, err := r.Config.Load()
-	if err != nil {
-		return err
-	}
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:      droplet,
-		DropletSize:  dropletSize,
-		Launcher:     launcher,
-		LauncherSize: launcherSize,
-		Port:         options.port,
-		AppDir:       absAppDir,
-		AppDirEmpty:  appDirEmpty,
-		AppConfig:    getAppConfig(options.name, localYML),
+		Droplet:         droplet,
+		DropletSize:     dropletSize,
+		Launcher:        launcher,
+		LauncherSize:    launcherSize,
+		Port:            options.port,
+		AppDir:          absAppDir,
+		AppDirEmpty:     appDirEmpty,
+		AppConfig:       appConfig,
+		ServiceSetupCmd: forwardCmd,
 	}, color.GreenString)
 	return err
 }
@@ -86,12 +99,16 @@ func (*Run) options(args []string) (*runOptions, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	options := &runOptions{}
 	set.UintVar(&options.port, "p", defaultPort, "")
 	set.StringVar(&options.appDir, "d", "", "")
+	set.StringVar(&options.serviceApp, "s", "", "")
+	set.StringVar(&options.forwardApp, "f", "", "")
 	if err := set.Parse(args[1:]); err != nil {
 		return nil, err
 	}
+
 	if set.NArg() != 1 {
 		return nil, errors.New("invalid arguments")
 	}

@@ -15,6 +15,7 @@ import (
 	docker "github.com/docker/docker/client"
 
 	"github.com/sclevine/cflocal/utils"
+	"github.com/sclevine/cflocal/remote"
 )
 
 type Stager struct {
@@ -77,6 +78,15 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 	if err != nil {
 		return nil, 0, err
 	}
+
+	services := config.AppConfig.Services
+	if services == nil {
+		services = remote.Services{}
+	}
+	vcapServices, err := json.Marshal(services)
+	if err != nil {
+		return nil, 0, err
+	}
 	env := map[string]string{
 		"CF_INSTANCE_ADDR":  "",
 		"CF_INSTANCE_IP":    "0.0.0.0",
@@ -89,7 +99,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		"PATH":              "/usr/local/bin:/usr/bin:/bin",
 		"USER":              "vcap",
 		"VCAP_APPLICATION":  string(vcapApp),
-		"VCAP_SERVICES":     "{}",
+		"VCAP_SERVICES":     string(vcapServices),
 	}
 	cont := utils.Container{Docker: s.Docker, Err: &err}
 	id := cont.Create(name+"-stage", &container.Config{

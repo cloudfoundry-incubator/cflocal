@@ -29,6 +29,10 @@ CF Local:
 App settings (currently env vars and a start command) are downloaded to or manually specified in ./local.yml.
 If no buildpack is specified during staging, the latest standard CF buildpacks are used to detect and compile your app.
 
+NOTES:
+ - For safety reasons, service forwarding tunnels are not active during staging
+ - For safety reasons, containers are never exported with remote service credentials
+
 TODO:
  - `cf local push` - upload apps to a CF installation
  - Improved support for connecting to local services via `VCAP_SERVICES`
