@@ -10,9 +10,7 @@ RUN \
   apt-get clean
 
 RUN \
-  curl -L "https://storage.googleapis.com/golang/go{{.GoVersion}}.linux-amd64.tar.gz" | tar -C /usr/local -xz
-
-RUN \
+  curl -L "https://storage.googleapis.com/golang/go{{.GoVersion}}.linux-amd64.tar.gz" | tar -C /usr/local -xz && \
   git -C /tmp clone --single-branch https://github.com/cloudfoundry/diego-release && \
   cd /tmp/diego-release && \
   git checkout "v{{.DiegoVersion}}" && \
@@ -27,7 +25,7 @@ RUN \
   export GOPATH=/tmp/diego-release && \
   go build -o /tmp/lifecycle/launcher code.cloudfoundry.org/buildpackapplifecycle/launcher && \
   go build -o /tmp/lifecycle/builder code.cloudfoundry.org/buildpackapplifecycle/builder && \
-  rm -rf /tmp/diego-release
+  rm -rf /tmp/diego-release /usr/local/go
 
 USER vcap
 

@@ -74,7 +74,7 @@ var _ = Describe("Run", func() {
 				mockFS.EXPECT().MakeDirAll("some-abs-dir").Return(nil),
 				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
+				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(launcher, int64(200), nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockRunner.EXPECT().Run(&local.RunConfig{
 					Droplet:      droplet,

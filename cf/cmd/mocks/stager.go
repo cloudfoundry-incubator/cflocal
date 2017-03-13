@@ -30,16 +30,16 @@ func (_m *MockStager) EXPECT() *_MockStagerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockStager) Launcher() (io.ReadCloser, int64, error) {
-	ret := _m.ctrl.Call(_m, "Launcher")
+func (_m *MockStager) Download(_param0 string) (io.ReadCloser, int64, error) {
+	ret := _m.ctrl.Call(_m, "Download", _param0)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-func (_mr *_MockStagerRecorder) Launcher() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Launcher")
+func (_mr *_MockStagerRecorder) Download(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Download", arg0)
 }
 
 func (_m *MockStager) Stage(_param0 *local.StageConfig, _param1 local.Colorizer) (io.ReadCloser, int64, error) {

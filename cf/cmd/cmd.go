@@ -25,14 +25,14 @@ type App interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
 type Stager interface {
-	Stage(config *local.StageConfig, color local.Colorizer) (droplet io.ReadCloser, size int64, err error)
-	Launcher() (launcher io.ReadCloser, size int64, err error)
+	Stage(config *local.StageConfig, color local.Colorizer) (droplet local.Stream, err error)
+	Download(path string) (stream local.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
 type Runner interface {
 	Run(config *local.RunConfig, color local.Colorizer) (status int, err error)
-	Export(config *local.RunConfig, reference string) (imageID string, err error)
+	Export(config *local.ExportConfig, reference string) (imageID string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS

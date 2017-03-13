@@ -14,8 +14,10 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
 
-	"github.com/sclevine/cflocal/utils"
+	"path/filepath"
+
 	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/cflocal/utils"
 )
 
 type Stager struct {
@@ -58,10 +60,10 @@ type StageConfig struct {
 	AppConfig  *AppConfig
 }
 
-func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadCloser, size int64, err error) {
+func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, err error) {
 	name := config.AppConfig.Name
 	if err := s.buildDockerfile(); err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -76,7 +78,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
 	})
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 
 	services := config.AppConfig.Services
@@ -85,7 +87,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 	}
 	vcapServices, err := json.Marshal(services)
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	env := map[string]string{
 		"CF_INSTANCE_ADDR":  "",
@@ -101,29 +103,36 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		"VCAP_APPLICATION":  string(vcapApp),
 		"VCAP_SERVICES":     string(vcapServices),
 	}
-	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create(name+"-stage", &container.Config{
-		Hostname:   "cflocal",
-		User:       "vcap",
-		Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
-		Image:      "cflocal",
-		WorkingDir: "/home/vcap",
-		Entrypoint: strslice.StrSlice{
-			"/tmp/lifecycle/builder",
-			"-buildpackOrder", strings.Join(config.Buildpacks, ","),
-			fmt.Sprintf("-skipDetect=%t", len(config.Buildpacks) == 1),
+	cont := utils.Container{
+		Name: name + "-stage",
+		Config: &container.Config{
+			Hostname:   "cflocal",
+			User:       "vcap",
+			Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
+			Image:      "cflocal",
+			WorkingDir: "/home/vcap",
+			Entrypoint: strslice.StrSlice{
+				"/tmp/lifecycle/builder",
+				"-buildpackOrder", strings.Join(config.Buildpacks, ","),
+				fmt.Sprintf("-skipDetect=%t", len(config.Buildpacks) == 1),
+			},
 		},
-	}, nil)
-	if id == "" {
-		return nil, 0, err
+		Docker: s.Docker,
+		Err:    &err,
 	}
-	defer cont.RemoveAfterCopy(id, &droplet)
+
+	cont.Create()
+	id := cont.ID()
+	if id == "" {
+		return Stream{}, err
+	}
+	defer cont.RemoveAfterCopy(&droplet.ReadCloser)
 
 	if err := s.Docker.CopyToContainer(context.Background(), id, "/tmp/app", config.AppTar, types.CopyToContainerOptions{}); err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	if err := s.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	logs, err := s.Docker.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
 		ShowStdout: true,
@@ -132,59 +141,67 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet io.ReadClo
 		Follow:     true,
 	})
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	defer logs.Close()
 	go utils.CopyStream(s.Logs, logs, color("[%s] ", name))
 
 	go func() {
 		<-s.ExitChan
-		cont.Remove(id)
+		cont.Remove()
 	}()
 	status, err := s.Docker.ContainerWait(context.Background(), id)
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
 	if status != 0 {
-		return nil, 0, fmt.Errorf("container exited with status %d", status)
+		return Stream{}, fmt.Errorf("container exited with status %d", status)
 	}
 
 	dropletTar, dropletStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/droplet")
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
-	droplet = dropletTar // allows removal in error case
+	droplet.ReadCloser = dropletTar // allows removal in error case
 	dropletReader, err := utils.FileFromTar("droplet", dropletTar)
 	if err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
-	return splitReadCloser{dropletReader, dropletTar}, dropletStat.Size, nil
+	return Stream{splitReadCloser{dropletReader, dropletTar}, dropletStat.Size}, nil
 }
 
-func (s *Stager) Launcher() (launcher io.ReadCloser, size int64, err error) {
+func (s *Stager) Download(path string) (stream Stream, err error) {
 	if err := s.buildDockerfile(); err != nil {
-		return nil, 0, err
+		return Stream{}, err
 	}
-	cont := utils.Container{Docker: s.Docker, Err: &err}
-	id := cont.Create("launcher", &container.Config{
-		Image:      "cflocal",
-		Entrypoint: strslice.StrSlice{"bash"},
-	}, nil)
-	if id == "" {
-		return nil, 0, err
-	}
-	defer cont.RemoveAfterCopy(id, &launcher)
-	launcherTar, launcherStat, err := s.Docker.CopyFromContainer(context.Background(), id, "/tmp/lifecycle/launcher")
-	if err != nil {
-		return nil, 0, err
-	}
-	launcher = launcherTar // allows removal in error case
-	launcherReader, err := utils.FileFromTar("launcher", launcherTar)
-	if err != nil {
-		return nil, 0, err
+	filename := filepath.Base(path)
+	cont := utils.Container{
+		Name: filename,
+		Config: &container.Config{
+			Image:      "cflocal",
+			Entrypoint: strslice.StrSlice{"bash"},
+		},
+		Docker: s.Docker,
+		Err: &err,
 	}
 
-	return splitReadCloser{launcherReader, launcherTar}, launcherStat.Size, nil
+	cont.Create()
+	id := cont.ID()
+	if id == "" {
+		return Stream{}, err
+	}
+	defer cont.RemoveAfterCopy(&stream.ReadCloser)
+	tar, stat, err := s.Docker.CopyFromContainer(context.Background(), id, path)
+	if err != nil {
+		return Stream{}, err
+	}
+	stream.ReadCloser = tar // allows deferred removal in error case
+	reader, err := utils.FileFromTar(filename, tar)
+	if err != nil {
+		return Stream{}, err
+	}
+
+	return Stream{splitReadCloser{reader, tar}, stat.Size}, nil
 }
 
 func (s *Stager) buildDockerfile() error {

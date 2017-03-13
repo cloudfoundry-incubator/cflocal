@@ -19,24 +19,6 @@ import (
 	"github.com/sclevine/cflocal/utils"
 )
 
-type Runner struct {
-	Docker   *docker.Client
-	Logs     io.Writer
-	ExitChan <-chan struct{}
-}
-
-type RunConfig struct {
-	Droplet         io.ReadCloser
-	DropletSize     int64
-	Launcher        io.ReadCloser
-	LauncherSize    int64
-	Port            uint
-	AppDir          string
-	AppDirEmpty     bool
-	AppConfig       *AppConfig
-	ServiceSetupCmd string
-}
-
 const runnerScript = `
 	set -e
 
@@ -53,6 +35,27 @@ const runnerScript = `
 	exec /tmp/lifecycle/launcher /home/vcap/app "$command" ''
 `
 
+type Runner struct {
+	Docker   *docker.Client
+	Logs     io.Writer
+	ExitChan <-chan struct{}
+}
+
+type Stream struct {
+	io.ReadCloser
+	Size int64
+}
+
+type RunConfig struct {
+	Droplet         Stream
+	Launcher        Stream
+	Port            uint
+	AppDir          string
+	AppDirEmpty     bool
+	AppConfig       *AppConfig
+	ServiceSetupCmd string
+}
+
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
 	containerConfig, err := buildContainerConfig(config.AppConfig, config.AppDir != "" && !config.AppDirEmpty, config.ServiceSetupCmd)
@@ -60,14 +63,24 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 		return 0, err
 	}
 	hostConfig := buildHostConfig(config.Port, config.AppDir)
-	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, containerConfig, hostConfig)
+	cont := utils.Container{
+		Name:       name,
+		Config:     containerConfig,
+		HostConfig: hostConfig,
+		Docker:     r.Docker,
+		Err:        &err,
+	}
+	cont.Create()
+	id := cont.ID()
 	if id == "" {
 		return 0, err
 	}
-	defer cont.Remove(id)
+	defer cont.Remove()
 
-	if err := r.prepareContainer(id, config); err != nil {
+	if err := r.copy(id, config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
+		return 0, err
+	}
+	if err := r.copy(id, config.Droplet, "/tmp/droplet"); err != nil {
 		return 0, err
 	}
 
@@ -88,7 +101,7 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 
 	go func() {
 		<-r.ExitChan
-		cont.Remove(id)
+		cont.Remove()
 	}()
 	status, err = r.Docker.ContainerWait(context.Background(), id)
 	if err != nil {
@@ -97,21 +110,38 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 	return status, nil
 }
 
-func (r *Runner) Export(config *RunConfig, reference string) (imageID string, err error) {
+type ExportConfig struct {
+	Droplet   Stream
+	Launcher  Stream
+	Port      uint
+	AppConfig *AppConfig
+}
+
+func (r *Runner) Export(config *ExportConfig, reference string) (imageID string, err error) {
 	name := config.AppConfig.Name
 	containerConfig, err := buildContainerConfig(config.AppConfig, false, "")
 	if err != nil {
 		return "", err
 	}
 	hostConfig := buildHostConfig(config.Port, "")
-	cont := utils.Container{Docker: r.Docker, Err: &err}
-	id := cont.Create(name, containerConfig, hostConfig)
+	cont := utils.Container{
+		Name:       name,
+		Config:     containerConfig,
+		HostConfig: hostConfig,
+		Docker:     r.Docker,
+		Err:        &err,
+	}
+	cont.Create()
+	id := cont.ID()
 	if id == "" {
 		return "", err
 	}
-	defer cont.Remove(id)
+	defer cont.Remove()
 
-	if err := r.prepareContainer(id, config); err != nil {
+	if err := r.copy(id, config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
+		return "", err
+	}
+	if err := r.copy(id, config.Droplet, "/tmp/droplet"); err != nil {
 		return "", err
 	}
 
@@ -217,26 +247,15 @@ func buildContainerConfig(config *AppConfig, excludeApp bool, serviceSetupCmd st
 	}, nil
 }
 
-func (r *Runner) prepareContainer(id string, config *RunConfig) error {
-	launcherTar, err := utils.TarFile("./lifecycle/launcher", config.Launcher, config.LauncherSize, 0755)
+func (r *Runner) copy(id string, stream Stream, path string) error {
+	tar, err := utils.TarFile(path, stream, stream.Size, 0755)
 	if err != nil {
 		return err
 	}
-	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", launcherTar, types.CopyToContainerOptions{}); err != nil {
+	if err := r.Docker.CopyToContainer(context.Background(), id, "/", tar, types.CopyToContainerOptions{}); err != nil {
 		return err
 	}
-	if err := config.Launcher.Close(); err != nil {
-		return err
-	}
-
-	dropletTar, err := utils.TarFile("./droplet", config.Droplet, config.DropletSize, 0755)
-	if err != nil {
-		return err
-	}
-	if err := r.Docker.CopyToContainer(context.Background(), id, "/tmp", dropletTar, types.CopyToContainerOptions{}); err != nil {
-		return err
-	}
-	if err := config.Droplet.Close(); err != nil {
+	if err := stream.Close(); err != nil {
 		return err
 	}
 	return nil

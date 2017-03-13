@@ -38,7 +38,7 @@ func (e *Export) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, launcherSize, err := e.Stager.Launcher()
+	launcher, err := e.Stager.Download("/tmp/lifecycle/launcher")
 	if err != nil {
 		return err
 	}
@@ -47,11 +47,9 @@ func (e *Export) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	id, err := e.Runner.Export(&local.RunConfig{
-		Droplet:      droplet,
-		DropletSize:  dropletSize,
+	id, err := e.Runner.Export(&local.ExportConfig{
+		Droplet:      local.Stream{droplet, dropletSize},
 		Launcher:     launcher,
-		LauncherSize: launcherSize,
 		AppConfig:    getAppConfig(options.name, localYML),
 	}, options.reference)
 	if err != nil {

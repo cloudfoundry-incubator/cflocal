@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -12,47 +13,62 @@ import (
 )
 
 type Container struct {
-	Docker *docker.Client
-	Err    *error
+	Name       string
+	Config     *container.Config
+	HostConfig *container.HostConfig
+	Docker     *docker.Client
+	Err        *error
+	mutex      *sync.Mutex
+	id         string
 }
 
-func (c *Container) Create(name string, config *container.Config, hostConfig *container.HostConfig) (id string) {
+func (c *Container) ID() string {
+	return c.id
+}
+
+func (c *Container) Create() {
 	uuid, err := gouuid.NewV4()
 	if err != nil {
 		*c.Err = err
-		return ""
-	}
-
-	response, err := c.Docker.ContainerCreate(context.Background(), config, hostConfig, nil, fmt.Sprintf("%s-%s", name, uuid))
-	if err != nil {
-		*c.Err = err
-		return ""
-	}
-	return response.ID
-}
-
-func (c *Container) Remove(id string) {
-	if id == "" {
 		return
 	}
-	rmErr := c.Docker.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{
+
+	response, err := c.Docker.ContainerCreate(context.Background(), c.Config, c.HostConfig, nil, fmt.Sprintf("%s-%s", c.Name, uuid))
+	if err != nil {
+		*c.Err = err
+		return
+	}
+	c.mutex = &sync.Mutex{}
+	c.id = response.ID
+}
+
+func (c *Container) Remove() {
+	c.mutex.Lock()
+	if c.id == "" {
+		return
+	}
+	rmErr := c.Docker.ContainerRemove(context.Background(), c.id, types.ContainerRemoveOptions{
 		Force: true,
 	})
 	if *c.Err == nil {
 		*c.Err = rmErr
 	}
+	if rmErr == nil {
+		c.id = ""
+	}
+	c.mutex.Unlock()
 }
 
-func (c *Container) RemoveAfterCopy(id string, file *io.ReadCloser) {
+func (c *Container) RemoveAfterCopy(file *io.ReadCloser) {
 	if *file == nil {
-		c.Remove(id)
+		c.Remove()
 		return
 	}
 
 	*file = &closeWrapper{
 		ReadCloser: *file,
 		After: func() {
-			c.Remove(id)
+			c.Remove()
 		},
 	}
 }

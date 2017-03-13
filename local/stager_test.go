@@ -40,7 +40,7 @@ var _ = Describe("Stager", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			droplet, size, err := stager.Stage(&StageConfig{
+			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
 				AppConfig: &AppConfig{
@@ -65,8 +65,8 @@ var _ = Describe("Stager", func() {
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile arguments: /tmp/app /tmp/cache`))
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
 
-			Expect(size).To(BeNumerically(">", 500))
-			Expect(size).To(BeNumerically("<", 1000))
+			Expect(droplet.Size).To(BeNumerically(">", 500))
+			Expect(droplet.Size).To(BeNumerically("<", 1000))
 
 			dropletTar, err := gzip.NewReader(droplet)
 			Expect(err).NotTo(HaveOccurred())
@@ -89,13 +89,13 @@ var _ = Describe("Stager", func() {
 		})
 	})
 
-	Describe("#Launcher", func() {
-		It("should return the Diego launcher", func() {
-			launcher, size, err := stager.Launcher()
+	Describe("#Download", func() {
+		It("should return the specified file", func() {
+			launcher, err := stager.Download("/tmp/lifecycle/launcher")
 			Expect(err).NotTo(HaveOccurred())
 			defer launcher.Close()
 
-			Expect(size).To(Equal(int64(3053594)))
+			Expect(launcher.Size).To(Equal(int64(3053594)))
 
 			launcherBytes, err := ioutil.ReadAll(launcher)
 			Expect(err).NotTo(HaveOccurred())

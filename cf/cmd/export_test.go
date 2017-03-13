@@ -70,7 +70,7 @@ var _ = Describe("Export", func() {
 			}
 			gomock.InOrder(
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockStager.EXPECT().Launcher().Return(launcher, int64(200), nil),
+				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(launcher, int64(200), nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockRunner.EXPECT().Export(&local.RunConfig{
 					Droplet:      droplet,

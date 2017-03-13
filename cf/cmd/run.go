@@ -73,17 +73,15 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, launcherSize, err := r.Stager.Launcher()
+	launcher, err := r.Stager.Download("/tmp/lifecycle/launcher")
 	if err != nil {
 		return err
 	}
 	defer launcher.Close()
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:         droplet,
-		DropletSize:     dropletSize,
+		Droplet:         local.Stream{droplet, dropletSize},
 		Launcher:        launcher,
-		LauncherSize:    launcherSize,
 		Port:            options.port,
 		AppDir:          absAppDir,
 		AppDirEmpty:     appDirEmpty,

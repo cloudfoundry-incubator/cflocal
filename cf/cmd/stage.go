@@ -70,7 +70,7 @@ func (s *Stage) Run(args []string) error {
 		s.UI.Output("Downloading %s...", options.buildpack)
 		buildpacks = []string{options.buildpack}
 	}
-	droplet, size, err := s.Stager.Stage(&local.StageConfig{
+	droplet, err := s.Stager.Stage(&local.StageConfig{
 		AppTar:     appTar,
 		Buildpacks: buildpacks,
 		AppConfig:  appConfig,
@@ -84,7 +84,7 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 	defer file.Close()
-	if _, err := io.CopyN(file, droplet, size); err != nil && err != io.EOF {
+	if _, err := io.CopyN(file, droplet, droplet.Size); err != nil && err != io.EOF {
 		return err
 	}
 	s.UI.Output("Successfully staged: %s", options.name)

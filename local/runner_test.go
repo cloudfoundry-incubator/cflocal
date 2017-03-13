@@ -54,7 +54,7 @@ var _ = Describe("Runner", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			droplet, dropletSize, err := stager.Stage(&StageConfig{
+			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
 				AppConfig:  &AppConfig{Name: "some-app"},
@@ -62,7 +62,7 @@ var _ = Describe("Runner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
-			launcher, launcherSize, err := stager.Launcher()
+			launcher, err := stager.Download("/tmp/lifecycle/launcher")
 			Expect(err).NotTo(HaveOccurred())
 			defer launcher.Close()
 
@@ -76,9 +76,7 @@ var _ = Describe("Runner", func() {
 
 			config := &RunConfig{
 				Droplet:      droplet,
-				DropletSize:  dropletSize,
 				Launcher:     launcher,
-				LauncherSize: launcherSize,
 				Port:         port,
 				AppConfig: &AppConfig{
 					Name: "some-app",
@@ -128,7 +126,7 @@ var _ = Describe("Runner", func() {
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
-			droplet, dropletSize, err := stager.Stage(&StageConfig{
+			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
 				AppConfig:  &AppConfig{Name: "some-app"},
@@ -136,15 +134,13 @@ var _ = Describe("Runner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer droplet.Close()
 
-			launcher, launcherSize, err := stager.Launcher()
+			launcher, err := stager.Download("/tmp/lifecycle/launcher")
 			Expect(err).NotTo(HaveOccurred())
 			defer launcher.Close()
 
-			config := &RunConfig{
+			config := &ExportConfig{
 				Droplet:      droplet,
-				DropletSize:  dropletSize,
 				Launcher:     launcher,
-				LauncherSize: launcherSize,
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
