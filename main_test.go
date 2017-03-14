@@ -82,14 +82,13 @@ var _ = Describe("CF Local", func() {
 		})
 	})
 
-	Describe("staging and running a local app", func() {
+	Context("when used as a cf CLI plugin", func() {
 		var tempDir string
 
 		BeforeEach(func() {
 			var err error
 			tempDir, err = ioutil.TempDir("", "cflocal")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(archive.CopyResource(filepath.Join("fixtures", "go-app"), tempDir, false)).To(Succeed())
 		})
 
 		AfterEach(func() {
@@ -97,6 +96,8 @@ var _ = Describe("CF Local", func() {
 		})
 
 		It("should successfully stage and run a local app", func() {
+			Expect(archive.CopyResource(filepath.Join("fixtures", "go-app"), tempDir, false)).To(Succeed())
+
 			By("staging", func() {
 				stageCmd := exec.Command("cf", "local", "stage", "some-app")
 				stageCmd.Dir = path.Join(tempDir, "go-app")
@@ -126,8 +127,8 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
-		PIt("should successfully download and run an app from CF", func() {
-			By("staging", func() {
+		PIt("should successfully pull and run an app from CF", func() {
+			By("pulling", func() {
 				pullCmd := exec.Command("cf", "local", "pull", "some-app")
 				pullCmd.Dir = path.Join(tempDir)
 				session, err := gexec.Start(pullCmd, GinkgoWriter, GinkgoWriter)
@@ -139,7 +140,7 @@ var _ = Describe("CF Local", func() {
 
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app")
-				runCmd.Dir = path.Join(tempDir, "go-app")
+				runCmd.Dir = path.Join(tempDir)
 				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())

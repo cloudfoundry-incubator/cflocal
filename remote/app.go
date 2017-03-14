@@ -11,6 +11,7 @@ import (
 	"sort"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
+	"github.com/sclevine/cflocal/service"
 )
 
 const firstForwardedServicePort uint = 40000
@@ -29,19 +30,6 @@ type AppEnv struct {
 	Running map[string]string `json:"running_env_json"`
 	App     map[string]string `json:"environment_json"`
 }
-
-type Service struct {
-	Name           string            `json:"name" yaml:"name"`
-	Label          string            `json:"label" yaml:"label"`
-	Tags           []string          `json:"tags" yaml:"tags"`
-	Plan           string            `json:"plan" yaml:"plan"`
-	Credentials    map[string]string `json:"credentials" yaml:"credentials"`
-	SyslogDrainURL *string           `json:"syslog_drain_url" yaml:"syslog_drain_url,omitempty"`
-	Provider       *string           `json:"provider" yaml:"provider,omitempty"`
-	VolumeMounts   []string          `json:"volume_mounts" yaml:"volume_mounts,omitempty"`
-}
-
-type Services map[string][]Service
 
 func (a *App) Droplet(name string) (droplet io.ReadCloser, size int64, err error) {
 	return a.get(name, "/droplet/download")
@@ -74,7 +62,7 @@ func (a *App) Env(name string) (*AppEnv, error) {
 	return &env, nil
 }
 
-func (a *App) Services(name string) (Services, error) {
+func (a *App) Services(name string) (service.Services, error) {
 	appEnvJSON, _, err := a.get(name, "/env")
 	if err != nil {
 		return nil, err
@@ -82,7 +70,7 @@ func (a *App) Services(name string) (Services, error) {
 	defer appEnvJSON.Close()
 	var env struct {
 		SystemEnvJSON struct {
-			VCAPServices Services `json:"VCAP_SERVICES"`
+			VCAPServices service.Services `json:"VCAP_SERVICES"`
 		} `json:"system_env_json"`
 	}
 	if err := json.NewDecoder(appEnvJSON).Decode(&env); err != nil {
@@ -91,42 +79,44 @@ func (a *App) Services(name string) (Services, error) {
 	return env.SystemEnvJSON.VCAPServices, nil
 }
 
-func (a *App) Forward(name string, services Services) (forwarded Services, command string, err error) {
-	sshHost, sshPort, err := a.sshEndpoint()
-	if err != nil {
-		return nil, "", err
+func (a *App) Forward(name string, svcs service.Services) (service.Services, *service.ForwardConfig, error) {
+	var err error
+	config := &service.ForwardConfig{}
+
+	if config.Host, config.Port, err = a.sshEndpoint(); err != nil {
+		return nil, nil, err
 	}
 	appGUID, err := a.getGUID(name)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
+	config.User = fmt.Sprintf("cf:%s/0", appGUID)
+
 	sshCodeLines, err := a.CLI.CliCommandWithoutTerminalOutput("ssh-code")
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
+	config.Code = sshCodeLines[0]
 
-	needsForward := false
 	forwardedPort := firstForwardedServicePort
-	sshOptions := "-f -N -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes"
-	command = fmt.Sprintf("sshpass -p %s %s -p %s cf:%s/0@%s", sshCodeLines[0], sshOptions, sshPort, appGUID, sshHost)
-	for _, serviceType := range serviceTypes(services) {
-		for _, service := range services[serviceType] {
-			if address := forward(service.Credentials, forwardedPort); address != "" {
-				command += fmt.Sprintf(" -L localhost:%d:%s", forwardedPort, address)
-				needsForward = true
+	for _, svcType := range serviceTypes(svcs) {
+		for i, svc := range svcs[svcType] {
+			if address := forward(svc.Credentials, forwardedPort); address != "" {
+				config.Forwards = append(config.Forwards, service.Forward{
+					Name: fmt.Sprintf("%s[%d]", svcType, i),
+					From: fmt.Sprintf("localhost:%d", forwardedPort),
+					To:   address,
+				})
 			} else {
-				a.UI.Warn("unable to forward service of type: %s", serviceType)
+				a.UI.Warn("unable to forward service of type: %s", svcType)
 			}
 			forwardedPort++
 		}
 	}
-	if !needsForward {
-		command = ""
-	}
-	return services, command, nil
+	return svcs, config, nil
 }
 
-func serviceTypes(s Services) (types []string) {
+func serviceTypes(s service.Services) (types []string) {
 	for t := range s {
 		types = append(types, t)
 	}

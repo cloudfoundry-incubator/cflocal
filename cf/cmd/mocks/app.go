@@ -6,6 +6,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	remote "github.com/sclevine/cflocal/remote"
+	service "github.com/sclevine/cflocal/service"
 	io "io"
 )
 
@@ -64,10 +65,10 @@ func (_mr *_MockAppRecorder) Env(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Env", arg0)
 }
 
-func (_m *MockApp) Forward(_param0 string, _param1 remote.Services) (remote.Services, string, error) {
+func (_m *MockApp) Forward(_param0 string, _param1 service.Services) (service.Services, *service.ForwardConfig, error) {
 	ret := _m.ctrl.Call(_m, "Forward", _param0, _param1)
-	ret0, _ := ret[0].(remote.Services)
-	ret1, _ := ret[1].(string)
+	ret0, _ := ret[0].(service.Services)
+	ret1, _ := ret[1].(*service.ForwardConfig)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -76,9 +77,9 @@ func (_mr *_MockAppRecorder) Forward(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Forward", arg0, arg1)
 }
 
-func (_m *MockApp) Services(_param0 string) (remote.Services, error) {
+func (_m *MockApp) Services(_param0 string) (service.Services, error) {
 	ret := _m.ctrl.Call(_m, "Services", _param0)
-	ret0, _ := ret[0].(remote.Services)
+	ret0, _ := ret[0].(service.Services)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

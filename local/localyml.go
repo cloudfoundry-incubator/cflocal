@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/cflocal/service"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -41,10 +41,10 @@ type LocalYML struct {
 }
 
 type AppConfig struct {
-	Name             string            `yaml:"name"`
-	Command          string            `yaml:"command,omitempty"`
-	StagingEnv       map[string]string `yaml:"staging_env,omitempty"`
-	RunningEnv       map[string]string `yaml:"running_env,omitempty"`
-	Env              map[string]string `yaml:"env,omitempty"`
-	Services         remote.Services   `yaml:"services,omitempty"`
+	Name       string            `yaml:"name"`
+	Command    string            `yaml:"command,omitempty"`
+	StagingEnv map[string]string `yaml:"staging_env,omitempty"`
+	RunningEnv map[string]string `yaml:"running_env,omitempty"`
+	Env        map[string]string `yaml:"env,omitempty"`
+	Services   service.Services  `yaml:"services,omitempty"`
 }

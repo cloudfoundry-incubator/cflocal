@@ -33,6 +33,11 @@ func (e *Export) Run(args []string) error {
 		}
 		return err
 	}
+	localYML, err := e.Config.Load()
+	if err != nil {
+		return err
+	}
+
 	droplet, dropletSize, err := e.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
 		return err
@@ -43,10 +48,7 @@ func (e *Export) Run(args []string) error {
 		return err
 	}
 	defer launcher.Close()
-	localYML, err := e.Config.Load()
-	if err != nil {
-		return err
-	}
+
 	id, err := e.Runner.Export(&local.ExportConfig{
 		Droplet:      local.Stream{droplet, dropletSize},
 		Launcher:     launcher,

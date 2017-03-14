@@ -5,6 +5,7 @@ import (
 
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/cflocal/service"
 )
 
 type UI interface {
@@ -19,8 +20,8 @@ type App interface {
 	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
 	Command(name string) (string, error)
 	Env(name string) (*remote.AppEnv, error)
-	Services(name string) (remote.Services, error)
-	Forward(name string, services remote.Services) (forwarded remote.Services, command string, err error)
+	Services(name string) (service.Services, error)
+	Forward(name string, services service.Services) (service.Services, *service.ForwardConfig, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
@@ -72,17 +73,20 @@ func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {
 	return app
 }
 
-func getRemoteServices(app App, serviceApp, forwardApp string) (services remote.Services, forwardCmd string, err error) {
+func getRemoteServices(app App, serviceApp, forwardApp string) (service.Services, *service.ForwardConfig, error) {
+	var services service.Services
+
 	if serviceApp == "" {
 		serviceApp = forwardApp
 	}
 	if serviceApp != "" {
+		var err error
 		if services, err = app.Services(serviceApp); err != nil {
-			return nil, "", err
+			return nil, nil, err
 		}
 	}
 	if forwardApp != "" {
 		return app.Forward(forwardApp, services)
 	}
-	return services, "", nil
+	return services, nil, nil
 }

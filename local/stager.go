@@ -16,7 +16,7 @@ import (
 
 	"path/filepath"
 
-	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -83,7 +83,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, er
 
 	services := config.AppConfig.Services
 	if services == nil {
-		services = remote.Services{}
+		services = service.Services{}
 	}
 	vcapServices, err := json.Marshal(services)
 	if err != nil {
@@ -182,7 +182,7 @@ func (s *Stager) Download(path string) (stream Stream, err error) {
 			Entrypoint: strslice.StrSlice{"bash"},
 		},
 		Docker: s.Docker,
-		Err: &err,
+		Err:    &err,
 	}
 
 	cont.Create()

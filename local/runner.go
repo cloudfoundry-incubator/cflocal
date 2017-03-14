@@ -15,14 +15,25 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
 
 const runnerScript = `
 	set -e
 
-	{{.ServiceSetupCmd}}
+	{{with .ForwardConfig}}
+	{{if .Forwards}}
+		echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
+		sshpass -p '{{.Code}}' ssh -f -N \
+			-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+			-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
+			-o ServerAliveInterval=10 -o ServerAliveCountMax=60 \
+			-p '{{.Port}}' '{{.User}}@{{.Host}}' \
+			{{range .Forwards}} -L '{{.From}}:{{.To}}' \
+			{{end}}
+	{{end}}
+	{{end}}
 
 	tar --exclude={{.Exclude}} -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
@@ -46,19 +57,24 @@ type Stream struct {
 	Size int64
 }
 
+type Forwarder struct {
+	SSHPass Stream
+	Config  *service.ForwardConfig
+}
+
 type RunConfig struct {
-	Droplet         Stream
-	Launcher        Stream
-	Port            uint
-	AppDir          string
-	AppDirEmpty     bool
-	AppConfig       *AppConfig
-	ServiceSetupCmd string
+	Droplet     Stream
+	Launcher    Stream
+	Forwarder   Forwarder
+	Port        uint
+	AppDir      string
+	AppDirEmpty bool
+	AppConfig   *AppConfig
 }
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, config.AppDir != "" && !config.AppDirEmpty, config.ServiceSetupCmd)
+	containerConfig, err := buildContainerConfig(config.AppConfig, config.Forwarder.Config, config.AppDir != "" && !config.AppDirEmpty)
 	if err != nil {
 		return 0, err
 	}
@@ -82,6 +98,11 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error)
 	}
 	if err := r.copy(id, config.Droplet, "/tmp/droplet"); err != nil {
 		return 0, err
+	}
+	if config.Forwarder != (Forwarder{}) {
+		if err := r.copy(id, config.Forwarder.SSHPass, "/usr/bin/sshpass"); err != nil {
+			return 0, err
+		}
 	}
 
 	if err := r.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
@@ -119,7 +140,7 @@ type ExportConfig struct {
 
 func (r *Runner) Export(config *ExportConfig, reference string) (imageID string, err error) {
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, false, "")
+	containerConfig, err := buildContainerConfig(config.AppConfig, nil, false)
 	if err != nil {
 		return "", err
 	}
@@ -169,7 +190,7 @@ func buildHostConfig(port uint, appDir string) *container.HostConfig {
 	return config
 }
 
-func buildContainerConfig(config *AppConfig, excludeApp bool, serviceSetupCmd string) (*container.Config, error) {
+func buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -193,7 +214,7 @@ func buildContainerConfig(config *AppConfig, excludeApp bool, serviceSetupCmd st
 
 	services := config.Services
 	if services == nil {
-		services = remote.Services{}
+		services = service.Services{}
 	}
 	vcapServices, err := json.Marshal(services)
 	if err != nil {
@@ -221,9 +242,9 @@ func buildContainerConfig(config *AppConfig, excludeApp bool, serviceSetupCmd st
 	}
 
 	options := struct {
-		Exclude         string
-		ServiceSetupCmd string
-	}{"", serviceSetupCmd}
+		Exclude       string
+		ForwardConfig *service.ForwardConfig
+	}{"", forwardConfig}
 	if excludeApp {
 		options.Exclude = "./app"
 	}

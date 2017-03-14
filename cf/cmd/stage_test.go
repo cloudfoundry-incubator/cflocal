@@ -68,8 +68,8 @@ var _ = Describe("Stage", func() {
 				},
 			}
 			gomock.InOrder(
-				mockFS.EXPECT().Tar(".").Return(appTar, nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
+				mockFS.EXPECT().Tar(".").Return(appTar, nil),
 				mockStager.EXPECT().Stage(&local.StageConfig{
 					AppTar:     appTar,
 					Buildpacks: []string{"some-buildpack"},
@@ -78,7 +78,7 @@ var _ = Describe("Stage", func() {
 						Env:  map[string]string{"a": "b"},
 					},
 				}, gomock.Any()).Return(
-					droplet, int64(100), nil,
+					local.Stream{droplet, 100}, nil,
 				).Do(func(_ *local.StageConfig, c local.Colorizer) {
 					Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 				}),

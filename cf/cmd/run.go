@@ -58,15 +58,6 @@ func (r *Run) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	appConfig := getAppConfig(options.name, localYML)
-
-	remoteServices, forwardCmd, err := getRemoteServices(r.App, options.serviceApp, options.forwardApp)
-	if err != nil {
-		return err
-	}
-	if remoteServices != nil {
-		appConfig.Services = remoteServices
-	}
 
 	droplet, dropletSize, err := r.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
@@ -78,15 +69,33 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	defer launcher.Close()
+
+	appConfig := getAppConfig(options.name, localYML)
+	remoteServices, forwardConfig, err := getRemoteServices(r.App, options.serviceApp, options.forwardApp)
+	if err != nil {
+		return err
+	}
+	if remoteServices != nil {
+		appConfig.Services = remoteServices
+	}
+
+	forwarder := local.Forwarder{Config: forwardConfig}
+	if forwarder.Config != nil {
+		if forwarder.SSHPass, err = r.Stager.Download("/usr/bin/sshpass"); err != nil {
+			return err
+		}
+		defer forwarder.SSHPass.Close()
+	}
+
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:         local.Stream{droplet, dropletSize},
-		Launcher:        launcher,
-		Port:            options.port,
-		AppDir:          absAppDir,
-		AppDirEmpty:     appDirEmpty,
-		AppConfig:       appConfig,
-		ServiceSetupCmd: forwardCmd,
+		Droplet:     local.Stream{droplet, dropletSize},
+		Launcher:    launcher,
+		Port:        options.port,
+		AppDir:      absAppDir,
+		AppDirEmpty: appDirEmpty,
+		AppConfig:   appConfig,
+		Forwarder:   forwarder,
 	}, color.GreenString)
 	return err
 }

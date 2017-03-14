@@ -42,8 +42,13 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	appConfig := getAppConfig(options.name, localYML)
+	appTar, err := s.FS.Tar(".")
+	if err != nil {
+		return err
+	}
+	defer appTar.Close()
 
+	appConfig := getAppConfig(options.name, localYML)
 	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
 	if err != nil {
 		return err
@@ -54,12 +59,6 @@ func (s *Stage) Run(args []string) error {
 	if sApp, fApp := options.serviceApp, options.forwardApp; sApp != fApp && sApp != "" && fApp != "" {
 		s.UI.Warn("'%s' app selected for service forwarding will not be used", fApp)
 	}
-
-	appTar, err := s.FS.Tar(".")
-	if err != nil {
-		return err
-	}
-	defer appTar.Close()
 
 	var buildpacks []string
 	switch options.buildpack {

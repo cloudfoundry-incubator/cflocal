@@ -29,7 +29,7 @@ func (_m *MockRunner) EXPECT() *_MockRunnerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockRunner) Export(_param0 *local.RunConfig, _param1 string) (string, error) {
+func (_m *MockRunner) Export(_param0 *local.ExportConfig, _param1 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "Export", _param0, _param1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
