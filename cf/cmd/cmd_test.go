@@ -3,9 +3,9 @@ package cmd_test
 import (
 	"bytes"
 
-	"github.com/sclevine/cflocal/cf/cmd/mocks"
-
 	"github.com/golang/mock/gomock"
+
+	"github.com/sclevine/cflocal/cf/cmd/mocks"
 )
 
 type mockBufferCloser struct {

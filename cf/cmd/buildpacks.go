@@ -8,5 +8,6 @@ var Buildpacks = []string{
 	"http://github.com/cloudfoundry/python-buildpack",
 	"http://github.com/cloudfoundry/php-buildpack",
 	"http://github.com/cloudfoundry/staticfile-buildpack",
+	"http://github.com/cloudfoundry/dotnet-core-buildpack",
 	"http://github.com/cloudfoundry/binary-buildpack",
 }
