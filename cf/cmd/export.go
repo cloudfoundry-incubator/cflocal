@@ -67,14 +67,13 @@ func (e *Export) Run(args []string) error {
 
 func (*Export) options(args []string) (*exportOptions, error) {
 	set := &flag.FlagSet{}
-	options := &exportOptions{}
+	options := &exportOptions{name: args[1]}
 	set.StringVar(&options.reference, "r", "", "")
-	if err := set.Parse(args[1:]); err != nil {
+	if err := set.Parse(args[2:]); err != nil {
 		return nil, err
 	}
-	if set.NArg() != 1 {
+	if set.NArg() != 0 {
 		return nil, errors.New("invalid arguments")
 	}
-	options.name = set.Arg(0)
 	return options, nil
 }

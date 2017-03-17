@@ -72,7 +72,7 @@ var _ = Describe("Push", func() {
 				mockApp.EXPECT().SetEnv("some-app", map[string]string{"some": "env"}).Return(nil),
 				mockApp.EXPECT().Restart("some-app").Return(nil),
 			)
-			Expect(cmd.Run([]string{"push", "-e", "some-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"push", "some-app", "-e"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Successfully pushed: some-app"))
 		})
 

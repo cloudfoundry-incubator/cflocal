@@ -107,19 +107,18 @@ func (*Run) options(args []string) (*runOptions, error) {
 		return nil, err
 	}
 
-	options := &runOptions{}
+	options := &runOptions{name: args[1]}
 	set.UintVar(&options.port, "p", defaultPort, "")
 	set.StringVar(&options.appDir, "d", "", "")
 	set.StringVar(&options.serviceApp, "s", "", "")
 	set.StringVar(&options.forwardApp, "f", "", "")
-	if err := set.Parse(args[1:]); err != nil {
+	if err := set.Parse(args[2:]); err != nil {
 		return nil, err
 	}
 
-	if set.NArg() != 1 {
+	if set.NArg() != 0 {
 		return nil, errors.New("invalid arguments")
 	}
-	options.name = set.Arg(0)
 	return options, nil
 }
 

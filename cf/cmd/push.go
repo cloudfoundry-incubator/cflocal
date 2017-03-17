@@ -68,15 +68,14 @@ func (p *Push) pushEnv(name string) error {
 
 func (*Push) options(args []string) (*pushOptions, error) {
 	set := &flag.FlagSet{}
-	options := &pushOptions{}
+	options := &pushOptions{name: args[1]}
 	set.BoolVar(&options.keepState, "k", false, "")
 	set.BoolVar(&options.pushEnv, "e", false, "")
-	if err := set.Parse(args[1:]); err != nil {
+	if err := set.Parse(args[2:]); err != nil {
 		return nil, err
 	}
-	if set.NArg() != 1 {
+	if set.NArg() != 0 {
 		return nil, errors.New("invalid arguments")
 	}
-	options.name = set.Arg(0)
 	return options, nil
 }

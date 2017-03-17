@@ -114,7 +114,7 @@ var _ = Describe("Run", func() {
 				launcher.EXPECT().Close(),
 				droplet.EXPECT().Close(),
 			)
-			Expect(cmd.Run([]string{"run", "-p", "3000", "-d", "some-dir", "-s", "some-service-app", "-f", "some-forward-app", "some-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"run", "some-app", "-p", "3000", "-d", "some-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 

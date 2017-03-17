@@ -86,7 +86,7 @@ var _ = Describe("Export", func() {
 				launcher.EXPECT().Close(),
 				droplet.EXPECT().Close(),
 			)
-			Expect(cmd.Run([]string{"export", "-r", "some-reference", "some-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"export", "some-app", "-r", "some-reference"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
 		})
 

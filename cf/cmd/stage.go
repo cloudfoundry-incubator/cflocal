@@ -92,16 +92,15 @@ func (s *Stage) Run(args []string) error {
 
 func (*Stage) options(args []string) (*stageOptions, error) {
 	set := &flag.FlagSet{}
-	options := &stageOptions{}
+	options := &stageOptions{name: args[1]}
 	set.StringVar(&options.buildpack, "b", "", "")
 	set.StringVar(&options.serviceApp, "s", "", "")
 	set.StringVar(&options.forwardApp, "f", "", "")
-	if err := set.Parse(args[1:]); err != nil {
+	if err := set.Parse(args[2:]); err != nil {
 		return nil, err
 	}
-	if set.NArg() != 1 {
+	if set.NArg() != 0 {
 		return nil, errors.New("invalid arguments")
 	}
-	options.name = set.Arg(0)
 	return options, nil
 }
