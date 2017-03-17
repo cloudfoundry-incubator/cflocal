@@ -10,6 +10,7 @@ import (
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/cflocal/service"
 )
 
 var _ = Describe("Export", func() {
@@ -63,8 +64,9 @@ var _ = Describe("Export", func() {
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
 					{
-						Name: "some-app",
-						Env:  map[string]string{"a": "b"},
+						Name:     "some-app",
+						Env:      map[string]string{"a": "b"},
+						Services: service.Services{"some": {{Name: "services"}}},
 					},
 				},
 			}
@@ -78,6 +80,7 @@ var _ = Describe("Export", func() {
 					AppConfig: &local.AppConfig{
 						Name: "some-app",
 						Env:  map[string]string{"a": "b"},
+						Services: service.Services{"some": {{Name: "services"}}},
 					},
 				}, "some-reference").Return("some-id", nil),
 				launcher.EXPECT().Close(),

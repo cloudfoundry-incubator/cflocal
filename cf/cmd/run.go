@@ -91,11 +91,11 @@ func (r *Run) Run(args []string) error {
 	_, err = r.Runner.Run(&local.RunConfig{
 		Droplet:     local.Stream{droplet, dropletSize},
 		Launcher:    launcher,
+		Forwarder:   forwarder,
 		Port:        options.port,
 		AppDir:      absAppDir,
 		AppDirEmpty: appDirEmpty,
 		AppConfig:   appConfig,
-		Forwarder:   forwarder,
 	}, color.GreenString)
 	return err
 }

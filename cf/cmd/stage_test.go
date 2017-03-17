@@ -1,16 +1,17 @@
 package cmd_test
 
 import (
-	. "github.com/sclevine/cflocal/cf/cmd"
-	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/cflocal/local"
-	sharedmocks "github.com/sclevine/cflocal/mocks"
-
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	. "github.com/sclevine/cflocal/cf/cmd"
+	"github.com/sclevine/cflocal/cf/cmd/mocks"
+	"github.com/sclevine/cflocal/local"
+	sharedmocks "github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/cflocal/service"
 )
 
 var _ = Describe("Stage", func() {
@@ -18,6 +19,7 @@ var _ = Describe("Stage", func() {
 		mockCtrl   *gomock.Controller
 		mockUI     *sharedmocks.MockUI
 		mockStager *mocks.MockStager
+		mockApp    *mocks.MockApp
 		mockFS     *mocks.MockFS
 		mockHelp   *mocks.MockHelp
 		mockConfig *mocks.MockConfig
@@ -28,12 +30,14 @@ var _ = Describe("Stage", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
 		mockStager = mocks.NewMockStager(mockCtrl)
+		mockApp = mocks.NewMockApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Stage{
 			UI:     mockUI,
 			Stager: mockStager,
+			App:    mockApp,
 			FS:     mockFS,
 			Help:   mockHelp,
 			Config: mockConfig,
@@ -58,24 +62,33 @@ var _ = Describe("Stage", func() {
 			appTar := newMockBufferCloser(mockCtrl)
 			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
 			file := newMockBufferCloser(mockCtrl)
+			services := service.Services{"some": {{Name: "services"}}}
+			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
+			forwardConfig := &service.ForwardConfig{
+				Host: "some-ssh-host",
+			}
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
 					{
-						Name: "some-app",
-						Env:  map[string]string{"a": "b"},
+						Name:     "some-app",
+						Env:      map[string]string{"a": "b"},
+						Services: service.Services{"some": {{Name: "overwritten-services"}}},
 					},
 				},
 			}
 			gomock.InOrder(
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockFS.EXPECT().Tar(".").Return(appTar, nil),
+				mockApp.EXPECT().Services("some-service-app").Return(services, nil),
+				mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil),
 				mockStager.EXPECT().Stage(&local.StageConfig{
 					AppTar:     appTar,
 					Buildpacks: []string{"some-buildpack"},
 					AppConfig: &local.AppConfig{
-						Name: "some-app",
-						Env:  map[string]string{"a": "b"},
+						Name:     "some-app",
+						Env:      map[string]string{"a": "b"},
+						Services: forwardedServices,
 					},
 				}, gomock.Any()).Return(
 					local.Stream{droplet, 100}, nil,
@@ -87,8 +100,9 @@ var _ = Describe("Stage", func() {
 				droplet.EXPECT().Close(),
 				appTar.EXPECT().Close(),
 			)
-			Expect(cmd.Run([]string{"stage", "-b", "some-buildpack", "some-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"stage", "-b", "some-buildpack", "-s", "some-service-app", "-f", "some-forward-app", "some-app"})).To(Succeed())
 			Expect(file.String()).To(Equal("some-droplet"))
+			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
 			Expect(mockUI.Out).To(gbytes.Say("Downloading some-buildpack..."))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})

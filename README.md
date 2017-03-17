@@ -30,8 +30,10 @@ App settings (currently env vars and a start command) are downloaded to or manua
 If no buildpack is specified during staging, the latest standard CF buildpacks are used to detect and compile your app.
 
 NOTES:
- - For safety reasons, service forwarding tunnels are not active during staging
- - For safety reasons, containers are never exported with remote service credentials
+ - For safety reasons:
+    - Service forwarding tunnels are not active during staging
+    - Containers are never exported with remote service credentials
+    - Service details are never pulled from remote apps
 
 TODO:
  - `cf local push` - upload apps to a CF installation

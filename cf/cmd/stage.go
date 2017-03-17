@@ -94,6 +94,8 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 	set := &flag.FlagSet{}
 	options := &stageOptions{}
 	set.StringVar(&options.buildpack, "b", "", "")
+	set.StringVar(&options.serviceApp, "s", "", "")
+	set.StringVar(&options.forwardApp, "f", "", "")
 	if err := set.Parse(args[1:]); err != nil {
 		return nil, err
 	}
