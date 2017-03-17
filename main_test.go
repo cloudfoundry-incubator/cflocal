@@ -156,6 +156,8 @@ var _ = Describe("CF Local", func() {
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
+
+		// TODO: stage and push / service forwarding / app dir mounts
 	})
 })
 

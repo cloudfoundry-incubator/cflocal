@@ -18,6 +18,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -51,9 +52,11 @@ var _ = Describe("Runner", func() {
 				Docker:       client,
 				Logs:         GinkgoWriter,
 			}
+
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
+
 			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
@@ -66,6 +69,9 @@ var _ = Describe("Runner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer launcher.Close()
 
+			sshpassBuf := bytes.NewBufferString("echo sshpass $@")
+			sshpass := Stream{ReadCloser: ioutil.NopCloser(sshpassBuf), Size: int64(sshpassBuf.Len())}
+
 			port := freePort()
 
 			go func() {
@@ -75,9 +81,30 @@ var _ = Describe("Runner", func() {
 			}()
 
 			config := &RunConfig{
-				Droplet:      droplet,
-				Launcher:     launcher,
-				Port:         port,
+				Droplet:  droplet,
+				Launcher: launcher,
+				Forwarder: Forwarder{
+					SSHPass: sshpass,
+					Config: &service.ForwardConfig{
+						Host: "some-ssh-host",
+						Port: "some-port",
+						User: "some-user",
+						Code: "some-code",
+						Forwards: []service.Forward{
+							{
+								Name: "some-name",
+								From: "some-from",
+								To:   "some-to",
+							},
+							{
+								Name: "some-other-name",
+								From: "some-other-from",
+								To:   "some-other-to",
+							},
+						},
+					},
+				},
+				Port: port,
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
@@ -91,12 +118,23 @@ var _ = Describe("Runner", func() {
 						"TEST_ENV_KEY": "test-env-value",
 						"MEMORY_LIMIT": "1024m",
 					},
+					Services: service.Services{
+						"some-type": {{
+							Name: "some-name",
+						}},
+					},
 				},
 			}
 			status, err := runner.Run(config, percentColor)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(137))
 
+			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Forwarding: some-name some-other-name`))
+			Expect(logs.Contents()).To(MatchRegexp(
+				`\[some-app\] % \S+ sshpass -p some-code ssh -f -N -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no` +
+					` -o LogLevel=ERROR -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -o ServerAliveCountMax=60` +
+					` -p some-port some-user@some-ssh-host -L some-from:some-to -L some-other-from:some-other-to`,
+			))
 			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stdout.`))
 			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stderr.`))
 
@@ -123,9 +161,11 @@ var _ = Describe("Runner", func() {
 				Docker:       client,
 				Logs:         GinkgoWriter,
 			}
+
 			appFileContents := bytes.NewBufferString("some-contents")
 			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
 			Expect(err).NotTo(HaveOccurred())
+
 			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
 				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
@@ -139,8 +179,8 @@ var _ = Describe("Runner", func() {
 			defer launcher.Close()
 
 			config := &ExportConfig{
-				Droplet:      droplet,
-				Launcher:     launcher,
+				Droplet:  droplet,
+				Launcher: launcher,
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
@@ -153,6 +193,12 @@ var _ = Describe("Runner", func() {
 					Env: map[string]string{
 						"TEST_ENV_KEY": "test-env-value",
 						"MEMORY_LIMIT": "1024m",
+					},
+
+					Services: service.Services{
+						"some-type": {{
+							Name: "some-name",
+						}},
 					},
 				},
 			}

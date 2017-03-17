@@ -12,6 +12,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	. "github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -55,6 +56,11 @@ var _ = Describe("Stager", func() {
 					Env: map[string]string{
 						"TEST_ENV_KEY": "test-env-value",
 						"MEMORY_LIMIT": "1024m",
+					},
+					Services: service.Services{
+						"some-type": {{
+							Name: "some-name",
+						}},
 					},
 				},
 			}, percentColor)
