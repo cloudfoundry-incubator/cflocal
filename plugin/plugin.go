@@ -139,7 +139,7 @@ func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
 		},
 		Commands: []cfplugin.Command{{
 			Name:     "local",
-			HelpText: "Build, download, and launch Cloud Foundry applications locally",
+			HelpText: "Stage, launch, push, pull, and export CF apps -- in Docker",
 			UsageDetails: cfplugin.Usage{Usage: usage},
 		}},
 	}
