@@ -1,11 +1,6 @@
-# CF Local - cf CLI Plugin
+package plugin
 
-```
-NAME:
-   local - Build, download, and launch Cloud Foundry applications locally
-
-USAGE:
-   cf local stage  <name> [(-b <URL>)] [-s <app> | -f <app>]
+const usage = `cf local stage  <name> [(-b <URL>)] [-s <app> | -f <app>]
    cf local run    <name> [(-p <port>) (-d <dir>) (-s <app>) (-f <app>)]
    cf local export <name> [(-r <ref>)]
    cf local pull   <name>
@@ -31,7 +26,7 @@ RUN OPTIONS:
    run      Run a droplet with using the environment specified in local.yml.
                Droplet filename: <name>.droplet
 
-   -p <port>   Port on localhost for app to listen on 
+   -p <port>   Port on localhost for app to listen on
                   Default: (arbitrary unused port)
    -d <dir>    Mount the specified directory into the app container at the app root.
                   If the directory is empty, the app is copied into the directory.
@@ -69,31 +64,5 @@ PUSH OPTIONS:
                   Default: false
    -k          Do not restart the application after pushing the droplet.
                   The current droplet will continue to run until the next restart.
-                  Default: false                               Output the CF Local version.
-```
-
-CF Local:
-  - Uses Docker to build and run Cloud Foundry apps locally.
-  - Supports downloading apps (droplets & settings) from a full CF installation.
-  - Supports mounting an empty (or non-existent) local directory to /home/vcap/app that recieves the staged app.
-  - Supports mounting a non-empty local directory to /home/vcap/app that replaces the staged app.
-
-App settings (currently env vars and a start command) are downloaded to or manually specified in ./local.yml.
-If no buildpack is specified during staging, the latest standard CF buildpacks are used to detect and compile your app.
-
-NOTES:
- - For safety reasons:
-    - Service forwarding tunnels are not active during staging
-    - Containers are never exported with remote service credentials
-    - Service details are never pulled from remote apps
-
-TODO:
- - `cf local push` - upload apps to a CF installation
- - Improved support for connecting to local services via `VCAP_SERVICES`
- - Improved support for connecting to CF services via `cf ssh` tunnel
- - Memory quotas, disk quotas, and multiple app instances
- - Support for running multiple apps in the same command
- - Support for running apps in the background
- - Support for specifying a custom rootfs
- - Support for specifying a custom version of Diego
- - `cf emulator` - run a full CF install in a docker container with the garden-docker backend pointed at the host
+                  Default: false
+`

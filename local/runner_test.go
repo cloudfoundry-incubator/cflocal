@@ -140,15 +140,15 @@ var _ = Describe("Runner", func() {
 
 			Eventually(exitChan, "5s").Should(BeClosed())
 
-			// test that droplet and launcher are closed
-			// test that no containers exist
+			// TODO: test that droplet and launcher are closed
+			// TODO: test that no containers exist
 		})
 
-		// test with custom start command
-		// test with mounted app dir
+		// TODO: test with custom start command
+		// TODO: test with mounted app dir
 
 		Context("on failure", func() {
-			// test failure cases using reverse proxy
+			// TODO: test failure cases using reverse proxy
 		})
 	})
 
@@ -227,14 +227,14 @@ var _ = Describe("Runner", func() {
 
 			Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
 
-			// test that droplet and launcher are closed
-			// test that no containers exist
+			// TODO: test that droplet and launcher are closed
+			// TODO: test that no containers exist
 		})
 
-		// test with custom start command
+		// TODO: test with custom start command
 
 		Context("on failure", func() {
-			// test failure cases using reverse proxy
+			// TODO: test failure cases using reverse proxy
 		})
 	})
 })

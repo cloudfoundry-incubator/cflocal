@@ -29,7 +29,7 @@ func (p *Pull) Run(args []string) error {
 	if err := p.saveDroplet(name); err != nil {
 		return err
 	}
-	if err := p.saveLocalYML(name); err != nil {
+	if err := p.updateLocalYML(name); err != nil {
 		return err
 	}
 	p.UI.Output("Successfully downloaded: %s", name)
@@ -53,7 +53,7 @@ func (p *Pull) saveDroplet(name string) error {
 	return nil
 }
 
-func (p *Pull) saveLocalYML(name string) error {
+func (p *Pull) updateLocalYML(name string) error {
 	localYML, err := p.Config.Load()
 	if err != nil {
 		return err

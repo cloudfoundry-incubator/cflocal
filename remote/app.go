@@ -47,7 +47,7 @@ func (a *App) Droplet(name string) (droplet io.ReadCloser, size int64, err error
 	return a.get(name, "/droplet/download")
 }
 
-func (a *App) SetDroplet(name string, droplet io.Reader) error {
+func (a *App) SetDroplet(name string, droplet io.Reader, size int64) error {
 	readBody, writeBody := io.Pipe()
 	defer readBody.Close()
 
@@ -61,7 +61,7 @@ func (a *App) SetDroplet(name string, droplet io.Reader) error {
 			errChan <- err
 			return
 		}
-		if _, err := io.Copy(dropletPart, droplet); err != nil {
+		if _, err := io.CopyN(dropletPart, droplet, size); err != nil {
 			errChan <- err
 			return
 		}
@@ -104,6 +104,11 @@ func (a *App) SetEnv(name string, env map[string]string) error {
 		return err
 	}
 	return a.put(name, "", "application/json", body)
+}
+
+func (a *App) Restart(name string) error {
+	_, err := a.CLI.CliCommand("restart", name)
+	return err
 }
 
 func (a *App) Services(name string) (service.Services, error) {

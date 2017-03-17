@@ -103,7 +103,8 @@ var _ = Describe("App", func() {
 		It("should upload the app's droplet", func() {
 			req := handleAppEndpoint("some-name", "")
 
-			Expect(app.SetDroplet("some-name", bytes.NewBufferString("some-droplet"))).To(Succeed())
+			droplet := bytes.NewBufferString("some-droplet")
+			Expect(app.SetDroplet("some-name", droplet, int64(droplet.Len()))).To(Succeed())
 
 			Expect(req.method).To(Equal("PUT"))
 			Expect(req.path).To(Equal("/v2/apps/some-guid/droplet/upload"))
@@ -155,6 +156,13 @@ var _ = Describe("App", func() {
 					"some-key": "some-value"
 				}
 			}`))
+		})
+	})
+
+	Describe("#Restart", func() {
+		It("should restart the app", func() {
+			mockCLI.EXPECT().CliCommand("restart", "some-name").Return(nil, nil)
+			Expect(app.Restart("some-name")).To(Succeed())
 		})
 	})
 

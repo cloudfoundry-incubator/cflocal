@@ -107,6 +107,6 @@ var _ = Describe("Stage", func() {
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
-		// test not providing a buildpack
+		// TODO: test not providing a buildpack
 	})
 })

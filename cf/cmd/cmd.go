@@ -17,9 +17,12 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf/cmd App
 type App interface {
-	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
 	Command(name string) (string, error)
+	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
+	SetDroplet(name string, droplet io.Reader, size int64) error
 	Env(name string) (*remote.AppEnv, error)
+	SetEnv(name string, env map[string]string) error
+	Restart(name string) error
 	Services(name string) (service.Services, error)
 	Forward(name string, services service.Services) (service.Services, *service.ForwardConfig, error)
 }

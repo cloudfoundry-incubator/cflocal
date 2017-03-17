@@ -77,6 +77,16 @@ func (_mr *_MockAppRecorder) Forward(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Forward", arg0, arg1)
 }
 
+func (_m *MockApp) Restart(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "Restart", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockAppRecorder) Restart(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Restart", arg0)
+}
+
 func (_m *MockApp) Services(_param0 string) (service.Services, error) {
 	ret := _m.ctrl.Call(_m, "Services", _param0)
 	ret0, _ := ret[0].(service.Services)
@@ -86,4 +96,24 @@ func (_m *MockApp) Services(_param0 string) (service.Services, error) {
 
 func (_mr *_MockAppRecorder) Services(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Services", arg0)
+}
+
+func (_m *MockApp) SetDroplet(_param0 string, _param1 io.Reader, _param2 int64) error {
+	ret := _m.ctrl.Call(_m, "SetDroplet", _param0, _param1, _param2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockAppRecorder) SetDroplet(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetDroplet", arg0, arg1, arg2)
+}
+
+func (_m *MockApp) SetEnv(_param0 string, _param1 map[string]string) error {
+	ret := _m.ctrl.Call(_m, "SetEnv", _param0, _param1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockAppRecorder) SetEnv(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetEnv", arg0, arg1)
 }

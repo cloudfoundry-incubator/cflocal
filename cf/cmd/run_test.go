@@ -62,9 +62,9 @@ var _ = Describe("Run", func() {
 
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
-			droplet := newMockBufferCloser(mockCtrl)
-			launcher := newMockBufferCloser(mockCtrl)
-			sshpass := newMockBufferCloser(mockCtrl)
+			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
+			launcher := newMockBufferCloser(mockCtrl, "some-launcher")
+			sshpass := newMockBufferCloser(mockCtrl, "some-sshpass")
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
 			forwardConfig := &service.ForwardConfig{

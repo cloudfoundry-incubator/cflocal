@@ -58,8 +58,8 @@ var _ = Describe("Export", func() {
 
 	Describe("#Run", func() {
 		It("should export a droplet as a Docker image", func() {
-			droplet := newMockBufferCloser(mockCtrl)
-			launcher := newMockBufferCloser(mockCtrl)
+			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
+			launcher := newMockBufferCloser(mockCtrl, "some-launcher")
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
@@ -78,8 +78,8 @@ var _ = Describe("Export", func() {
 					Droplet:  local.Stream{droplet, 100},
 					Launcher: local.Stream{launcher, 200},
 					AppConfig: &local.AppConfig{
-						Name: "some-app",
-						Env:  map[string]string{"a": "b"},
+						Name:     "some-app",
+						Env:      map[string]string{"a": "b"},
 						Services: service.Services{"some": {{Name: "services"}}},
 					},
 				}, "some-reference").Return("some-id", nil),
@@ -90,6 +90,6 @@ var _ = Describe("Export", func() {
 			Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
 		})
 
-		// test without reference
+		// TODO: test without reference
 	})
 })

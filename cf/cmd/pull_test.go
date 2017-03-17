@@ -101,6 +101,6 @@ var _ = Describe("Pull", func() {
 			Expect(mockUI.Out).To(gbytes.Say("Successfully downloaded: some-app"))
 		})
 
-		// test when app isn't in local.yml
+		// TODO: test when app isn't in local.yml
 	})
 })

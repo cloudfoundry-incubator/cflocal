@@ -83,15 +83,15 @@ var _ = Describe("Stager", func() {
 			Expect(fileFromTar("./staging_info.yml", dropletBuffer)).To(ContainSubstring("start_command"))
 			Expect(fileFromTar("./app/env", dropletBuffer)).To(Equal(stagingEnvFixture))
 
-			// test that no "some-app-staging-GUID" containers exist
+			// TODO: test that no "some-app-staging-GUID" containers exist
 
-			// test that termination via ExitChan works
+			// TODO: test that termination via ExitChan works
 
-			// test skipping detection when only one buildpack
+			// TODO: test skipping detection when only one buildpack
 		})
 
 		Context("on failure", func() {
-			// test failure cases using reverse proxy
+			// TODO: test failure cases using reverse proxy
 		})
 	})
 
@@ -107,16 +107,16 @@ var _ = Describe("Stager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(launcherBytes).To(HaveLen(3053594))
 
-			// test that no "some-app-launcher-GUID" containers exist
+			// TODO: test that no "some-app-launcher-GUID" containers exist
 		})
 
 		Context("on failure", func() {
-			// test failure cases using reverse proxy
+			// TODO: test failure cases using reverse proxy
 		})
 	})
 
 	Describe("Dockerfile", func() {
-		// test docker image via docker info?
+		// TODO: test docker image via docker info?
 	})
 })
 
