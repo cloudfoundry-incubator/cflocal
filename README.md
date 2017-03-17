@@ -69,7 +69,7 @@ PUSH OPTIONS:
                   Default: false
    -k          Do not restart the application after pushing the droplet.
                   The current droplet will continue to run until the next restart.
-                  Default: false                               Output the CF Local version.
+                  Default: false
 ```
 
 NOTES:
