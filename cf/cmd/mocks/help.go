@@ -28,12 +28,10 @@ func (_m *MockHelp) EXPECT() *_MockHelpRecorder {
 	return _m.recorder
 }
 
-func (_m *MockHelp) Show() error {
-	ret := _m.ctrl.Call(_m, "Show")
-	ret0, _ := ret[0].(error)
-	return ret0
+func (_m *MockHelp) Short() {
+	_m.ctrl.Call(_m, "Short")
 }
 
-func (_mr *_MockHelpRecorder) Show() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Show")
+func (_mr *_MockHelpRecorder) Short() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Short")
 }

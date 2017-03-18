@@ -51,7 +51,7 @@ type FS interface {
 
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf/cmd Help
 type Help interface {
-	Show() error
+	Short()
 }
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/sclevine/cflocal/cf/cmd Config

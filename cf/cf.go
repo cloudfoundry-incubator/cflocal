@@ -17,7 +17,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf Help
 type Help interface {
-	Show() error
+	Long()
 }
 
 //go:generate mockgen -package mocks -destination mocks/cmd.go github.com/sclevine/cflocal/cf Cmd
@@ -29,7 +29,8 @@ type Cmd interface {
 func (c *CF) Run(args []string) error {
 	switch args[0] {
 	case "help":
-		return c.Help.Show()
+		c.Help.Long()
+		return nil
 	case "version", "--version":
 		c.UI.Output("CF Local version %s", c.Version)
 		return nil

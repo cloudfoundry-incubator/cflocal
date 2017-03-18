@@ -42,14 +42,14 @@ var _ = Describe("CF", func() {
 
 	Describe("#Run", func() {
 		Context("when the subcommand is 'help'", func() {
-			It("should show the help text", func() {
-				mockHelp.EXPECT().Show()
+			It("should show the long usage text", func() {
+				mockHelp.EXPECT().Long()
 				Expect(cf.Run([]string{"help"})).To(Succeed())
 			})
 
-			Context("when printing the help text fails", func() {
+			Context("when printing the usage text fails", func() {
 				It("should print an error", func() {
-					mockHelp.EXPECT().Show().Return(errors.New("some error"))
+					mockHelp.EXPECT().Long().Return(errors.New("some error"))
 					err := cf.Run([]string{"help"})
 					Expect(err).To(MatchError("some error"))
 				})

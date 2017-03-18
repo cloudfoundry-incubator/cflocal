@@ -5,10 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
-
-	"github.com/sclevine/cflocal/local"
+	"io/ioutil"
 
 	"github.com/fatih/color"
+
+	"github.com/sclevine/cflocal/local"
 )
 
 type Stage struct {
@@ -32,9 +33,7 @@ func (s *Stage) Match(args []string) bool {
 func (s *Stage) Run(args []string) error {
 	options, err := s.options(args)
 	if err != nil {
-		if err := s.Help.Show(); err != nil {
-			s.UI.Error(err)
-		}
+		s.Help.Short()
 		return err
 	}
 
@@ -92,6 +91,7 @@ func (s *Stage) Run(args []string) error {
 
 func (*Stage) options(args []string) (*stageOptions, error) {
 	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
 	options := &stageOptions{name: args[1]}
 	set.StringVar(&options.buildpack, "b", "", "")
 	set.StringVar(&options.serviceApp, "s", "", "")

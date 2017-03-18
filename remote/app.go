@@ -56,7 +56,7 @@ func (a *App) SetDroplet(name string, droplet io.Reader, size int64) error {
 	go func() {
 		defer writeBody.Close()
 
-		dropletPart, err := form.CreateFormFile("droplet", name+".droplet")
+		dropletPart, err := form.CreateFormFile("droplet", fmt.Sprintf("./%s.droplet", name))
 		if err != nil {
 			errChan <- err
 			return

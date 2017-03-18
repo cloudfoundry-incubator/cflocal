@@ -4,13 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/sclevine/cflocal/local"
-
 	"github.com/fatih/color"
+
+	"github.com/sclevine/cflocal/local"
 )
 
 type Run struct {
@@ -36,9 +37,7 @@ func (r *Run) Match(args []string) bool {
 func (r *Run) Run(args []string) error {
 	options, err := r.options(args)
 	if err != nil {
-		if err := r.Help.Show(); err != nil {
-			r.UI.Error(err)
-		}
+		r.Help.Short()
 		return err
 	}
 	absAppDir, appDirEmpty := "", false
@@ -102,6 +101,8 @@ func (r *Run) Run(args []string) error {
 
 func (*Run) options(args []string) (*runOptions, error) {
 	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
+
 	defaultPort, err := freePort()
 	if err != nil {
 		return nil, err

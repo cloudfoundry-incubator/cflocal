@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/sclevine/cflocal/local"
 )
@@ -28,9 +29,7 @@ func (e *Export) Match(args []string) bool {
 func (e *Export) Run(args []string) error {
 	options, err := e.options(args)
 	if err != nil {
-		if err := e.Help.Show(); err != nil {
-			e.UI.Error(err)
-		}
+		e.Help.Short()
 		return err
 	}
 	localYML, err := e.Config.Load()
@@ -50,9 +49,9 @@ func (e *Export) Run(args []string) error {
 	defer launcher.Close()
 
 	id, err := e.Runner.Export(&local.ExportConfig{
-		Droplet:      local.Stream{droplet, dropletSize},
-		Launcher:     launcher,
-		AppConfig:    getAppConfig(options.name, localYML),
+		Droplet:   local.Stream{droplet, dropletSize},
+		Launcher:  launcher,
+		AppConfig: getAppConfig(options.name, localYML),
 	}, options.reference)
 	if err != nil {
 		return err
@@ -67,6 +66,7 @@ func (e *Export) Run(args []string) error {
 
 func (*Export) options(args []string) (*exportOptions, error) {
 	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
 	options := &exportOptions{name: args[1]}
 	set.StringVar(&options.reference, "r", "", "")
 	if err := set.Parse(args[2:]); err != nil {

@@ -22,13 +22,13 @@ import (
 )
 
 type Plugin struct {
-	UI       UserInterface
+	UI       PluginUI
 	Version  string
 	RunErr   error
 	ExitChan chan struct{}
 }
 
-type UserInterface interface {
+type PluginUI interface {
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
@@ -74,7 +74,10 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 	fs := &utils.FS{}
 	config := &local.Config{Path: "./local.yml"}
-	help := &Help{CLI: cliConnection}
+	help := &Help{
+		CLI: cliConnection,
+		UI:  p.UI,
+	}
 	cf := &cf.CF{
 		UI:   p.UI,
 		Help: help,
@@ -138,9 +141,9 @@ func (p *Plugin) GetMetadata() cfplugin.PluginMetadata {
 			Build: version.Segments()[2],
 		},
 		Commands: []cfplugin.Command{{
-			Name:     "local",
-			HelpText: "Stage, launch, push, pull, and export CF apps -- in Docker",
-			UsageDetails: cfplugin.Usage{Usage: usage},
+			Name:         "local",
+			HelpText:     "Stage, launch, push, pull, and export CF apps -- in Docker",
+			UsageDetails: cfplugin.Usage{Usage: strings.TrimSpace(Usage)},
 		}},
 	}
 }

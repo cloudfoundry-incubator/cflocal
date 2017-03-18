@@ -20,9 +20,7 @@ func (p *Pull) Match(args []string) bool {
 
 func (p *Pull) Run(args []string) error {
 	if len(args) != 2 {
-		if err := p.Help.Show(); err != nil {
-			p.UI.Error(err)
-		}
+		p.Help.Short()
 		return errors.New("invalid arguments")
 	}
 	name := args[1]

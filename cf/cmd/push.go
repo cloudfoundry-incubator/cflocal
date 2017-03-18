@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 )
 
 type Push struct {
@@ -26,9 +27,7 @@ func (p *Push) Match(args []string) bool {
 func (p *Push) Run(args []string) error {
 	options, err := p.options(args)
 	if err != nil {
-		if err := p.Help.Show(); err != nil {
-			p.UI.Error(err)
-		}
+		p.Help.Short()
 		return err
 	}
 
@@ -68,6 +67,7 @@ func (p *Push) pushEnv(name string) error {
 
 func (*Push) options(args []string) (*pushOptions, error) {
 	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
 	options := &pushOptions{name: args[1]}
 	set.BoolVar(&options.keepState, "k", false, "")
 	set.BoolVar(&options.pushEnv, "e", false, "")
