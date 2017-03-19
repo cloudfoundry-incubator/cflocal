@@ -6,7 +6,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
 	"github.com/sclevine/cflocal/mocks"
 	. "github.com/sclevine/cflocal/plugin"
@@ -37,7 +36,7 @@ var _ = Describe("Help", func() {
 	Describe("#Short", func() {
 		It("should output the short usage message", func() {
 			help.Short()
-			Expect(mockUI.Out).To(gbytes.Say("Usage:" + ShortUsage + "\n"))
+			Expect(string(mockUI.Out.Contents())).To(Equal("Usage:" + ShortUsage + "\n\n"))
 		})
 	})
 

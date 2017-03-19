@@ -46,14 +46,6 @@ var _ = Describe("CF", func() {
 				mockHelp.EXPECT().Long()
 				Expect(cf.Run([]string{"help"})).To(Succeed())
 			})
-
-			Context("when printing the usage text fails", func() {
-				It("should print an error", func() {
-					mockHelp.EXPECT().Long().Return(errors.New("some error"))
-					err := cf.Run([]string{"help"})
-					Expect(err).To(MatchError("some error"))
-				})
-			})
 		})
 
 		Context("when the subcommand is '[--]version'", func() {
@@ -87,9 +79,10 @@ var _ = Describe("CF", func() {
 		})
 
 		Context("when the subcommand doesn't match a command", func() {
-			It("should return an error", func() {
+			It("should show the short usage and return an error", func() {
 				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
 				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(false)
+				mockHelp.EXPECT().Short()
 
 				err := cf.Run([]string{"some-cmd"})
 				Expect(err).To(MatchError("invalid command"))

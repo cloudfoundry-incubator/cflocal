@@ -17,6 +17,7 @@ type UI interface {
 
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf Help
 type Help interface {
+	Short()
 	Long()
 }
 
@@ -40,5 +41,6 @@ func (c *CF) Run(args []string) error {
 			return cmd.Run(args)
 		}
 	}
+	c.Help.Short()
 	return errors.New("invalid command")
 }

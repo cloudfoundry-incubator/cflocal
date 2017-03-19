@@ -15,6 +15,23 @@ import (
 
 const firstForwardedServicePort uint = 40000
 
+func (a *App) Services(name string) (service.Services, error) {
+	appEnvJSON, _, err := a.get(name, "/env")
+	if err != nil {
+		return nil, err
+	}
+	defer appEnvJSON.Close()
+	var env struct {
+		SystemEnvJSON struct {
+			VCAPServices service.Services `json:"VCAP_SERVICES"`
+		} `json:"system_env_json"`
+	}
+	if err := json.NewDecoder(appEnvJSON).Decode(&env); err != nil {
+		return nil, err
+	}
+	return env.SystemEnvJSON.VCAPServices, nil
+}
+
 func (a *App) Forward(name string, svcs service.Services) (service.Services, *service.ForwardConfig, error) {
 	var err error
 	config := &service.ForwardConfig{}
@@ -22,11 +39,15 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 	if config.Host, config.Port, err = a.sshEndpoint(); err != nil {
 		return nil, nil, err
 	}
-	appGUID, err := a.getGUID(name)
+
+	if err := a.checkAuth(); err != nil {
+		return nil, nil, err
+	}
+	appModel, err := a.CLI.GetApp(name)
 	if err != nil {
 		return nil, nil, err
 	}
-	config.User = fmt.Sprintf("cf:%s/0", appGUID)
+	config.User = fmt.Sprintf("cf:%s/0", appModel.Guid)
 
 	sshCodeLines, err := a.CLI.CliCommandWithoutTerminalOutput("ssh-code")
 	if err != nil {

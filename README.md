@@ -101,8 +101,8 @@ SAMPLE: local.yml
 
 INSTALL:
 ```
-$ ./cflocal
-Plugin successfully installed. Current version: 0.1.1
+$ ./cflocal-v0.2.0-macos
+Plugin successfully installed. Current version: 0.2.0
 ```
 
 NOTES:

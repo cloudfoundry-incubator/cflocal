@@ -35,3 +35,11 @@ func (_m *MockHelp) Long() {
 func (_mr *_MockHelpRecorder) Long() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Long")
 }
+
+func (_m *MockHelp) Short() {
+	_m.ctrl.Call(_m, "Short")
+}
+
+func (_mr *_MockHelpRecorder) Short() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Short")
+}
