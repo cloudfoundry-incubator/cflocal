@@ -1,2 +1,7 @@
 /cflocal
+/cflocal-*
+.DS_Store
 .idea
+*.coverprofile
+*.test
+*~
