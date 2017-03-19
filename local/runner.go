@@ -47,9 +47,10 @@ const runnerScript = `
 `
 
 type Runner struct {
-	Docker   *docker.Client
-	Logs     io.Writer
-	ExitChan <-chan struct{}
+	StackVersion string
+	Docker       *docker.Client
+	Logs         io.Writer
+	ExitChan     <-chan struct{}
 }
 
 type Stream struct {
@@ -73,8 +74,12 @@ type RunConfig struct {
 }
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
+	if err := r.pull(); err != nil {
+		return 0, err
+	}
+
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, config.Forwarder.Config, config.AppDir != "" && !config.AppDirEmpty)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.Forwarder.Config, config.AppDir != "" && !config.AppDirEmpty)
 	if err != nil {
 		return 0, err
 	}
@@ -139,8 +144,12 @@ type ExportConfig struct {
 }
 
 func (r *Runner) Export(config *ExportConfig, reference string) (imageID string, err error) {
+	if err := r.pull(); err != nil {
+		return "", err
+	}
+
 	name := config.AppConfig.Name
-	containerConfig, err := buildContainerConfig(config.AppConfig, nil, false)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
 	if err != nil {
 		return "", err
 	}
@@ -178,19 +187,30 @@ func (r *Runner) Export(config *ExportConfig, reference string) (imageID string,
 	return response.ID, nil
 }
 
-func buildHostConfig(port uint, appDir string) *container.HostConfig {
-	config := &container.HostConfig{
-		PortBindings: nat.PortMap{
-			"8080/tcp": {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
-		},
+func (r *Runner) pull() error {
+	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:" + r.StackVersion, types.ImagePullOptions{})
+	if err != nil {
+		return err
 	}
-	if appDir != "" {
-		config.Binds = []string{appDir + ":/home/vcap/app"}
+	defer body.Close()
+	decoder := json.NewDecoder(body)
+	for {
+		var stream struct{ Error string }
+		if err := decoder.Decode(&stream); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		if stream.Error != "" {
+			return fmt.Errorf("pull failure: %s", stream.Error)
+		}
 	}
-	return config
+	return nil
 }
 
-func buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
+func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -260,7 +280,7 @@ func buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfi
 		User:         "vcap",
 		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": {}},
 		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
-		Image:        "cloudfoundry/cflinuxfs2",
+		Image:        "cloudfoundry/cflinuxfs2:" + r.StackVersion,
 		WorkingDir:   "/home/vcap/app",
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", scriptBuffer.String(), config.Command,
@@ -280,6 +300,18 @@ func (r *Runner) copy(id string, stream Stream, path string) error {
 		return err
 	}
 	return nil
+}
+
+func buildHostConfig(port uint, appDir string) *container.HostConfig {
+	config := &container.HostConfig{
+		PortBindings: nat.PortMap{
+			"8080/tcp": {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
+		},
+	}
+	if appDir != "" {
+		config.Binds = []string{appDir + ":/home/vcap/app"}
+	}
+	return config
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

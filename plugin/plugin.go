@@ -58,12 +58,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
 		StackVersion: "latest",
-		UpdateRootFS: true,
 		Docker:       client,
 		Logs:         os.Stdout,
 		ExitChan:     p.ExitChan,
 	}
 	runner := &local.Runner{
+		StackVersion: "latest",
 		Docker:   client,
 		Logs:     os.Stdout,
 		ExitChan: p.ExitChan,

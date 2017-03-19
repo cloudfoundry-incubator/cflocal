@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -13,9 +14,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
-
-	"path/filepath"
-
 	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
@@ -24,7 +22,6 @@ type Stager struct {
 	DiegoVersion string
 	GoVersion    string
 	StackVersion string
-	UpdateRootFS bool
 	Docker       *docker.Client
 	Logs         io.Writer
 	ExitChan     <-chan struct{}
@@ -217,7 +214,7 @@ func (s *Stager) buildDockerfile() error {
 	response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
 		Tags:           []string{"cflocal"},
 		SuppressOutput: true,
-		PullParent:     s.UpdateRootFS,
+		PullParent:     true,
 		Remove:         true,
 		ForceRemove:    true,
 	})

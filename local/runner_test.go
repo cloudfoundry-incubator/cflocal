@@ -37,9 +37,10 @@ var _ = Describe("Runner", func() {
 		logs = gbytes.NewBuffer()
 		exitChan = make(chan struct{})
 		runner = &Runner{
-			Docker:   client,
-			Logs:     io.MultiWriter(logs, GinkgoWriter),
-			ExitChan: exitChan,
+			StackVersion: "1.86.0",
+			Docker:       client,
+			Logs:         io.MultiWriter(logs, GinkgoWriter),
+			ExitChan:     exitChan,
 		}
 	})
 
@@ -59,7 +60,7 @@ var _ = Describe("Runner", func() {
 
 			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
+				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
 				AppConfig:  &AppConfig{Name: "some-app"},
 			}, percentColor)
 			Expect(err).NotTo(HaveOccurred())
@@ -168,7 +169,7 @@ var _ = Describe("Runner", func() {
 
 			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
+				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
 				AppConfig:  &AppConfig{Name: "some-app"},
 			}, percentColor)
 			Expect(err).NotTo(HaveOccurred())

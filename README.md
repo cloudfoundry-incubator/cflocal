@@ -84,6 +84,7 @@ ENVIRONMENT:
 
 SAMPLE: local.yml
 
+applications:
 - name: first-app
   command: "some start command"
   staging_env:

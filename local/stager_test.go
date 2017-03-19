@@ -30,7 +30,6 @@ var _ = Describe("Stager", func() {
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
 			StackVersion: "1.86.0",
-			UpdateRootFS: true,
 			Docker:       client,
 			Logs:         io.MultiWriter(logs, GinkgoWriter),
 		}
@@ -43,7 +42,7 @@ var _ = Describe("Stager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			droplet, err := stager.Stage(&StageConfig{
 				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.1"},
+				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
