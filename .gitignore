@@ -1,5 +1,6 @@
 /cflocal
 /cflocal-*
+.droplet
 .DS_Store
 .idea
 *.coverprofile
