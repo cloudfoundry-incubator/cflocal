@@ -112,3 +112,7 @@ NOTES:
     - Service forwarding tunnels are not active during staging
     - Containers are never exported with remote service credentials
     - Service credentials from remote apps are never stored in local.yml
+
+TODO:
+ - Permit specification of cflinuxfs2 version
+ - Permit offline usage

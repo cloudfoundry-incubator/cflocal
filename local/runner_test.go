@@ -249,7 +249,7 @@ func get(url string) string {
 		}
 		body = response.Body
 		return nil
-	}, "5s").Should(Succeed())
+	}, "10s").Should(Succeed())
 	defer body.Close()
 	bodyBytes, err := ioutil.ReadAll(body)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
