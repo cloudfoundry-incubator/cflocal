@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+cd $(dirname "${BASH_SOURCE[0]}")/..
+
+go get github.com/onsi/ginkgo/ginkgo
+
+ginkgo -r -skipPackage /vendor/ .
