@@ -106,7 +106,7 @@ var _ = Describe("Run", func() {
 						Services: forwardedServices,
 					},
 				}, gomock.Any()).Return(
-					0, nil,
+					int64(0), nil,
 				).Do(func(_ *local.RunConfig, c local.Colorizer) {
 					Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 				}),

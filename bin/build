@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+cd $(dirname "${BASH_SOURCE[0]}")/..
+
+mkdir -p out
+
+os_list=(darwin linux windows)
+out_list=(macos linux windows.exe)
+version=${1:-$(<VERSION)}
+
+for ((i=0; i < ${#os_list[@]}; i++)); do
+  echo "Building plugin for ${os_list[i]}..."
+  GOOS=${os_list[i]} go build -ldflags "-X main.Version=$version" -o "out/cflocal-$version-${out_list[i]}" .
+done

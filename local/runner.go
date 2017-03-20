@@ -73,7 +73,7 @@ type RunConfig struct {
 	AppConfig   *AppConfig
 }
 
-func (r *Runner) Run(config *RunConfig, color Colorizer) (status int, err error) {
+func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err error) {
 	if err := r.pull(); err != nil {
 		return 0, err
 	}
@@ -188,7 +188,7 @@ func (r *Runner) Export(config *ExportConfig, reference string) (imageID string,
 }
 
 func (r *Runner) pull() error {
-	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:" + r.StackVersion, types.ImagePullOptions{})
+	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	return &container.Config{
 		Hostname:     "cflocal",
 		User:         "vcap",
-		ExposedPorts: map[nat.Port]struct{}{"8080/tcp": {}},
+		ExposedPorts: nat.PortSet(map[nat.Port]struct{}{"8080/tcp": {}}),
 		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
 		Image:        "cloudfoundry/cflinuxfs2:" + r.StackVersion,
 		WorkingDir:   "/home/vcap/app",

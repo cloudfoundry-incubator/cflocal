@@ -35,7 +35,7 @@ type Stager interface {
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
 type Runner interface {
-	Run(config *local.RunConfig, color local.Colorizer) (status int, err error)
+	Run(config *local.RunConfig, color local.Colorizer) (status int64, err error)
 	Export(config *local.ExportConfig, reference string) (imageID string, err error)
 }
 

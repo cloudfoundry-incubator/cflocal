@@ -128,7 +128,7 @@ var _ = Describe("Runner", func() {
 			}
 			status, err := runner.Run(config, percentColor)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(status).To(Equal(137))
+			Expect(status).To(Equal(int64(137)))
 
 			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Forwarding: some-name some-other-name`))
 			Expect(logs.Contents()).To(MatchRegexp(

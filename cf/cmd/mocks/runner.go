@@ -40,9 +40,9 @@ func (_mr *_MockRunnerRecorder) Export(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Export", arg0, arg1)
 }
 
-func (_m *MockRunner) Run(_param0 *local.RunConfig, _param1 local.Colorizer) (int, error) {
+func (_m *MockRunner) Run(_param0 *local.RunConfig, _param1 local.Colorizer) (int64, error) {
 	ret := _m.ctrl.Call(_m, "Run", _param0, _param1)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
