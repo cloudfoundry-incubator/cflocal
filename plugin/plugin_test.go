@@ -59,7 +59,7 @@ var _ = Describe("Plugin", func() {
 		It("should return metadata about the plugin", func() {
 			metadata := plugin.GetMetadata()
 			Expect(metadata.Name).To(Equal("cflocal"))
-			Expect(metadata.Version).To(Equal(cfplugin.VersionType{100, 200, 300}))
+			Expect(metadata.Version).To(Equal(cfplugin.VersionType{Major: 100, Minor: 200, Build: 300}))
 			Expect(metadata.Commands).To(HaveLen(1))
 			Expect(metadata.Commands[0].Name).To(Equal("local"))
 			Expect(metadata.Commands[0].HelpText).NotTo(BeEmpty())

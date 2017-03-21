@@ -164,7 +164,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, er
 	if err != nil {
 		return Stream{}, err
 	}
-	return Stream{splitReadCloser{dropletReader, dropletTar}, dropletStat.Size}, nil
+	return NewStream(splitReadCloser{dropletReader, dropletTar}, dropletStat.Size), nil
 }
 
 func (s *Stager) Download(path string) (stream Stream, err error) {
@@ -198,7 +198,7 @@ func (s *Stager) Download(path string) (stream Stream, err error) {
 		return Stream{}, err
 	}
 
-	return Stream{splitReadCloser{reader, tar}, stat.Size}, nil
+	return NewStream(splitReadCloser{reader, tar}, stat.Size), nil
 }
 
 func (s *Stager) buildDockerfile() error {
@@ -222,19 +222,6 @@ func (s *Stager) buildDockerfile() error {
 		return err
 	}
 	defer response.Body.Close()
-	decoder := json.NewDecoder(response.Body)
-	for {
-		var stream struct{ Error string }
-		if err := decoder.Decode(&stream); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
+	return checkBody(response.Body)
 
-		if stream.Error != "" {
-			return fmt.Errorf("build failure: %s", stream.Error)
-		}
-	}
-	return nil
 }

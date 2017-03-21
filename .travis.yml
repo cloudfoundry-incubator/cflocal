@@ -1,0 +1,14 @@
+sudo: required
+language: go
+services:
+  - docker
+go:
+  - 1.8
+  - master
+install:
+  - cd vendor/code.cloudfoundry.org/cli
+  - ./bin/build
+  - mv out/cf /usr/local/bin/
+script:
+  - [[ -z $(./bin/format | tee >(cat >&2)) ]]
+  - ./bin/test -nodes=2 -compilers=2

@@ -2,11 +2,10 @@ package local_test
 
 import (
 	"fmt"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 func TestLocal(t *testing.T) {

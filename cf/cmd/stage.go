@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 
 	"github.com/fatih/color"
@@ -82,7 +81,7 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 	defer file.Close()
-	if _, err := io.CopyN(file, droplet, droplet.Size); err != nil && err != io.EOF {
+	if err := droplet.Write(file); err != nil {
 		return err
 	}
 	s.UI.Output("Successfully staged: %s", options.name)

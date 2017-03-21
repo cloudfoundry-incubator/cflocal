@@ -9,5 +9,5 @@ import (
 
 func TestCFLocal(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "CFLocal Suite")
+	RunSpecs(t, "CF Local Suite")
 }

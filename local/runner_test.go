@@ -71,7 +71,7 @@ var _ = Describe("Runner", func() {
 			defer launcher.Close()
 
 			sshpassBuf := bytes.NewBufferString("echo sshpass $@")
-			sshpass := Stream{ReadCloser: ioutil.NopCloser(sshpassBuf), Size: int64(sshpassBuf.Len())}
+			sshpass := NewStream(ioutil.NopCloser(sshpassBuf), int64(sshpassBuf.Len()))
 
 			port := freePort()
 

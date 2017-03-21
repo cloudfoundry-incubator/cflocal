@@ -32,8 +32,8 @@ func (s *Server) Handle(auth bool, status int, response string) (*Request, Calls
 	var accessToken string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*request = Request{
-			Method: r.Method,
-			Path: r.URL.Path,
+			Method:        r.Method,
+			Path:          r.URL.Path,
 			Authenticated: auth && r.Header.Get("Authorization") == accessToken,
 		}
 		if r.Method == "PUT" || r.Method == "POST" {

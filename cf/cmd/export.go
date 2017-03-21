@@ -49,7 +49,7 @@ func (e *Export) Run(args []string) error {
 	defer launcher.Close()
 
 	id, err := e.Runner.Export(&local.ExportConfig{
-		Droplet:   local.Stream{droplet, dropletSize},
+		Droplet:   local.NewStream(droplet, dropletSize),
 		Launcher:  launcher,
 		AppConfig: getAppConfig(options.name, localYML),
 	}, options.reference)

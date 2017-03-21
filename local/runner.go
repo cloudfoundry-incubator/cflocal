@@ -53,11 +53,6 @@ type Runner struct {
 	ExitChan     <-chan struct{}
 }
 
-type Stream struct {
-	io.ReadCloser
-	Size int64
-}
-
 type Forwarder struct {
 	SSHPass Stream
 	Config  *service.ForwardConfig
@@ -193,21 +188,7 @@ func (r *Runner) pull() error {
 		return err
 	}
 	defer body.Close()
-	decoder := json.NewDecoder(body)
-	for {
-		var stream struct{ Error string }
-		if err := decoder.Decode(&stream); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-
-		if stream.Error != "" {
-			return fmt.Errorf("pull failure: %s", stream.Error)
-		}
-	}
-	return nil
+	return checkBody(body)
 }
 
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {

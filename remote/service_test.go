@@ -76,7 +76,7 @@ var _ = Describe("App - Service", func() {
 
 	Describe("#Forward", func() {
 		It("should translate the provided services to forwarded services", func() {
-			req, _ := server.Handle(false, http.StatusOK,`{"app_ssh_endpoint": "some-ssh-host:1000"}`)
+			req, _ := server.Handle(false, http.StatusOK, `{"app_ssh_endpoint": "some-ssh-host:1000"}`)
 			testutil.Calls{
 				mockCLI.EXPECT().GetApp("some-name").Return(plugin_models.GetAppModel{Guid: "some-guid"}, nil),
 				mockCLI.EXPECT().CliCommandWithoutTerminalOutput("ssh-code").Return([]string{"some-code", "something-else"}, nil),

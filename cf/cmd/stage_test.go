@@ -91,7 +91,7 @@ var _ = Describe("Stage", func() {
 						Services: forwardedServices,
 					},
 				}, gomock.Any()).Return(
-					local.Stream{droplet, 100}, nil,
+					local.NewStream(droplet, 100), nil,
 				).Do(func(_ *local.StageConfig, c local.Colorizer) {
 					Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 				}),

@@ -64,9 +64,9 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 	runner := &local.Runner{
 		StackVersion: "latest",
-		Docker:   client,
-		Logs:     os.Stdout,
-		ExitChan: p.ExitChan,
+		Docker:       client,
+		Logs:         os.Stdout,
+		ExitChan:     p.ExitChan,
 	}
 	app := &remote.App{
 		CLI: cliConnection,

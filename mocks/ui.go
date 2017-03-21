@@ -25,7 +25,6 @@ func (m *MockUI) Prompt(prompt string) string {
 	return m.Reply[prompt]
 }
 
-
 func (m *MockUI) Output(message string, args ...interface{}) {
 	fmt.Fprintf(m.Out, message+"\n", args...)
 }

@@ -88,7 +88,7 @@ func (r *Run) Run(args []string) error {
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:     local.Stream{droplet, dropletSize},
+		Droplet:     local.NewStream(droplet, dropletSize),
 		Launcher:    launcher,
 		Forwarder:   forwarder,
 		Port:        options.port,
