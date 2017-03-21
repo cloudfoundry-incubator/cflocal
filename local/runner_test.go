@@ -34,6 +34,7 @@ var _ = Describe("Runner", func() {
 		var err error
 		client, err = docker.NewEnvClient()
 		Expect(err).NotTo(HaveOccurred())
+		client.UpdateClientVersion("")
 		logs = gbytes.NewBuffer()
 		exitChan = make(chan struct{})
 		runner = &Runner{

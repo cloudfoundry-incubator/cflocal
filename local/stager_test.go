@@ -25,6 +25,7 @@ var _ = Describe("Stager", func() {
 	BeforeEach(func() {
 		client, err := docker.NewEnvClient()
 		Expect(err).NotTo(HaveOccurred())
+		client.UpdateClientVersion("")
 		logs = gbytes.NewBuffer()
 		stager = &Stager{
 			DiegoVersion: "0.1482.0",
