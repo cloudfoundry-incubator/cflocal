@@ -1,5 +1,7 @@
 # CF Local - cf CLI Plugin
 
+[![Build Status](https://travis-ci.org/sclevine/cflocal.svg?branch=master)](https://travis-ci.org/sclevine/cflocal)
+
 ```
 NAME:
    local - Stage, launch, push, pull, and export CF apps -- in Docker

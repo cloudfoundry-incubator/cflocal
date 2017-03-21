@@ -5,9 +5,9 @@ services:
 go:
   - 1.8.x
 install:
-  - cd vendor/code.cloudfoundry.org/cli
-  - ./bin/build
-  - mv out/cf "$GOPATH/bin"
+  - set -e
+  - ( cd vendor/code.cloudfoundry.org/cli && bin/build )
+  - mv vendor/code.cloudfoundry.org/cli/out/cf "$GOPATH/bin"
 script:
-  - [[ -z $(./bin/format | tee >(cat >&2)) ]]
-  - ./bin/test -nodes=2 -compilers=2
+  - [[ -z $(bin/format | tee >(cat >&2)) ]]
+  - bin/test -nodes=2 -compilers=2
