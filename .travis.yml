@@ -7,7 +7,7 @@ go:
 install:
   - cd vendor/code.cloudfoundry.org/cli
   - ./bin/build
-  - mv out/cf /usr/local/bin/
+  - mv out/cf "$GOPATH/bin"
 script:
   - [[ -z $(./bin/format | tee >(cat >&2)) ]]
   - ./bin/test -nodes=2 -compilers=2
