@@ -3,8 +3,7 @@ language: go
 services:
   - docker
 go:
-  - 1.8
-  - master
+  - 1.8.x
 install:
   - cd vendor/code.cloudfoundry.org/cli
   - ./bin/build
