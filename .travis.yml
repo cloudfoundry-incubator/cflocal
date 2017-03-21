@@ -4,8 +4,6 @@ services:
 - docker
 go:
 - 1.8.x
-env:
-- DOCKER_API_VERSION=1.24
 install:
 - set -e
 - curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar -C "$GOPATH/bin" -xz cf

@@ -54,6 +54,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		p.RunErr = err
 		return
 	}
+	client.UpdateClientVersion("")
 	stager := &local.Stager{
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
