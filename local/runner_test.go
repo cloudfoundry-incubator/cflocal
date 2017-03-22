@@ -122,7 +122,6 @@ var _ = Describe("Runner", func() {
 				},
 			}
 
-
 			go func() {
 				defer GinkgoRecover()
 				defer close(exitChan)
