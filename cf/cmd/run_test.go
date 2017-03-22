@@ -97,6 +97,7 @@ var _ = Describe("Run", func() {
 						SSHPass: local.NewStream(sshpass, 300),
 						Config:  forwardConfig,
 					},
+					IP:          "0.0.0.0",
 					Port:        3000,
 					AppDir:      "some-abs-dir",
 					AppDirEmpty: true,
@@ -114,7 +115,7 @@ var _ = Describe("Run", func() {
 				launcher.EXPECT().Close(),
 				droplet.EXPECT().Close(),
 			)
-			Expect(cmd.Run([]string{"run", "some-app", "-p", "3000", "-d", "some-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"run", "some-app", "-i", "0.0.0.0", "-p", "3000", "-d", "some-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 

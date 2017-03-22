@@ -65,9 +65,12 @@ func (e *Export) Run(args []string) error {
 }
 
 func (*Export) options(args []string) (*exportOptions, error) {
+	if len(args) < 2 {
+		return nil, errors.New("app name required")
+	}
+	options := &exportOptions{name: args[1]}
 	set := &flag.FlagSet{}
 	set.SetOutput(ioutil.Discard)
-	options := &exportOptions{name: args[1]}
 	set.StringVar(&options.reference, "r", "", "")
 	if err := set.Parse(args[2:]); err != nil {
 		return nil, err

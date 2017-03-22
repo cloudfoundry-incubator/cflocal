@@ -62,6 +62,7 @@ type RunConfig struct {
 	Droplet     Stream
 	Launcher    Stream
 	Forwarder   Forwarder
+	IP          string
 	Port        uint
 	AppDir      string
 	AppDirEmpty bool
@@ -78,7 +79,7 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := buildHostConfig(config.Port, config.AppDir)
+	hostConfig := buildHostConfig(config.IP, config.Port, config.AppDir)
 	cont := utils.Container{
 		Name:       name,
 		Config:     containerConfig,
@@ -134,7 +135,6 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 type ExportConfig struct {
 	Droplet   Stream
 	Launcher  Stream
-	Port      uint
 	AppConfig *AppConfig
 }
 
@@ -148,13 +148,11 @@ func (r *Runner) Export(config *ExportConfig, reference string) (imageID string,
 	if err != nil {
 		return "", err
 	}
-	hostConfig := buildHostConfig(config.Port, "")
 	cont := utils.Container{
-		Name:       name,
-		Config:     containerConfig,
-		HostConfig: hostConfig,
-		Docker:     r.Docker,
-		Err:        &err,
+		Name:   name,
+		Config: containerConfig,
+		Docker: r.Docker,
+		Err:    &err,
 	}
 	cont.Create()
 	id := cont.ID()
@@ -283,10 +281,10 @@ func (r *Runner) copy(id string, stream Stream, path string) error {
 	return nil
 }
 
-func buildHostConfig(port uint, appDir string) *container.HostConfig {
+func buildHostConfig(ip string, port uint, appDir string) *container.HostConfig {
 	config := &container.HostConfig{
 		PortBindings: nat.PortMap{
-			"8080/tcp": {{HostIP: "127.0.0.1", HostPort: strconv.FormatUint(uint64(port), 10)}},
+			"8080/tcp": {{HostIP: ip, HostPort: strconv.FormatUint(uint64(port), 10)}},
 		},
 	}
 	if appDir != "" {

@@ -76,12 +76,6 @@ var _ = Describe("Runner", func() {
 
 			port := freePort()
 
-			go func() {
-				defer GinkgoRecover()
-				defer close(exitChan)
-				Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
-			}()
-
 			config := &RunConfig{
 				Droplet:  droplet,
 				Launcher: launcher,
@@ -127,20 +121,28 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}
+
+
+			go func() {
+				defer GinkgoRecover()
+				defer close(exitChan)
+				Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
+
+				Eventually(logs.Contents).Should(MatchRegexp(`\[some-app\] % \S+ Forwarding: some-name some-other-name`))
+				Eventually(logs.Contents).Should(MatchRegexp(
+					`\[some-app\] % \S+ sshpass -p some-code ssh -f -N -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no` +
+						` -o LogLevel=ERROR -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -o ServerAliveCountMax=60` +
+						` -p some-port some-user@some-ssh-host -L some-from:some-to -L some-other-from:some-other-to`,
+				))
+				Eventually(logs.Contents, "2s").Should(MatchRegexp(`\[some-app\] % \S+ Log message from stdout.`))
+				Eventually(logs.Contents, "2s").Should(MatchRegexp(`\[some-app\] % \S+ Log message from stderr.`))
+			}()
+
 			status, err := runner.Run(config, percentColor)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status).To(Equal(int64(137)))
 
-			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Forwarding: some-name some-other-name`))
-			Expect(logs.Contents()).To(MatchRegexp(
-				`\[some-app\] % \S+ sshpass -p some-code ssh -f -N -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no` +
-					` -o LogLevel=ERROR -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -o ServerAliveCountMax=60` +
-					` -p some-port some-user@some-ssh-host -L some-from:some-to -L some-other-from:some-other-to`,
-			))
-			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stdout.`))
-			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Log message from stderr.`))
-
-			Eventually(exitChan, "5s").Should(BeClosed())
+			<-exitChan
 
 			// TODO: test that droplet and launcher are closed
 			// TODO: test that no containers exist

@@ -89,9 +89,12 @@ func (s *Stage) Run(args []string) error {
 }
 
 func (*Stage) options(args []string) (*stageOptions, error) {
+	if len(args) < 2 {
+		return nil, errors.New("app name required")
+	}
+	options := &stageOptions{name: args[1]}
 	set := &flag.FlagSet{}
 	set.SetOutput(ioutil.Discard)
-	options := &stageOptions{name: args[1]}
 	set.StringVar(&options.buildpack, "b", "", "")
 	set.StringVar(&options.serviceApp, "s", "", "")
 	set.StringVar(&options.forwardApp, "f", "", "")

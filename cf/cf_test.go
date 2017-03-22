@@ -41,14 +41,14 @@ var _ = Describe("CF", func() {
 	})
 
 	Describe("#Run", func() {
-		Context("when the subcommand is 'help'", func() {
+		Context("when the command is 'help'", func() {
 			It("should show the long usage text", func() {
 				mockHelp.EXPECT().Long()
 				Expect(cf.Run([]string{"help"})).To(Succeed())
 			})
 		})
 
-		Context("when the subcommand is '[--]version'", func() {
+		Context("when the command is '[--]version'", func() {
 			It("should output the version", func() {
 				Expect(cf.Run([]string{"version"})).To(Succeed())
 				Expect(mockUI.Out).To(gbytes.Say("CF Local version some-version"))
@@ -57,7 +57,7 @@ var _ = Describe("CF", func() {
 			})
 		})
 
-		Context("when the subcommand matches a command", func() {
+		Context("when the command matches a command", func() {
 			It("should run only that command", func() {
 				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
 				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(true)
@@ -78,7 +78,15 @@ var _ = Describe("CF", func() {
 			})
 		})
 
-		Context("when the subcommand doesn't match a command", func() {
+		Context("when no command is specified", func() {
+			It("should show the short usage and return an error", func() {
+				mockHelp.EXPECT().Short()
+				err := cf.Run([]string{})
+				Expect(err).To(MatchError("command required"))
+			})
+		})
+
+		Context("when the command is not known", func() {
 			It("should show the short usage and return an error", func() {
 				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
 				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(false)

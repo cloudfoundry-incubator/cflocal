@@ -27,6 +27,7 @@ type Run struct {
 type runOptions struct {
 	name, appDir           string
 	serviceApp, forwardApp string
+	ip                     string
 	port                   uint
 }
 
@@ -91,6 +92,7 @@ func (r *Run) Run(args []string) error {
 		Droplet:     local.NewStream(droplet, dropletSize),
 		Launcher:    launcher,
 		Forwarder:   forwarder,
+		IP:          options.ip,
 		Port:        options.port,
 		AppDir:      absAppDir,
 		AppDirEmpty: appDirEmpty,
@@ -100,16 +102,18 @@ func (r *Run) Run(args []string) error {
 }
 
 func (*Run) options(args []string) (*runOptions, error) {
-	set := &flag.FlagSet{}
-	set.SetOutput(ioutil.Discard)
-
+	if len(args) < 2 {
+		return nil, errors.New("app name required")
+	}
+	options := &runOptions{name: args[1]}
 	defaultPort, err := freePort()
 	if err != nil {
 		return nil, err
 	}
-
-	options := &runOptions{name: args[1]}
+	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
 	set.UintVar(&options.port, "p", defaultPort, "")
+	set.StringVar(&options.ip, "i", "127.0.0.1", "")
 	set.StringVar(&options.appDir, "d", "", "")
 	set.StringVar(&options.serviceApp, "s", "", "")
 	set.StringVar(&options.forwardApp, "f", "", "")

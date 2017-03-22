@@ -7,11 +7,11 @@ NAME:
    local - Stage, launch, push, pull, and export CF apps -- in Docker
 
 USAGE:
-   cf local stage  <name> [(-b <URL>)] [-s <app> | -f <app>]
-   cf local run    <name> [(-p <port>) (-d <dir>) (-s <app>) (-f <app>)]
-   cf local export <name> [(-r <ref>)]
-   cf local pull   <name>
-   cf local push   <name> [-e] [-k]
+   cf local stage   <name> [ (-b <URL>) (-s <app> | -f <app>) ]
+   cf local run     <name> [ (-p <port>) (-d <dir>) (-s <app>) (-f <app>) ]
+   cf local export  <name> [ (-r <ref>) ]
+   cf local pull    <name>
+   cf local push    <name> [-e -k]
    cf local help
    cf local version
 
@@ -35,7 +35,9 @@ RUN OPTIONS:
    run <name>     Run a droplet with the configuration specified in local.yml.
                      Droplet filename: <name>.droplet
 
-   -p <port>      Listen on the specified port (localhost only)
+   -i <ip>        Listen on the specified interface IP
+                     Default: localhost
+   -p <port>      Listen on the specified port
                      Default: (arbitrary free port)
    -d <dir>       Mount the specified directory into the app at the app root.
                      If empty, the app root is copied into the directory.
@@ -57,7 +59,7 @@ EXPORT OPTIONS:
                      Droplet filename: <name>.droplet
 
    -r <ref>       Tag the exported image with the provided reference.
-                      Default: none
+                     Default: none
 
 PULL OPTIONS:
    pull <name>    Download the droplet, environment variables, environment
@@ -118,3 +120,4 @@ NOTES:
 TODO:
  - Permit specification of cflinuxfs2 version
  - Permit offline usage
+ - Warnings about mismatched Docker client / server versions

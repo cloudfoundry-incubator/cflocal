@@ -28,6 +28,10 @@ type Cmd interface {
 }
 
 func (c *CF) Run(args []string) error {
+	if len(args) == 0 {
+		c.Help.Short()
+		return errors.New("command required")
+	}
 	switch args[0] {
 	case "help":
 		c.Help.Long()

@@ -66,9 +66,12 @@ func (p *Push) pushEnv(name string) error {
 }
 
 func (*Push) options(args []string) (*pushOptions, error) {
+	if len(args) < 2 {
+		return nil, errors.New("app name required")
+	}
+	options := &pushOptions{name: args[1]}
 	set := &flag.FlagSet{}
 	set.SetOutput(ioutil.Discard)
-	options := &pushOptions{name: args[1]}
 	set.BoolVar(&options.keepState, "k", false, "")
 	set.BoolVar(&options.pushEnv, "e", false, "")
 	if err := set.Parse(args[2:]); err != nil {

@@ -21,6 +21,9 @@ func (p *Pull) Match(args []string) bool {
 func (p *Pull) Run(args []string) error {
 	if len(args) != 2 {
 		p.Help.Short()
+		if len(args) < 2 {
+			return errors.New("app name required")
+		}
 		return errors.New("invalid arguments")
 	}
 	name := args[1]
