@@ -23,6 +23,7 @@ func (s Stream) Write(dst io.Writer) error {
 }
 
 func checkBody(body io.Reader) error {
+	// TODO: add a timer or loading bar: "updating base image"
 	decoder := json.NewDecoder(body)
 	for {
 		var stream struct{ Error string }

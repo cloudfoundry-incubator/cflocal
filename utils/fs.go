@@ -11,7 +11,11 @@ import (
 type FS struct{}
 
 func (f *FS) Tar(path string) (io.ReadCloser, error) {
-	return archive.TarWithOptions(path, &archive.TarOptions{
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	return archive.TarWithOptions(absPath, &archive.TarOptions{
 		ExcludePatterns: []string{filepath.Join(path, "*.droplet")},
 	})
 }
