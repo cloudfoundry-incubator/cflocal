@@ -14,8 +14,9 @@ import (
 )
 
 type App struct {
-	CLI cfplugin.CliConnection
-	UI  UI
+	CLI  cfplugin.CliConnection
+	UI   UI
+	HTTP *http.Client
 }
 
 type UI interface {
@@ -128,7 +129,7 @@ func (a *App) doRequest(method, endpoint string, body io.Reader, contentType str
 		request.ContentLength = contentLength
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := a.HTTP.Do(request)
 	if err != nil {
 		return nil, err
 	}

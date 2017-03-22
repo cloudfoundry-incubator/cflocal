@@ -96,7 +96,4 @@ applications:
     SOME_VAR: "some value"
   services:
     (( contents of VCAP_SERVICES ))
-
-- name: second-app
-  ...
 `

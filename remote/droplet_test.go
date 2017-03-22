@@ -28,7 +28,7 @@ var _ = Describe("App - Droplet", func() {
 		mockCLI = mocks.NewMockCliConnection(mockCtrl)
 		mockUI = mocks.NewMockUI()
 		server = testutil.Serve(mockCLI)
-		app = &App{CLI: mockCLI, UI: mockUI}
+		app = &App{CLI: mockCLI, UI: mockUI, HTTP: &http.Client{}}
 	})
 
 	AfterEach(func() {

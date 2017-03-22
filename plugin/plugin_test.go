@@ -1,16 +1,17 @@
 package plugin_test
 
 import (
+	"errors"
 	"os"
-
-	"github.com/sclevine/cflocal/mocks"
-	. "github.com/sclevine/cflocal/plugin"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	"github.com/sclevine/cflocal/mocks"
+	. "github.com/sclevine/cflocal/plugin"
 )
 
 var _ = Describe("Plugin", func() {
@@ -51,6 +52,14 @@ var _ = Describe("Plugin", func() {
 				os.Setenv("DOCKER_HOST", "#$%")
 				plugin.Run(mockCLI, []string{"some-command"})
 				Expect(plugin.RunErr).To(MatchError("unable to parse docker host `#$%`"))
+			})
+		})
+
+		Context("when the status of skipping SSL certificate verification cannot be determined", func() {
+			It("should set an error and return", func() {
+				mockCLI.EXPECT().IsSSLDisabled().Return(false, errors.New("some error"))
+				plugin.Run(mockCLI, []string{"some-command"})
+				Expect(plugin.RunErr).To(MatchError("some error"))
 			})
 		})
 	})

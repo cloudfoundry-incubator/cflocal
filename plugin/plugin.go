@@ -1,19 +1,22 @@
 package plugin
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
 	docker "github.com/docker/docker/client"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
-
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/local"
@@ -55,6 +58,30 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 	client.UpdateClientVersion("")
+
+	ccSkipSSLVerify, err := cliConnection.IsSSLDisabled()
+	if err != nil {
+		p.RunErr = err
+		return
+	}
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ccSkipSSLVerify,
+			},
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+
 	stager := &local.Stager{
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
@@ -70,8 +97,9 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		ExitChan:     p.ExitChan,
 	}
 	app := &remote.App{
-		CLI: cliConnection,
-		UI:  p.UI,
+		CLI:  cliConnection,
+		UI:   p.UI,
+		HTTP: httpClient,
 	}
 	fs := &utils.FS{}
 	config := &local.Config{Path: "./local.yml"}
