@@ -75,7 +75,10 @@ func (u *UI) Loading(message string, f func() error) error {
 			ticks++
 		case err := <-doneChan:
 			if ticks > 0 {
-				fmt.Fprint(u.Out, "\r")
+				fmt.Fprintf(u.Out, "\r%s   %s\r",
+					strings.Repeat(" ", len(message)),
+					strings.Repeat("  ", spinnerWidth),
+				)
 			}
 			return err
 		}

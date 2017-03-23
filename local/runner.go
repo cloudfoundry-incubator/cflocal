@@ -182,12 +182,12 @@ func (r *Runner) Export(config *ExportConfig, reference string) (imageID string,
 }
 
 func (r *Runner) pull() error {
-	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
-	if err != nil {
-		return err
-	}
-	defer body.Close()
 	return r.UI.Loading("Pulling cflinuxfs2", func() error {
+		body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
+		if err != nil {
+			return err
+		}
+		defer body.Close()
 		return checkBody(body)
 	})
 }

@@ -202,18 +202,18 @@ func (s *Stager) buildDockerfile() error {
 	if err != nil {
 		return err
 	}
-	response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
-		Tags:           []string{"cflocal"},
-		SuppressOutput: true,
-		PullParent:     true,
-		Remove:         true,
-		ForceRemove:    true,
-	})
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
 	return s.UI.Loading("Building Diego-powered base image", func() error {
+		response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
+			Tags:           []string{"cflocal"},
+			SuppressOutput: true,
+			PullParent:     true,
+			Remove:         true,
+			ForceRemove:    true,
+		})
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
 		return checkBody(response.Body)
 	})
 }
