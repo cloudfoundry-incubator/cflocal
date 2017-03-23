@@ -37,16 +37,16 @@ func TarFile(name string, contents io.Reader, size, mode int64) (io.Reader, erro
 	return tarBuffer, nil
 }
 
-func FileFromTar(name string, archive io.Reader) (io.Reader, error) {
+func FileFromTar(name string, archive io.Reader) (file io.Reader, header *tar.Header, err error) {
 	tarball := tar.NewReader(archive)
 	for {
-		header, err := tarball.Next()
+		header, err = tarball.Next()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if header.Name == name {
 			break
 		}
 	}
-	return tarball, nil
+	return tarball, header, nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -17,6 +18,14 @@ import (
 	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
+
+const stagerScript = `
+	set -e
+
+	chown -R vcap:vcap /tmp/app
+
+	exec su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
+`
 
 type Stager struct {
 	DiegoVersion string
@@ -104,14 +113,14 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, er
 		Name: name + "-stage",
 		Config: &container.Config{
 			Hostname:   "cflocal",
-			User:       "vcap",
+			User:       "root",
 			Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
 			Image:      "cflocal",
 			WorkingDir: "/home/vcap",
 			Entrypoint: strslice.StrSlice{
-				"/tmp/lifecycle/builder",
-				"-buildpackOrder", strings.Join(config.Buildpacks, ","),
-				fmt.Sprintf("-skipDetect=%t", len(config.Buildpacks) == 1),
+				"/bin/bash", "-c", stagerScript,
+				strings.Join(config.Buildpacks, ","),
+				strconv.FormatBool(len(config.Buildpacks) == 1),
 			},
 		},
 		Docker: s.Docker,
@@ -160,7 +169,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, er
 		return Stream{}, err
 	}
 	droplet.ReadCloser = dropletTar // allows removal in error case
-	dropletReader, err := utils.FileFromTar("droplet", dropletTar)
+	dropletReader, _, err := utils.FileFromTar("droplet", dropletTar)
 	if err != nil {
 		return Stream{}, err
 	}
@@ -193,7 +202,7 @@ func (s *Stager) Download(path string) (stream Stream, err error) {
 		return Stream{}, err
 	}
 	stream.ReadCloser = tar // allows deferred removal in error case
-	reader, err := utils.FileFromTar(filename, tar)
+	reader, _, err := utils.FileFromTar(filename, tar)
 	if err != nil {
 		return Stream{}, err
 	}

@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"io"
@@ -72,16 +73,27 @@ var _ = Describe("Stager", func() {
 			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
 
 			Expect(droplet.Size).To(BeNumerically(">", 500))
-			Expect(droplet.Size).To(BeNumerically("<", 1000))
+			Expect(droplet.Size).To(BeNumerically("<", 1500))
 
 			dropletTar, err := gzip.NewReader(droplet)
 			Expect(err).NotTo(HaveOccurred())
 			dropletBuffer, err := ioutil.ReadAll(dropletTar)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fileFromTar("./app/some-file", dropletBuffer)).To(Equal("some-contents"))
-			Expect(fileFromTar("./staging_info.yml", dropletBuffer)).To(ContainSubstring("start_command"))
-			Expect(fileFromTar("./app/env", dropletBuffer)).To(Equal(stagingEnvFixture))
+			file1, header1 := fileFromTar("./app/some-file", dropletBuffer)
+			Expect(file1).To(Equal("some-contents"))
+			Expect(header1.Uid).To(Equal(2000))
+			Expect(header1.Gid).To(Equal(2000))
+
+			file2, header2 := fileFromTar("./staging_info.yml", dropletBuffer)
+			Expect(file2).To(ContainSubstring("start_command"))
+			Expect(header2.Uid).To(Equal(2000))
+			Expect(header2.Gid).To(Equal(2000))
+
+			file3, header3 := fileFromTar("./app/env", dropletBuffer)
+			Expect(file3).To(Equal(stagingEnvFixture))
+			Expect(header3.Uid).To(Equal(2000))
+			Expect(header3.Gid).To(Equal(2000))
 
 			// TODO: test that no "some-app-staging-GUID" containers exist
 
@@ -120,10 +132,10 @@ var _ = Describe("Stager", func() {
 	})
 })
 
-func fileFromTar(path string, tarball []byte) string {
-	file, err := utils.FileFromTar(path, bytes.NewReader(tarball))
+func fileFromTar(path string, tarball []byte) (string, *tar.Header) {
+	file, header, err := utils.FileFromTar(path, bytes.NewReader(tarball))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	contents, err := ioutil.ReadAll(file)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return string(contents)
+	return string(contents), header
 }

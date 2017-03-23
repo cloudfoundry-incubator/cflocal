@@ -249,8 +249,8 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}
 
 	scriptBuffer := &bytes.Buffer{}
-	err = template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options)
-	if err != nil {
+
+	if err := template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options); err != nil {
 		return nil, err
 	}
 

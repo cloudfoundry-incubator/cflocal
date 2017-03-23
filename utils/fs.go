@@ -17,7 +17,6 @@ func (f *FS) Tar(path string) (io.ReadCloser, error) {
 	}
 	return archive.TarWithOptions(absPath, &archive.TarOptions{
 		ExcludePatterns: []string{filepath.Join(path, "*.droplet")},
-		ChownOpts:       &archive.TarChownOptions{UID: 2000, GID: 2000},
 	})
 }
 
