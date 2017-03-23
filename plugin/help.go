@@ -4,12 +4,7 @@ import cfplugin "code.cloudfoundry.org/cli/plugin"
 
 type Help struct {
 	CLI cfplugin.CliConnection
-	UI  PluginUI
-}
-
-type HelpUI interface {
-	Output(format string, a ...interface{})
-	Error(err error)
+	UI  UI
 }
 
 func (h *Help) Short() {

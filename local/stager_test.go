@@ -13,6 +13,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	. "github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
@@ -20,15 +21,19 @@ import (
 var _ = Describe("Stager", func() {
 	var (
 		stager *Stager
+		mockUI *mocks.MockUI
 		logs   *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
+		mockUI = mocks.NewMockUI()
+
 		client, err := docker.NewEnvClient()
 		Expect(err).NotTo(HaveOccurred())
 		client.UpdateClientVersion("")
 		logs = gbytes.NewBuffer()
 		stager = &Stager{
+			UI:           mockUI,
 			DiegoVersion: "0.1482.0",
 			GoVersion:    "1.7",
 			StackVersion: "1.86.0",
@@ -96,10 +101,9 @@ var _ = Describe("Stager", func() {
 			Expect(header3.Gid).To(Equal(2000))
 
 			// TODO: test that no "some-app-staging-GUID" containers exist
-
 			// TODO: test that termination via ExitChan works
-
 			// TODO: test skipping detection when only one buildpack
+			// TODO: test UI loading call
 		})
 
 		Context("on failure", func() {
@@ -120,6 +124,7 @@ var _ = Describe("Stager", func() {
 			Expect(launcherBytes).To(HaveLen(3053594))
 
 			// TODO: test that no "some-app-launcher-GUID" containers exist
+			// TODO: test UI loading call
 		})
 
 		Context("on failure", func() {

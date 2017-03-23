@@ -1,27 +1,27 @@
-package plugin_test
+package ui_test
 
 import (
 	"errors"
 	"io"
 
-	"github.com/sclevine/cflocal/plugin"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	. "github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("UI", func() {
 	var (
 		out, err, in *gbytes.Buffer
-		ui           *plugin.UI
+		ui           *UI
 	)
 
 	BeforeEach(func() {
 		out = gbytes.NewBuffer()
 		err = gbytes.NewBuffer()
 		in = gbytes.NewBuffer()
-		ui = &plugin.UI{Out: out, Err: err, In: in}
+		ui = &UI{Out: out, Err: err, In: in}
 	})
 
 	Describe("#Prompt", func() {
@@ -82,5 +82,9 @@ var _ = Describe("UI", func() {
 				Expect(out).To(gbytes.Say("FAILED"))
 			})
 		})
+	})
+
+	Describe("#Loading", func() {
+		// TODO: test loading bar
 	})
 })

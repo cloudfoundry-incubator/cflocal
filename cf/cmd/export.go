@@ -64,6 +64,7 @@ func (e *Export) Run(args []string) error {
 	return nil
 }
 
+// TODO: refactor to invert control
 func (*Export) options(args []string) (*exportOptions, error) {
 	if len(args) < 2 {
 		return nil, errors.New("app name required")

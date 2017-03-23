@@ -25,12 +25,12 @@ func (m *MockUI) Prompt(prompt string) string {
 	return m.Reply[prompt]
 }
 
-func (m *MockUI) Output(message string, args ...interface{}) {
-	fmt.Fprintf(m.Out, message+"\n", args...)
+func (m *MockUI) Output(format string, args ...interface{}) {
+	fmt.Fprintf(m.Out, format+"\n", args...)
 }
 
-func (m *MockUI) Warn(message string, args ...interface{}) {
-	fmt.Fprintf(m.Out, "Warning: "+message+"\n", args...)
+func (m *MockUI) Warn(format string, args ...interface{}) {
+	fmt.Fprintf(m.Out, "Warning: "+format+"\n", args...)
 }
 
 func (m *MockUI) Error(err error) {
@@ -38,4 +38,9 @@ func (m *MockUI) Error(err error) {
 		ginkgo.Fail("Error should not be called twice.")
 	}
 	m.Err = err
+}
+
+func (m *MockUI) Loading(message string, f func() error) error {
+	fmt.Fprintln(m.Out, "Loading: "+message)
+	return f()
 }

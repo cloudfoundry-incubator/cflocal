@@ -18,6 +18,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/utils"
 )
@@ -25,19 +26,25 @@ import (
 var _ = Describe("Runner", func() {
 	var (
 		runner   *Runner
+		mockUI   *mocks.MockUI
 		client   *docker.Client
 		logs     *gbytes.Buffer
 		exitChan chan struct{}
 	)
 
 	BeforeEach(func() {
+		mockUI = mocks.NewMockUI()
+
 		var err error
 		client, err = docker.NewEnvClient()
 		Expect(err).NotTo(HaveOccurred())
 		client.UpdateClientVersion("")
+
 		logs = gbytes.NewBuffer()
 		exitChan = make(chan struct{})
+
 		runner = &Runner{
+			UI:           mockUI,
 			StackVersion: "1.86.0",
 			Docker:       client,
 			Logs:         io.MultiWriter(logs, GinkgoWriter),
@@ -48,6 +55,7 @@ var _ = Describe("Runner", func() {
 	Describe("#Run", func() {
 		It("should run the provided droplet with the provided launcher", func() {
 			stager := &Stager{
+				UI:           mockUI,
 				DiegoVersion: "0.1482.0",
 				GoVersion:    "1.7",
 				StackVersion: "1.86.0",
@@ -149,6 +157,7 @@ var _ = Describe("Runner", func() {
 
 		// TODO: test with custom start command
 		// TODO: test with mounted app dir
+		// TODO: test UI loading call
 
 		Context("on failure", func() {
 			// TODO: test failure cases using reverse proxy
@@ -158,6 +167,7 @@ var _ = Describe("Runner", func() {
 	Describe("#Export", func() {
 		It("should load the provided droplet into a Docker image with the launcher", func() {
 			stager := &Stager{
+				UI:           mockUI,
 				DiegoVersion: "0.1482.0",
 				GoVersion:    "1.7",
 				StackVersion: "1.86.0",

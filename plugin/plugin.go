@@ -15,8 +15,10 @@ import (
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
 	docker "github.com/docker/docker/client"
+	"github.com/fatih/color"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
+
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/local"
@@ -25,17 +27,18 @@ import (
 )
 
 type Plugin struct {
-	UI       PluginUI
+	UI       UI
 	Version  string
 	RunErr   error
 	ExitChan chan struct{}
 }
 
-type PluginUI interface {
+type UI interface {
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
+	Loading(message string, f func() error) error
 }
 
 func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
@@ -83,17 +86,19 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 
 	stager := &local.Stager{
+		UI:           p.UI,
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
 		StackVersion: "latest",
 		Docker:       client,
-		Logs:         os.Stdout,
+		Logs:         color.Output,
 		ExitChan:     p.ExitChan,
 	}
 	runner := &local.Runner{
+		UI:           p.UI,
 		StackVersion: "latest",
 		Docker:       client,
-		Logs:         os.Stdout,
+		Logs:         color.Output,
 		ExitChan:     p.ExitChan,
 	}
 	app := &remote.App{

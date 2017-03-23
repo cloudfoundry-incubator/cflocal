@@ -1,13 +1,18 @@
-package plugin
+package ui
 
 import (
 	"bufio"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 )
+
+var spinner = []string{". ", "o ", "O ", "8 ", "oo", "OO", "88"}
+
+const spinnerWidth = 5
 
 type UI struct {
 	Out       io.Writer
@@ -47,4 +52,32 @@ func (u *UI) Error(err error) {
 	}
 	fmt.Fprintf(writer, "Error: %s\n", err)
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
+}
+
+func (u *UI) Loading(message string, f func() error) error {
+	doneChan := make(chan error)
+	go func() { doneChan <- f() }()
+
+	timeChan := time.NewTimer(2 * time.Second).C
+	var tickChan <-chan time.Time
+
+	ticks := 0
+	for {
+		select {
+		case <-timeChan:
+			tickChan = time.NewTicker(time.Millisecond * 250).C
+		case <-tickChan:
+			fmt.Fprintf(u.Out, "\r%s > %s%s%s", message,
+				strings.Repeat("88", ticks/len(spinner)%spinnerWidth),
+				spinner[ticks%len(spinner)],
+				strings.Repeat("  ", spinnerWidth-ticks/len(spinner)%spinnerWidth),
+			)
+			ticks++
+		case err := <-doneChan:
+			if ticks > 0 {
+				fmt.Fprint(u.Out, "\r")
+			}
+			return err
+		}
+	}
 }

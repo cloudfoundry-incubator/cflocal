@@ -3,17 +3,19 @@ package main
 import (
 	"os"
 
-	"github.com/sclevine/cflocal/plugin"
-
 	cfplugin "code.cloudfoundry.org/cli/plugin"
+	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/sclevine/cflocal/plugin"
+	"github.com/sclevine/cflocal/ui"
 )
 
 var Version = "0.0.0"
 
 func main() {
-	ui := &plugin.UI{
-		Out:       os.Stdout,
+	ui := &ui.UI{
+		Out:       color.Output,
 		Err:       os.Stderr,
 		In:        os.Stdin,
 		ErrIsTerm: terminal.IsTerminal(int(os.Stderr.Fd())),

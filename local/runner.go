@@ -47,6 +47,7 @@ const runnerScript = `
 `
 
 type Runner struct {
+	UI           UI
 	StackVersion string
 	Docker       *docker.Client
 	Logs         io.Writer
@@ -186,7 +187,9 @@ func (r *Runner) pull() error {
 		return err
 	}
 	defer body.Close()
-	return checkBody(body)
+	return r.UI.Loading("Pulling cflinuxfs2", func() error {
+		return checkBody(body)
+	})
 }
 
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {

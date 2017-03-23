@@ -28,31 +28,13 @@ const stagerScript = `
 `
 
 type Stager struct {
+	UI           UI
 	DiegoVersion string
 	GoVersion    string
 	StackVersion string
 	Docker       *docker.Client
 	Logs         io.Writer
 	ExitChan     <-chan struct{}
-}
-
-type Colorizer func(string, ...interface{}) string
-
-type vcapApplication struct {
-	ApplicationID      string          `json:"application_id"`
-	ApplicationName    string          `json:"application_name"`
-	ApplicationURIs    []string        `json:"application_uris"`
-	ApplicationVersion string          `json:"application_version"`
-	Host               string          `json:"host,omitempty"`
-	InstanceID         string          `json:"instance_id,omitempty"`
-	InstanceIndex      *uint           `json:"instance_index,omitempty"`
-	Limits             map[string]uint `json:"limits"`
-	Name               string          `json:"name"`
-	Port               *uint           `json:"port,omitempty"`
-	SpaceID            string          `json:"space_id"`
-	SpaceName          string          `json:"space_name"`
-	URIs               []string        `json:"uris"`
-	Version            string          `json:"version"`
 }
 
 type splitReadCloser struct {
@@ -231,6 +213,7 @@ func (s *Stager) buildDockerfile() error {
 		return err
 	}
 	defer response.Body.Close()
-	return checkBody(response.Body)
-
+	return s.UI.Loading("Building Diego-powered base image", func() error {
+		return checkBody(response.Body)
+	})
 }
