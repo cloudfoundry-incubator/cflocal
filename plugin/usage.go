@@ -67,7 +67,6 @@ PULL OPTIONS:
                      configuration.
                      Droplet filename: <name>.droplet
 
-
 PUSH OPTIONS:
    push <name>    Push a droplet to a remote CF app and restart the app.
                      Droplet filename: <name>.droplet
