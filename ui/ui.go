@@ -68,7 +68,7 @@ func (u *UI) Loading(message string, f func() error) error {
 			tickChan = time.NewTicker(time.Millisecond * 250).C
 		case <-tickChan:
 			fmt.Fprintf(u.Out, "\r%s > %s%s%s", message,
-				strings.Repeat("88", ticks/len(spinner)%spinnerWidth),
+				strings.Repeat(spinner[len(spinner)-1], ticks/len(spinner)%spinnerWidth),
 				spinner[ticks%len(spinner)],
 				strings.Repeat("  ", spinnerWidth-ticks/len(spinner)%spinnerWidth),
 			)

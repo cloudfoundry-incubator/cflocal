@@ -7,7 +7,7 @@ NAME:
    local - Stage, launch, push, pull, and export CF apps -- in Docker
 
 USAGE:
-   cf local stage   <name> [ (-b <URL>) (-s <app> | -f <app>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
    cf local run     <name> [ (-p <port>) (-d <dir>) (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
@@ -21,7 +21,9 @@ STAGE OPTIONS:
                      in local.yml.
                      Droplet filename: <name>.droplet
 
-   -b <url>       Use the specified buildpack URL (git or zip).
+   -b <name>      Use an official CF buildpack, specified by name.
+                     Default: (uses detection)
+   -b <url>       Use a buildpack specified by URL (git or zip-over-HTTP).
                      Default: (uses detection)
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.

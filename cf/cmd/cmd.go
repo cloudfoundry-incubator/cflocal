@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"errors"
+	"flag"
 	"io"
+	"io/ioutil"
 
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
@@ -61,6 +64,22 @@ type Config interface {
 }
 
 //go:generate mockgen -package mocks -destination mocks/closer.go io Closer
+
+func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
+	if len(args) < 2 {
+		return errors.New("app name required")
+	}
+	set := &flag.FlagSet{}
+	set.SetOutput(ioutil.Discard)
+	f(args[1], set)
+	if err := set.Parse(args[2:]); err != nil {
+		return err
+	}
+	if set.NArg() != 0 {
+		return errors.New("invalid arguments")
+	}
+	return nil
+}
 
 func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {
 	var app *local.AppConfig

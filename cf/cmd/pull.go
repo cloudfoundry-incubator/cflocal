@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"errors"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -19,14 +19,11 @@ func (p *Pull) Match(args []string) bool {
 }
 
 func (p *Pull) Run(args []string) error {
-	if len(args) != 2 {
+	name, err := p.options(args)
+	if err != nil {
 		p.Help.Short()
-		if len(args) < 2 {
-			return errors.New("app name required")
-		}
-		return errors.New("invalid arguments")
+		return err
 	}
-	name := args[1]
 	if err := p.saveDroplet(name); err != nil {
 		return err
 	}
@@ -79,4 +76,10 @@ func (p *Pull) updateLocalYML(name string) error {
 		return err
 	}
 	return nil
+}
+
+func (*Pull) options(args []string) (appName string, err error) {
+	return appName, parseOptions(args, func(name string, _ *flag.FlagSet) {
+		appName = name
+	})
 }

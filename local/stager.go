@@ -202,7 +202,7 @@ func (s *Stager) buildDockerfile() error {
 	if err != nil {
 		return err
 	}
-	return s.UI.Loading("Building Diego-powered base image", func() error {
+	return s.UI.Loading("Building cached cflocal base image", func() error {
 		response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
 			Tags:           []string{"cflocal"},
 			SuppressOutput: true,

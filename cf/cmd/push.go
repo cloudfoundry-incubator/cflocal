@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 )
 
 type Push struct {
@@ -66,19 +64,11 @@ func (p *Push) pushEnv(name string) error {
 }
 
 func (*Push) options(args []string) (*pushOptions, error) {
-	if len(args) < 2 {
-		return nil, errors.New("app name required")
-	}
-	options := &pushOptions{name: args[1]}
-	set := &flag.FlagSet{}
-	set.SetOutput(ioutil.Discard)
-	set.BoolVar(&options.keepState, "k", false, "")
-	set.BoolVar(&options.pushEnv, "e", false, "")
-	if err := set.Parse(args[2:]); err != nil {
-		return nil, err
-	}
-	if set.NArg() != 0 {
-		return nil, errors.New("invalid arguments")
-	}
-	return options, nil
+	options := &pushOptions{}
+
+	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
+		options.name = name
+		set.BoolVar(&options.keepState, "k", false, "")
+		set.BoolVar(&options.pushEnv, "e", false, "")
+	})
 }

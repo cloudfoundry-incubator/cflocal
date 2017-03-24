@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/fatih/color"
 
@@ -58,11 +56,15 @@ func (s *Stage) Run(args []string) error {
 		s.UI.Warn("'%s' app selected for service forwarding will not be used", fApp)
 	}
 
+	lookupURL := Buildpacks[options.buildpack]
 	var buildpacks []string
-	switch options.buildpack {
-	case "":
+	switch {
+	case options.buildpack == "":
 		s.UI.Output("Downloading all buildpacks...")
-		buildpacks = Buildpacks
+		buildpacks = valuesInOrder(Buildpacks, BuildpackOrder)
+	case lookupURL != "":
+		s.UI.Output("Downloading %s from %s...", options.buildpack, lookupURL)
+		buildpacks = []string{lookupURL}
 	default:
 		s.UI.Output("Downloading %s...", options.buildpack)
 		buildpacks = []string{options.buildpack}
@@ -89,20 +91,20 @@ func (s *Stage) Run(args []string) error {
 }
 
 func (*Stage) options(args []string) (*stageOptions, error) {
-	if len(args) < 2 {
-		return nil, errors.New("app name required")
+	options := &stageOptions{}
+
+	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
+		options.name = name
+		set.StringVar(&options.buildpack, "b", "", "")
+		set.StringVar(&options.serviceApp, "s", "", "")
+		set.StringVar(&options.forwardApp, "f", "", "")
+	})
+}
+
+func valuesInOrder(m map[string]string, l []string) []string {
+	var result []string
+	for _, lv := range l {
+		result = append(result, m[lv])
 	}
-	options := &stageOptions{name: args[1]}
-	set := &flag.FlagSet{}
-	set.SetOutput(ioutil.Discard)
-	set.StringVar(&options.buildpack, "b", "", "")
-	set.StringVar(&options.serviceApp, "s", "", "")
-	set.StringVar(&options.forwardApp, "f", "", "")
-	if err := set.Parse(args[2:]); err != nil {
-		return nil, err
-	}
-	if set.NArg() != 0 {
-		return nil, errors.New("invalid arguments")
-	}
-	return options, nil
+	return result
 }

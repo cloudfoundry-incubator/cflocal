@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"strconv"
 	"strings"
@@ -102,29 +100,20 @@ func (r *Run) Run(args []string) error {
 }
 
 func (*Run) options(args []string) (*runOptions, error) {
-	if len(args) < 2 {
-		return nil, errors.New("app name required")
-	}
-	options := &runOptions{name: args[1]}
+	options := &runOptions{}
 	defaultPort, err := freePort()
 	if err != nil {
 		return nil, err
 	}
-	set := &flag.FlagSet{}
-	set.SetOutput(ioutil.Discard)
-	set.UintVar(&options.port, "p", defaultPort, "")
-	set.StringVar(&options.ip, "i", "127.0.0.1", "")
-	set.StringVar(&options.appDir, "d", "", "")
-	set.StringVar(&options.serviceApp, "s", "", "")
-	set.StringVar(&options.forwardApp, "f", "", "")
-	if err := set.Parse(args[2:]); err != nil {
-		return nil, err
-	}
 
-	if set.NArg() != 0 {
-		return nil, errors.New("invalid arguments")
-	}
-	return options, nil
+	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
+		options.name = name
+		set.UintVar(&options.port, "p", defaultPort, "")
+		set.StringVar(&options.ip, "i", "127.0.0.1", "")
+		set.StringVar(&options.appDir, "d", "", "")
+		set.StringVar(&options.serviceApp, "s", "", "")
+		set.StringVar(&options.forwardApp, "f", "", "")
+	})
 }
 
 func freePort() (uint, error) {
