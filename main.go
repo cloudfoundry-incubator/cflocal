@@ -22,9 +22,9 @@ func main() {
 	}
 
 	cflocal := &plugin.Plugin{
-		UI:       ui,
-		Version:  Version,
-		ExitChan: make(chan struct{}),
+		UI:      ui,
+		Version: Version,
+		Exit:    make(chan struct{}),
 	}
 
 	if len(os.Args) > 1 && os.Args[1] != "" {
@@ -35,7 +35,7 @@ func main() {
 			cfplugin.Start(cflocal)
 		}
 		select {
-		case <-cflocal.ExitChan:
+		case <-cflocal.Exit:
 			os.Exit(128)
 		default:
 			if err := cflocal.RunErr; err != nil {

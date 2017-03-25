@@ -13,11 +13,14 @@ import (
 var spinner = []string{". ", "o ", "O ", "8 ", "oo", "OO", "88"}
 
 const (
-	spinnerWidth        = 5
-	dockerProgressWidth = 72
+	spinnerWidth = 6
+	loaderWidth  = 72
 
 	spinnerPrefix = ": building > "
 	loaderPrefix  = ": "
+
+	spinnerDelay    = 2 * time.Second
+	spinnerInterval = 250 * time.Millisecond
 )
 
 type UI struct {
@@ -60,48 +63,48 @@ func (u *UI) Error(err error) {
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
 }
 
-func (u *UI) Loading(message string, f func(chan<- string) error) error {
-	loadLen := len(message+loaderPrefix) + dockerProgressWidth
+func (u *UI) Loading(message string, f func(progress chan<- string) error) error {
+	loadLen := len(message+loaderPrefix) + loaderWidth
 	spinLen := len(message+spinnerPrefix) + spinnerWidth*len(spinner[0])
 
-	doneChan := make(chan error)
-	progressChan := make(chan string)
-	go func() { doneChan <- f(progressChan) }()
+	done := make(chan error)
+	progress := make(chan string)
+	go func() { done <- f(progress) }()
 
-	var timeChan, tickChan <-chan time.Time
+	var updateSpinner <-chan time.Time
+	startSpinner := time.After(spinnerDelay)
 	ticks := 0
+
 	for {
 		select {
-		case progress := <-progressChan:
-			switch progress {
-			case "":
-				if timeChan == nil {
-					timeChan = time.After(time.Second)
-				}
-			default:
-				if timeChan != nil {
-					timeChan, tickChan = nil, nil
-					fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", spinLen))
-				}
-				fmt.Fprintf(u.Out, "\r%s%s%s", message, loaderPrefix, progress)
-
-			}
-		case <-timeChan:
-			tickChan = time.Tick(time.Millisecond * 250)
-			fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", loadLen))
-		case <-tickChan:
+		case <-startSpinner:
+			startSpinner = nil
+			updateSpinner = time.Tick(spinnerInterval)
+		case <-updateSpinner:
 			fmt.Fprintf(u.Out, "\r%s%s%s%s%s", message, spinnerPrefix,
 				strings.Repeat(spinner[len(spinner)-1], ticks/len(spinner)%spinnerWidth),
 				spinner[ticks%len(spinner)],
 				strings.Repeat("  ", spinnerWidth-ticks/len(spinner)%spinnerWidth),
 			)
 			ticks++
-		case err := <-doneChan:
+		case status := <-progress:
+			switch status {
+			case "":
+				if updateSpinner == nil && startSpinner == nil {
+					fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", loadLen))
+					updateSpinner = time.Tick(spinnerInterval)
+				}
+			default:
+				if updateSpinner != nil {
+					fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", spinLen))
+					updateSpinner = nil
+				} else if startSpinner != nil {
+					startSpinner = nil
+				}
+				fmt.Fprintf(u.Out, "\r%s%s%s", message, loaderPrefix, status)
+			}
+		case err := <-done:
 			fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", max(loadLen, spinLen)))
-			fmt.Fprintf(u.Out, "\r%s   %s\r",
-				strings.Repeat(" ", len(message)),
-				strings.Repeat("  ", spinnerWidth),
-			)
 			return err
 		}
 	}

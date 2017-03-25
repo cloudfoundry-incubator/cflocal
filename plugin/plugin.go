@@ -27,10 +27,10 @@ import (
 )
 
 type Plugin struct {
-	UI       UI
-	Version  string
-	RunErr   error
-	ExitChan chan struct{}
+	UI      UI
+	Version string
+	RunErr  error
+	Exit    chan struct{}
 }
 
 type UI interface {
@@ -52,7 +52,8 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	signal.Notify(signalChan, syscall.SIGTERM)
 	go func() {
 		<-signalChan
-		close(p.ExitChan)
+		// TODO: stop p.UI from working to avoid writing over shell prompt
+		close(p.Exit)
 	}()
 
 	client, err := docker.NewEnvClient()
@@ -92,14 +93,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		StackVersion: "latest",
 		Docker:       client,
 		Logs:         color.Output,
-		Exit:         p.ExitChan,
+		Exit:         p.Exit,
 	}
 	runner := &local.Runner{
 		UI:           p.UI,
 		StackVersion: "latest",
 		Docker:       client,
 		Logs:         color.Output,
-		Exit:         p.ExitChan,
+		Exit:         p.Exit,
 	}
 	app := &remote.App{
 		CLI:  cliConnection,

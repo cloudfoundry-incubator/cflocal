@@ -8,17 +8,15 @@ import (
 )
 
 type MockUI struct {
-	Out      *gbytes.Buffer
-	Err      error
-	Reply    map[string]string
-	Progress chan string
+	Out   *gbytes.Buffer
+	Err   error
+	Reply map[string]string
 }
 
 func NewMockUI() *MockUI {
 	return &MockUI{
-		Out:      gbytes.NewBuffer(),
-		Reply:    map[string]string{},
-		Progress: make(chan string),
+		Out:   gbytes.NewBuffer(),
+		Reply: map[string]string{},
 	}
 }
 
@@ -44,5 +42,12 @@ func (m *MockUI) Error(err error) {
 
 func (m *MockUI) Loading(message string, f func(progress chan<- string) error) error {
 	fmt.Fprintln(m.Out, "Loading: "+message)
-	return f(m.Progress)
+	// TODO: move this to m.Progress and test calls to m.Loading
+	progress := make(chan string)
+	go func() {
+		for {
+			<-progress
+		}
+	}()
+	return f(progress)
 }
