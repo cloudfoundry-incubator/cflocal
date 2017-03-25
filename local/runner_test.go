@@ -48,7 +48,7 @@ var _ = Describe("Runner", func() {
 			StackVersion: "1.86.0",
 			Docker:       client,
 			Logs:         io.MultiWriter(logs, GinkgoWriter),
-			ExitChan:     exitChan,
+			Exit:         exitChan,
 		}
 	})
 

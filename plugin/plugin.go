@@ -38,7 +38,7 @@ type UI interface {
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
-	Loading(message string, f func() error) error
+	Loading(message string, f func(progress chan<- string) error) error
 }
 
 func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
@@ -92,14 +92,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		StackVersion: "latest",
 		Docker:       client,
 		Logs:         color.Output,
-		ExitChan:     p.ExitChan,
+		Exit:         p.ExitChan,
 	}
 	runner := &local.Runner{
 		UI:           p.UI,
 		StackVersion: "latest",
 		Docker:       client,
 		Logs:         color.Output,
-		ExitChan:     p.ExitChan,
+		Exit:         p.ExitChan,
 	}
 	app := &remote.App{
 		CLI:  cliConnection,

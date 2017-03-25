@@ -7,7 +7,7 @@ import (
 )
 
 type UI interface {
-	Loading(message string, f func() error) error
+	Loading(message string, f func(progress chan<- string) error) error
 }
 
 type Colorizer func(string, ...interface{}) string
@@ -45,19 +45,27 @@ type vcapApplication struct {
 	Version            string          `json:"version"`
 }
 
-func checkBody(body io.Reader) error {
+func checkBody(body io.Reader, progress chan<- string, stop <-chan struct{}) error {
 	decoder := json.NewDecoder(body)
 	for {
-		var stream struct{ Error string }
-		if err := decoder.Decode(&stream); err != nil {
-			if err == io.EOF {
-				return nil
+		select {
+		case <-stop:
+			return errors.New("interrupted")
+		default:
+			var stream struct {
+				Error    string
+				Progress string
 			}
-			return err
-		}
-
-		if stream.Error != "" {
-			return errors.New(stream.Error)
+			if err := decoder.Decode(&stream); err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
+			}
+			if stream.Error != "" {
+				return errors.New(stream.Error)
+			}
+			progress <- stream.Progress
 		}
 	}
 }

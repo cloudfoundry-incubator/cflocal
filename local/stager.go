@@ -34,7 +34,7 @@ type Stager struct {
 	StackVersion string
 	Docker       *docker.Client
 	Logs         io.Writer
-	ExitChan     <-chan struct{}
+	Exit         <-chan struct{}
 }
 
 type splitReadCloser struct {
@@ -135,7 +135,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet Stream, er
 	go utils.CopyStream(s.Logs, logs, color("[%s] ", name))
 
 	go func() {
-		<-s.ExitChan
+		<-s.Exit
 		cont.Remove()
 	}()
 	status, err := s.Docker.ContainerWait(context.Background(), id)
@@ -202,18 +202,17 @@ func (s *Stager) buildDockerfile() error {
 	if err != nil {
 		return err
 	}
-	return s.UI.Loading("Building cached cflocal base image", func() error {
-		response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
-			Tags:           []string{"cflocal"},
-			SuppressOutput: true,
-			PullParent:     true,
-			Remove:         true,
-			ForceRemove:    true,
-		})
-		if err != nil {
-			return err
-		}
-		defer response.Body.Close()
-		return checkBody(response.Body)
+	response, err := s.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
+		Tags:        []string{"cflocal"},
+		PullParent:  true,
+		Remove:      true,
+		ForceRemove: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	return s.UI.Loading("Image", func(progress chan<- string) error {
+		return checkBody(response.Body, progress, s.Exit)
 	})
 }

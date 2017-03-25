@@ -51,7 +51,7 @@ type Runner struct {
 	StackVersion string
 	Docker       *docker.Client
 	Logs         io.Writer
-	ExitChan     <-chan struct{}
+	Exit         <-chan struct{}
 }
 
 type Forwarder struct {
@@ -123,7 +123,7 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 	go utils.CopyStream(r.Logs, logs, color("[%s] ", name))
 
 	go func() {
-		<-r.ExitChan
+		<-r.Exit
 		cont.Remove()
 	}()
 	status, err = r.Docker.ContainerWait(context.Background(), id)
@@ -182,13 +182,13 @@ func (r *Runner) Export(config *ExportConfig, reference string) (imageID string,
 }
 
 func (r *Runner) pull() error {
-	return r.UI.Loading("Pulling cflinuxfs2", func() error {
-		body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
-		if err != nil {
-			return err
-		}
-		defer body.Close()
-		return checkBody(body)
+	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+	return r.UI.Loading("Image", func(progress chan<- string) error {
+		return checkBody(body, progress, r.Exit)
 	})
 }
 
