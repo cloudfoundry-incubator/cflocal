@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/sclevine/cflocal.svg?branch=master)](https://travis-ci.org/sclevine/cflocal)
 
+![CF Local Demo](https://raw.githubusercontent.com/sclevine/cflocal/master/assets/cflocal-demo.gif) \
+*Note: Image download/build only occurs when a new root FS is available.*
 
 CF Local is a Cloud Foundry CLI plugin that enables you to:
 
@@ -119,8 +121,42 @@ applications:
 ## Install
 
 ```
-$ ./cflocal-v0.8.0-macos
-Plugin successfully installed. Current version: 0.8.0
+$ ./cflocal-v0.9.0-macos
+Plugin successfully installed. Current version: 0.9.0
+```
+Or
+```
+$ cf install-plugin cflocal-0.9.0-macos
+
+**Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
+
+Do you want to install the plugin cflocal-0.9.0-macos?> y
+
+Installing plugin cflocal-0.9.0-macos...
+OK
+Plugin cflocal v0.9.0 successfully installed.
+```
+Or
+```
+$ cf install-plugin -r CF-Community cflocal
+
+**Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
+
+Do you want to install the plugin cflocal?> y
+Looking up 'cflocal' from repository 'CF-Community'
+11354404 bytes downloaded...
+Installing plugin cflocal-0.8.0-macos...
+OK
+Plugin cflocal v0.8.0 successfully installed.
+```
+Note: The version available in the 'CF-Community` plugin repo may not always be the latest available.
+## Uninstall
+
+```
+$ cf uninstall-plugin cflocal
+Uninstalling plugin cflocal...
+OK
+Plugin cflocal successfully uninstalled.
 ```
 
 ## Security Notes
