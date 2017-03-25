@@ -103,7 +103,7 @@ var _ = Describe("Stage", func() {
 			Expect(cmd.Run([]string{"stage", "some-app", "-b", "go_buildpack", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(file.String()).To(Equal("some-droplet"))
 			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
-			Expect(mockUI.Out).To(gbytes.Say("Downloading go_buildpack from https://github.com/cloudfoundry/go-buildpack..."))
+			Expect(mockUI.Out).To(gbytes.Say("Buildpack: go_buildpack from https://github.com/cloudfoundry/go-buildpack"))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
