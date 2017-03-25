@@ -2,10 +2,24 @@
 
 [![Build Status](https://travis-ci.org/sclevine/cflocal.svg?branch=master)](https://travis-ci.org/sclevine/cflocal)
 
-```
-NAME:
-   local - Stage, launch, push, pull, and export CF apps -- in Docker
 
+CF Local is a Cloud Foundry CLI plugin that enables you to:
+
+* Build and launch CF application droplets locally in Docker
+* Download droplets from Cloud Foundry and run them locally in Docker
+* Build droplets locally in Docker and push them to Cloud Foundry
+* Automatically tunnel service connections from a local app to an app running in Cloud Foundry
+* Launch droplets with their active app root mounted to a local directory
+* Export droplets as Docker images that do not require CF Local to run
+
+Notably, CF Local:
+
+* Does not require the Docker CLI
+* Can run against a remote Docker daemon
+* Uses the latest official CF buildpack releases by default
+* Always uses the latest CF root filesystem (cflinuxfs2) release
+
+```
 USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
    cf local run     <name> [ (-p <port>) (-d <dir>) (-s <app>) (-f <app>) ]
@@ -102,20 +116,23 @@ applications:
     (( contents of VCAP_SERVICES ))
 ```
 
-INSTALL:
+## Install
+
 ```
-$ ./cflocal-v0.2.0-macos
-Plugin successfully installed. Current version: 0.2.0
+$ ./cflocal-v0.8.0-macos
+Plugin successfully installed. Current version: 0.8.0
 ```
 
-NOTES:
- - CF Local does not require the Docker CLI. It communicates directly with the Docker daemon.
- - For safety reasons:
-    - Service forwarding tunnels are not active during staging
-    - Containers are never exported with remote service credentials
-    - Service credentials from remote apps are never stored in local.yml
+## Security Notes
 
-TODO:
- - Permit specification of cflinuxfs2 version
- - Permit offline usage
- - Warnings about mismatched Docker client / server versions
+* Service forwarding tunnels are not active during staging
+* Containers are never exported with remote service credentials
+* Service credentials from remote apps are never stored in local.yml
+* CF Local should not be used to download untrusted CF applications
+* CF Local is not intended for production use and is offered without warranty
+
+## TODO
+
+* Permit specification of cflinuxfs2 version
+* Permit entirely offline usage
+* Add warnings about mismatched Docker client / server versions
