@@ -24,7 +24,8 @@ Notably, CF Local:
 ```
 USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-p <port>) (-d <dir>) (-s <app>) (-f <app>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
+                           [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
    cf local push    <name> [-e -k]
@@ -120,12 +121,12 @@ applications:
 
 ## Install
 
-```
+```bash
 $ ./cflocal-v0.9.0-macos
 Plugin successfully installed. Current version: 0.9.0
 ```
-Or
-```
+***Or***
+```bash
 $ cf install-plugin cflocal-0.9.0-macos
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
@@ -136,8 +137,8 @@ Installing plugin cflocal-0.9.0-macos...
 OK
 Plugin cflocal v0.9.0 successfully installed.
 ```
-Or
-```
+***Or***
+```bash
 $ cf install-plugin -r CF-Community cflocal
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
@@ -149,7 +150,8 @@ Installing plugin cflocal-0.8.0-macos...
 OK
 Plugin cflocal v0.8.0 successfully installed.
 ```
-Note: The version available in the 'CF-Community` plugin repo may not always be the latest available.
+Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
+
 ## Uninstall
 
 ```

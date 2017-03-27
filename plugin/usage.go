@@ -4,7 +4,8 @@ const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
    cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) (-s <app>) (-f <app>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
+                           [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
    cf local push    <name> [-e -k]
