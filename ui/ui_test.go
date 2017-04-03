@@ -84,7 +84,7 @@ var _ = Describe("UI", func() {
 		})
 	})
 
-	Describe("#Loading", func() {
+	PDescribe("#Loading", func() {
 		// TODO: test loading bar
 	})
 })

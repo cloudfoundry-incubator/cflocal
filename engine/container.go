@@ -1,0 +1,148 @@
+package engine
+
+import (
+	"context"
+	"fmt"
+	"io"
+	gopath "path"
+	"strings"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	docker "github.com/docker/docker/client"
+	gouuid "github.com/nu7hatch/gouuid"
+
+	"github.com/sclevine/cflocal/utils"
+)
+
+type Container struct {
+	Docker *docker.Client
+	Exit   <-chan struct{}
+	ID     string
+	config *container.Config
+}
+
+func NewContainer(docker *docker.Client, config *container.Config, hostConfig *container.HostConfig) (*Container, error) {
+	uuid, err := gouuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
+	response, err := docker.ContainerCreate(context.Background(), config, hostConfig, nil, fmt.Sprintf("%s-%s", config.Hostname, uuid))
+	if err != nil {
+		return nil, err
+	}
+	return &Container{docker, nil, response.ID, config}, nil
+}
+
+func (c *Container) Close() error {
+	return c.Docker.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{
+		Force: true,
+	})
+}
+
+func (c *Container) CloseAfterStream(stream *Stream) error {
+	if stream == nil || stream.ReadCloser == nil {
+		return c.Close()
+	}
+	stream.ReadCloser = &closeWrapper{
+		ReadCloser: stream.ReadCloser,
+		After:      c.Close,
+	}
+	return nil
+}
+
+type causer interface {
+	Cause() error
+}
+
+func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err error) {
+	defer func() {
+		if err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled")) {
+			status, err = 128, nil
+			return
+		}
+	}()
+	done := make(chan struct{})
+	defer close(done)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-done:
+		case <-c.Exit:
+			cancel()
+		}
+	}()
+
+	if err := c.Docker.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+		return 0, err
+	}
+	out, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Timestamps: true,
+		Follow:     true,
+	})
+	if err != nil {
+		return 0, err
+	}
+	defer out.Close()
+	go utils.CopyStream(logs, out, logPrefix)
+	return c.Docker.ContainerWait(ctx, c.ID)
+}
+
+func (c *Container) Commit(ref string) (imageID string, err error) {
+	response, err := c.Docker.ContainerCommit(context.Background(), c.ID, types.ContainerCommitOptions{
+		Reference: ref,
+		Author:    "CF Local",
+		Pause:     true,
+		Config:    c.config,
+	})
+	return response.ID, err
+}
+
+func (c *Container) ExtractTo(tar io.Reader, path string) error {
+	return c.Docker.CopyToContainer(context.Background(), c.ID, path, tar, types.CopyToContainerOptions{})
+}
+
+func (c *Container) CopyTo(stream Stream, path string) error {
+	tar, err := utils.TarFile(path, stream, stream.Size, 0755)
+	if err != nil {
+		return err
+	}
+	if err := c.ExtractTo(tar, "/"); err != nil {
+		return err
+	}
+	return stream.Close()
+}
+
+func (c *Container) CopyFrom(path string) (Stream, error) {
+	tar, stat, err := c.Docker.CopyFromContainer(context.Background(), c.ID, path)
+	if err != nil {
+		return Stream{}, err
+	}
+	reader, _, err := utils.FileFromTar(gopath.Base(path), tar)
+	if err != nil {
+		tar.Close()
+		return Stream{}, err
+	}
+	return NewStream(splitReadCloser{reader, tar}, stat.Size), nil
+}
+
+type splitReadCloser struct {
+	io.Reader
+	io.Closer
+}
+
+type closeWrapper struct {
+	io.ReadCloser
+	After func() error
+}
+
+func (c *closeWrapper) Close() (err error) {
+	defer func() {
+		if afterErr := c.After(); err == nil {
+			err = afterErr
+		}
+	}()
+	return c.ReadCloser.Close()
+}

@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"os/exec"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	cfplugin "code.cloudfoundry.org/cli/plugin"
@@ -21,6 +18,7 @@ import (
 
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/utils"
@@ -34,11 +32,11 @@ type Plugin struct {
 }
 
 type UI interface {
+	local.UI
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
-	Loading(message string, f func(progress chan<- string) error) error
 }
 
 func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
@@ -46,21 +44,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
-	signal.Notify(make(chan os.Signal), syscall.SIGHUP)
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT)
-	signal.Notify(signalChan, syscall.SIGTERM)
-	go func() {
-		<-signalChan
-		// TODO: stop p.UI from working to avoid writing over shell prompt
-		close(p.Exit)
-	}()
-
 	client, err := docker.NewEnvClient()
 	if err != nil {
 		p.RunErr = err
 		return
 	}
+	defer client.Close()
 	client.UpdateClientVersion("")
 
 	ccSkipSSLVerify, err := cliConnection.IsSSLDisabled()
@@ -68,6 +57,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		p.RunErr = err
 		return
 	}
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -86,21 +76,29 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		},
 	}
 
+	dockerEngine := &local.DockerEngine{
+		Docker: client,
+		Exit:   p.Exit,
+	}
+	image := &engine.Image{
+		Docker: client,
+		Exit:   p.Exit,
+	}
 	stager := &local.Stager{
-		UI:           p.UI,
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
 		StackVersion: "latest",
-		Docker:       client,
 		Logs:         color.Output,
-		Exit:         p.Exit,
+		UI:           p.UI,
+		Engine:       dockerEngine,
+		Image:        image,
 	}
 	runner := &local.Runner{
-		UI:           p.UI,
 		StackVersion: "latest",
-		Docker:       client,
 		Logs:         color.Output,
-		Exit:         p.Exit,
+		UI:           p.UI,
+		Engine:       dockerEngine,
+		Image:        image,
 	}
 	app := &remote.App{
 		CLI:  cliConnection,

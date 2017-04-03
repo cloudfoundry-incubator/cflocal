@@ -9,6 +9,7 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
@@ -91,7 +92,7 @@ var _ = Describe("Stage", func() {
 						Services: forwardedServices,
 					},
 				}, gomock.Any()).Return(
-					local.NewStream(droplet, 100), nil,
+					engine.NewStream(droplet, 100), nil,
 				).Do(func(_ *local.StageConfig, c local.Colorizer) {
 					Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 				}),

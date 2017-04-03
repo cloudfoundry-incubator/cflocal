@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/service"
@@ -32,8 +33,8 @@ type App interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
 type Stager interface {
-	Stage(config *local.StageConfig, color local.Colorizer) (droplet local.Stream, err error)
-	Download(path string) (stream local.Stream, err error)
+	Stage(config *local.StageConfig, color local.Colorizer) (droplet engine.Stream, err error)
+	Download(path string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner

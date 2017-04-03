@@ -2,21 +2,18 @@ package local
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
 	"text/template"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/utils"
 )
 
 const runnerScript = `
@@ -47,27 +44,23 @@ const runnerScript = `
 `
 
 type Runner struct {
-	UI           UI
 	StackVersion string
-	Docker       *docker.Client
 	Logs         io.Writer
-	Exit         <-chan struct{}
-}
-
-type Forwarder struct {
-	SSHPass Stream
-	Config  *service.ForwardConfig
+	UI           UI
+	Engine       Engine
+	Image        Image
 }
 
 type RunConfig struct {
-	Droplet     Stream
-	Launcher    Stream
-	Forwarder   Forwarder
-	IP          string
-	Port        uint
-	AppDir      string
-	AppDirEmpty bool
-	AppConfig   *AppConfig
+	Droplet       engine.Stream
+	Launcher      engine.Stream
+	SSHPass       engine.Stream
+	IP            string
+	Port          uint
+	AppDir        string
+	AppDirEmpty   bool
+	AppConfig     *AppConfig
+	ForwardConfig *service.ForwardConfig
 }
 
 func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err error) {
@@ -75,121 +68,68 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 		return 0, err
 	}
 
-	name := config.AppConfig.Name
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.Forwarder.Config, config.AppDir != "" && !config.AppDirEmpty)
+	excludeApp := config.AppDir != "" && !config.AppDirEmpty
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, excludeApp)
 	if err != nil {
 		return 0, err
 	}
 	hostConfig := buildHostConfig(config.IP, config.Port, config.AppDir)
-	cont := utils.Container{
-		Name:       name,
-		Config:     containerConfig,
-		HostConfig: hostConfig,
-		Docker:     r.Docker,
-		Err:        &err,
-	}
-	cont.Create()
-	id := cont.ID()
-	if id == "" {
-		return 0, err
-	}
-	defer cont.Remove()
 
-	if err := r.copy(id, config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
+	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
+	if err != nil {
 		return 0, err
 	}
-	if err := r.copy(id, config.Droplet, "/tmp/droplet"); err != nil {
+	defer contr.Close()
+
+	if err := contr.CopyTo(config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
 		return 0, err
 	}
-	if config.Forwarder != (Forwarder{}) {
-		if err := r.copy(id, config.Forwarder.SSHPass, "/usr/bin/sshpass"); err != nil {
+	if err := contr.CopyTo(config.Droplet, "/tmp/droplet"); err != nil {
+		return 0, err
+	}
+	if config.SSHPass.Size > 0 {
+		if err := contr.CopyTo(config.SSHPass, "/usr/bin/sshpass"); err != nil {
 			return 0, err
 		}
 	}
+	return contr.Start(color("[%s] ", config.AppConfig.Name), r.Logs)
 
-	if err := r.Docker.ContainerStart(context.Background(), id, types.ContainerStartOptions{}); err != nil {
-		return 0, err
-	}
-	logs, err := r.Docker.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Timestamps: true,
-		Follow:     true,
-	})
-	if err != nil {
-		return 0, err
-	}
-	defer logs.Close()
-	go utils.CopyStream(r.Logs, logs, color("[%s] ", name))
-
-	go func() {
-		<-r.Exit
-		cont.Remove()
-	}()
-	status, err = r.Docker.ContainerWait(context.Background(), id)
-	if err != nil {
-		return 0, err
-	}
-	return status, nil
 }
 
 type ExportConfig struct {
-	Droplet   Stream
-	Launcher  Stream
+	Droplet   engine.Stream
+	Launcher  engine.Stream
 	AppConfig *AppConfig
 }
 
-func (r *Runner) Export(config *ExportConfig, reference string) (imageID string, err error) {
+func (r *Runner) Export(config *ExportConfig, ref string) (imageID string, err error) {
 	if err := r.pull(); err != nil {
 		return "", err
 	}
 
-	name := config.AppConfig.Name
 	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
 	if err != nil {
 		return "", err
 	}
-	cont := utils.Container{
-		Name:   name,
-		Config: containerConfig,
-		Docker: r.Docker,
-		Err:    &err,
-	}
-	cont.Create()
-	id := cont.ID()
-	if id == "" {
-		return "", err
-	}
-	defer cont.Remove()
-
-	if err := r.copy(id, config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
-		return "", err
-	}
-	if err := r.copy(id, config.Droplet, "/tmp/droplet"); err != nil {
-		return "", err
-	}
-
-	response, err := r.Docker.ContainerCommit(context.Background(), id, types.ContainerCommitOptions{
-		Reference: reference,
-		Author:    "CF Local",
-		Pause:     true,
-		Config:    containerConfig,
-	})
+	contr, err := r.Engine.NewContainer(containerConfig, nil)
 	if err != nil {
 		return "", err
 	}
-	return response.ID, nil
+	defer contr.Close()
+
+	if err := contr.CopyTo(config.Launcher, "/tmp/lifecycle/launcher"); err != nil {
+		return "", err
+	}
+	if err := contr.CopyTo(config.Droplet, "/tmp/droplet"); err != nil {
+		return "", err
+	}
+
+	return contr.Commit(ref)
 }
 
 func (r *Runner) pull() error {
-	body, err := r.Docker.ImagePull(context.Background(), "cloudfoundry/cflinuxfs2:"+r.StackVersion, types.ImagePullOptions{})
-	if err != nil {
-		return err
-	}
-	defer body.Close()
-	return r.UI.Loading("Image", func(progress chan<- string) error {
-		return checkBody(body, progress, r.Exit)
-	})
+	progress, done := r.Image.Pull("cloudfoundry/cflinuxfs2:" + r.StackVersion)
+	return r.UI.Loading("Image", progress, done)
 }
 
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
@@ -252,7 +192,6 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}
 
 	scriptBuffer := &bytes.Buffer{}
-
 	if err := template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options); err != nil {
 		return nil, err
 	}
@@ -268,20 +207,6 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 			"/bin/bash", "-c", scriptBuffer.String(), config.Command,
 		},
 	}, nil
-}
-
-func (r *Runner) copy(id string, stream Stream, path string) error {
-	tar, err := utils.TarFile(path, stream, stream.Size, 0755)
-	if err != nil {
-		return err
-	}
-	if err := r.Docker.CopyToContainer(context.Background(), id, "/", tar, types.CopyToContainerOptions{}); err != nil {
-		return err
-	}
-	if err := stream.Close(); err != nil {
-		return err
-	}
-	return nil
 }
 
 func buildHostConfig(ip string, port uint, appDir string) *container.HostConfig {

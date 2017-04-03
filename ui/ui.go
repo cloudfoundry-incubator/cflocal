@@ -63,13 +63,9 @@ func (u *UI) Error(err error) {
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
 }
 
-func (u *UI) Loading(message string, f func(progress chan<- string) error) error {
+func (u *UI) Loading(message string, progress <-chan string, done <-chan error) error {
 	loadLen := len(message+loaderPrefix) + loaderWidth
 	spinLen := len(message+spinnerPrefix) + spinnerWidth*len(spinner[0])
-
-	done := make(chan error)
-	progress := make(chan string)
-	go func() { done <- f(progress) }()
 
 	var updateSpinner <-chan time.Time
 	startSpinner := time.After(spinnerDelay)
@@ -87,7 +83,10 @@ func (u *UI) Loading(message string, f func(progress chan<- string) error) error
 				strings.Repeat("  ", spinnerWidth-ticks/len(spinner)%spinnerWidth),
 			)
 			ticks++
-		case status := <-progress:
+		case status, ok := <-progress:
+			if !ok {
+				progress = nil
+			}
 			switch status {
 			case "":
 				if updateSpinner == nil && startSpinner == nil {

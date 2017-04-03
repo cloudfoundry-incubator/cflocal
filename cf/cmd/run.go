@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatih/color"
 
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 )
 
@@ -77,24 +78,26 @@ func (r *Run) Run(args []string) error {
 		appConfig.Services = remoteServices
 	}
 
-	forwarder := local.Forwarder{Config: forwardConfig}
-	if forwarder.Config != nil {
-		if forwarder.SSHPass, err = r.Stager.Download("/usr/bin/sshpass"); err != nil {
+	var sshpass engine.Stream
+	if forwardConfig != nil {
+		sshpass, err = r.Stager.Download("/usr/bin/sshpass")
+		if err != nil {
 			return err
 		}
-		defer forwarder.SSHPass.Close()
+		defer sshpass.Close()
 	}
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:     local.NewStream(droplet, dropletSize),
-		Launcher:    launcher,
-		Forwarder:   forwarder,
-		IP:          options.ip,
-		Port:        options.port,
-		AppDir:      absAppDir,
-		AppDirEmpty: appDirEmpty,
-		AppConfig:   appConfig,
+		Droplet:       engine.NewStream(droplet, dropletSize),
+		Launcher:      launcher,
+		SSHPass:       sshpass,
+		IP:            options.ip,
+		Port:          options.port,
+		AppDir:        absAppDir,
+		AppDirEmpty:   appDirEmpty,
+		AppConfig:     appConfig,
+		ForwardConfig: forwardConfig,
 	}, color.GreenString)
 	return err
 }

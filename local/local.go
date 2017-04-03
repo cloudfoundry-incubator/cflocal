@@ -1,32 +1,40 @@
 package local
 
 import (
-	"encoding/json"
-	"errors"
 	"io"
+
+	"github.com/docker/docker/api/types/container"
+
+	"github.com/sclevine/cflocal/engine"
 )
 
+//go:generate mockgen -package mocks -destination mocks/image.go github.com/sclevine/cflocal/local Image
+type Image interface {
+	Pull(image string) (<-chan string, <-chan error)
+	Build(tag string, dockerfile engine.Stream) (<-chan string, <-chan error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/container.go github.com/sclevine/cflocal/local Container
+type Container interface {
+	io.Closer
+	CloseAfterStream(stream *engine.Stream) error
+	Start(logPrefix string, logs io.Writer) (status int64, err error)
+	Commit(ref string) (imageID string, err error)
+	ExtractTo(tar io.Reader, path string) error
+	CopyTo(stream engine.Stream, path string) error
+	CopyFrom(path string) (engine.Stream, error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/engine.go github.com/sclevine/cflocal/local Engine
+type Engine interface {
+	NewContainer(config *container.Config, hostConfig *container.HostConfig) (Container, error)
+}
+
 type UI interface {
-	Loading(message string, f func(progress chan<- string) error) error
+	Loading(message string, progress <-chan string, done <-chan error) error
 }
 
 type Colorizer func(string, ...interface{}) string
-
-type Stream struct {
-	io.ReadCloser
-	Size int64
-}
-
-func NewStream(data io.ReadCloser, size int64) Stream {
-	return Stream{data, size}
-}
-
-func (s Stream) Write(dst io.Writer) error {
-	if _, err := io.CopyN(dst, s, s.Size); err != nil && err != io.EOF {
-		return err
-	}
-	return nil
-}
 
 type vcapApplication struct {
 	ApplicationID      string          `json:"application_id"`
@@ -43,29 +51,4 @@ type vcapApplication struct {
 	SpaceName          string          `json:"space_name"`
 	URIs               []string        `json:"uris"`
 	Version            string          `json:"version"`
-}
-
-func checkBody(body io.Reader, progress chan<- string, stop <-chan struct{}) error {
-	decoder := json.NewDecoder(body)
-	for {
-		select {
-		case <-stop:
-			return errors.New("interrupted")
-		default:
-			var stream struct {
-				Error    string
-				Progress string
-			}
-			if err := decoder.Decode(&stream); err != nil {
-				if err == io.EOF {
-					return nil
-				}
-				return err
-			}
-			if stream.Error != "" {
-				return errors.New(stream.Error)
-			}
-			progress <- stream.Progress
-		}
-	}
 }

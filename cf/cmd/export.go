@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/engine"
 )
 
 type Export struct {
@@ -47,7 +48,7 @@ func (e *Export) Run(args []string) error {
 	defer launcher.Close()
 
 	id, err := e.Runner.Export(&local.ExportConfig{
-		Droplet:   local.NewStream(droplet, dropletSize),
+		Droplet:   engine.NewStream(droplet, dropletSize),
 		Launcher:  launcher,
 		AppConfig: getAppConfig(options.name, localYML),
 	}, options.reference)

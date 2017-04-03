@@ -1,5 +1,12 @@
 package local
 
+import (
+	"github.com/docker/docker/api/types/container"
+	docker "github.com/docker/docker/client"
+
+	"github.com/sclevine/cflocal/engine"
+)
+
 const dockerfile = `
 FROM cloudfoundry/cflinuxfs2:{{.StackVersion}}
 MAINTAINER CF Local <cflocal@sclevine.org>
@@ -31,3 +38,17 @@ USER vcap
 
 RUN mkdir -p /tmp/app /home/vcap/tmp
 `
+
+type DockerEngine struct {
+	Docker *docker.Client
+	Exit   <-chan struct{}
+}
+
+func (d *DockerEngine) NewContainer(config *container.Config, hostConfig *container.HostConfig) (Container, error) {
+	contr, err := engine.NewContainer(d.Docker, config, hostConfig)
+	if err != nil {
+		return nil, err
+	}
+	contr.Exit = d.Exit
+	return contr, nil
+}

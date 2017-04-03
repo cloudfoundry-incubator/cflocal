@@ -9,6 +9,7 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
@@ -86,15 +87,15 @@ var _ = Describe("Run", func() {
 				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(local.NewStream(launcher, 200), nil),
+				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil),
 				mockApp.EXPECT().Services("some-service-app").Return(services, nil),
 				mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil),
-				mockStager.EXPECT().Download("/usr/bin/sshpass").Return(local.NewStream(sshpass, 300), nil),
+				mockStager.EXPECT().Download("/usr/bin/sshpass").Return(engine.NewStream(sshpass, 300), nil),
 				mockRunner.EXPECT().Run(&local.RunConfig{
-					Droplet:  local.NewStream(droplet, 100),
-					Launcher: local.NewStream(launcher, 200),
-					Forwarder: local.Forwarder{
-						SSHPass: local.NewStream(sshpass, 300),
+					Droplet:  engine.NewStream(droplet, 100),
+					Launcher: engine.NewStream(launcher, 200),
+					Forwarder: &local.Forwarder{
+						SSHPass: engine.NewStream(sshpass, 300),
 						Config:  forwardConfig,
 					},
 					IP:          "0.0.0.0",

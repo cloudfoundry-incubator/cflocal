@@ -40,14 +40,10 @@ func (m *MockUI) Error(err error) {
 	m.Err = err
 }
 
-func (m *MockUI) Loading(message string, f func(progress chan<- string) error) error {
+func (m *MockUI) Loading(message string, progress <-chan string, done <-chan error) error {
 	fmt.Fprintln(m.Out, "Loading: "+message)
 	// TODO: move this to m.Progress and test calls to m.Loading
-	progress := make(chan string)
-	go func() {
-		for {
-			<-progress
-		}
-	}()
+	for range progress {
+	}
 	return f(progress)
 }
