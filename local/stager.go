@@ -140,6 +140,6 @@ func (s *Stager) buildDockerfile() error {
 	if err := dockerfileTmpl.Execute(dockerfileBuf, s); err != nil {
 		return err
 	}
-	progress, done := s.Image.Build("cflocal", engine.NewStream(ioutil.NopCloser(dockerfileBuf), int64(dockerfileBuf.Len())))
-	return s.UI.Loading("Image", progress, done)
+	dockerfileStream := engine.NewStream(ioutil.NopCloser(dockerfileBuf), int64(dockerfileBuf.Len()))
+	return s.UI.Loading("Image", s.Image.Build("cflocal", dockerfileStream))
 }

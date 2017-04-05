@@ -63,7 +63,12 @@ func (u *UI) Error(err error) {
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
 }
 
-func (u *UI) Loading(message string, progress <-chan string, done <-chan error) error {
+type Progress interface {
+	Status() string
+	Err() error
+}
+
+func (u *UI) Loading(message string, progress <-chan Progress) (err error) {
 	loadLen := len(message+loaderPrefix) + loaderWidth
 	spinLen := len(message+spinnerPrefix) + spinnerWidth*len(spinner[0])
 
@@ -83,12 +88,15 @@ func (u *UI) Loading(message string, progress <-chan string, done <-chan error) 
 				strings.Repeat("  ", spinnerWidth-ticks/len(spinner)%spinnerWidth),
 			)
 			ticks++
-		case status, ok := <-progress:
+		case p, ok := <-progress:
 			if !ok {
-				progress = nil
+				fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", max(loadLen, spinLen)))
+				return err
 			}
-			switch status {
-			case "":
+			switch status, pErr := p.Status(), p.Err(); {
+			case pErr != nil:
+				err = pErr
+			case status == "N/A":
 				if updateSpinner == nil && startSpinner == nil {
 					fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", loadLen))
 					updateSpinner = time.Tick(spinnerInterval)
@@ -102,9 +110,6 @@ func (u *UI) Loading(message string, progress <-chan string, done <-chan error) 
 				}
 				fmt.Fprintf(u.Out, "\r%s%s%s", message, loaderPrefix, status)
 			}
-		case err := <-done:
-			fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", max(loadLen, spinLen)))
-			return err
 		}
 	}
 }

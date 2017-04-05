@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	gouuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -30,36 +32,6 @@ var _ = Describe("Container", func() {
 		entrypoint strslice.StrSlice
 	)
 
-	BeforeEach(func() {
-		entrypoint = strslice.StrSlice{"bash"}
-	})
-
-	JustBeforeEach(func() {
-		var err error
-		client, err = docker.NewEnvClient()
-		Expect(err).NotTo(HaveOccurred())
-		client.UpdateClientVersion("")
-
-		progress, done := (&Image{Docker: client}).Pull("cloudfoundry/cflinuxfs2")
-		go drain(progress)
-		Eventually(done, "5m").Should(BeClosed())
-
-		config = &container.Config{
-			Hostname:   "test-container",
-			Image:      "cloudfoundry/cflinuxfs2",
-			Env:        []string{"SOME-KEY=some-value"},
-			Labels:     map[string]string{"some-label-key": "some-label-value"},
-			Entrypoint: entrypoint,
-		}
-		hostConfig := &container.HostConfig{
-			PortBindings: nat.PortMap{
-				"8080/tcp": {{HostIP: "127.0.0.1", HostPort: freePort()}},
-			},
-		}
-		contr, err = NewContainer(client, config, hostConfig)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	containerFound := func(id string) bool {
 		_, err := client.ContainerInspect(context.Background(), contr.ID)
 		if err != nil {
@@ -74,6 +46,35 @@ var _ = Describe("Container", func() {
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		return info.State.Running
 	}
+
+	BeforeEach(func() {
+		entrypoint = strslice.StrSlice{"bash"}
+	})
+
+	JustBeforeEach(func() {
+		var err error
+		client, err = docker.NewEnvClient()
+		Expect(err).NotTo(HaveOccurred())
+		client.UpdateClientVersion("")
+
+		progress := (&Image{Docker: client}).Pull("sclevine/test")
+		Eventually(progress, "5m").Should(BeClosed())
+
+		config = &container.Config{
+			Hostname:   "test-container",
+			Image:      "sclevine/test",
+			Env:        []string{"SOME-KEY=some-value"},
+			Labels:     map[string]string{"some-label-key": "some-label-value"},
+			Entrypoint: entrypoint,
+		}
+		hostConfig := &container.HostConfig{
+			PortBindings: nat.PortMap{
+				"8080/tcp": {{HostIP: "127.0.0.1", HostPort: freePort()}},
+			},
+		}
+		contr, err = NewContainer(client, config, hostConfig)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	AfterEach(func() {
 		if containerFound(contr.ID) {
@@ -134,7 +135,7 @@ var _ = Describe("Container", func() {
 		Context("when signaled to exit", func() {
 			BeforeEach(func() {
 				entrypoint = strslice.StrSlice{
-					"bash", "-c",
+					"sh", "-c",
 					`echo some-logs-stdout && \
 					 >&2 echo some-logs-stderr && \
 					 sleep 60`,
@@ -164,7 +165,7 @@ var _ = Describe("Container", func() {
 		Context("when the command finishes successfully", func() {
 			BeforeEach(func() {
 				entrypoint = strslice.StrSlice{
-					"bash", "-c",
+					"sh", "-c",
 					`echo some-logs-stdout && \
 					 >&2 echo some-logs-stderr && \
 					 sleep 0`,
@@ -195,7 +196,10 @@ var _ = Describe("Container", func() {
 			inStream := NewStream(ioutil.NopCloser(inBuffer), int64(inBuffer.Len()))
 			Expect(contr.CopyTo(inStream, "/some-path")).To(Succeed())
 
-			id, err := contr.Commit("some-ref")
+			uuid, err := gouuid.NewV4()
+			Expect(err).NotTo(HaveOccurred())
+			ref := fmt.Sprintf("some-ref-%s", uuid)
+			id, err := contr.Commit(ref)
 			Expect(err).NotTo(HaveOccurred())
 			defer client.ImageRemove(ctx, id, types.ImageRemoveOptions{
 				Force:         true,
@@ -204,12 +208,12 @@ var _ = Describe("Container", func() {
 
 			info, _, err := client.ImageInspectWithRaw(ctx, id)
 			Expect(err).NotTo(HaveOccurred())
-			info.Config.Env = scrubProxyEnv(info.Config.Env)
+			info.Config.Env = scrubEnv(info.Config.Env)
 			Expect(info.Config).To(Equal(config))
 			Expect(info.Author).To(Equal("CF Local"))
-			Expect(info.RepoTags[0]).To(Equal("some-ref:latest"))
+			Expect(info.RepoTags[0]).To(Equal(ref + ":latest"))
 
-			config.Image = "some-ref:latest"
+			config.Image = ref + ":latest"
 			contr2, err := NewContainer(client, config, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer contr2.Close()
@@ -271,8 +275,8 @@ var _ = Describe("Container", func() {
 		It("should return an error if extracting fails", func() {
 			inBuffer := bytes.NewBufferString("some-data")
 			inStream := NewStream(&closeTester{Reader: inBuffer}, int64(inBuffer.Len()))
-			err := contr.CopyTo(inStream, "/dev/stdout/bad-path")
-			Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
+			err := contr.CopyTo(inStream, "/")
+			Expect(err).To(MatchError(ContainSubstring("cannot overwrite")))
 		})
 
 		It("should return an error if closing fails", func() {
@@ -286,11 +290,11 @@ var _ = Describe("Container", func() {
 
 	Describe("#CopyFrom", func() {
 		It("should copy the contents of a file out of the container", func() {
-			stream, err := contr.CopyFrom("/etc/timezone")
+			stream, err := contr.CopyFrom("/testfile")
 			Expect(err).NotTo(HaveOccurred())
 			defer stream.Close()
-			Expect(ioutil.ReadAll(stream)).To(Equal([]byte("Etc/UTC\n")))
-			Expect(stream.Size).To(Equal(int64(8)))
+			Expect(ioutil.ReadAll(stream)).To(Equal([]byte("test-data\n")))
+			Expect(stream.Size).To(Equal(int64(10)))
 			Expect(stream.Close()).To(Succeed())
 			// TODO: test closing of tar
 		})
@@ -314,11 +318,6 @@ func try(f func(string) bool, id string) func() bool {
 	}
 }
 
-func drain(c <-chan string) {
-	for range c {
-	}
-}
-
 func freePort() string {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -327,9 +326,12 @@ func freePort() string {
 	return strings.SplitN(address, ":", 2)[1]
 }
 
-func scrubProxyEnv(old []string) (new []string) {
+func scrubEnv(old []string) (new []string) {
 	for _, v := range old {
-		if !strings.Contains(v, "proxy") {
+		switch {
+		case strings.Contains(v, "proxy="):
+		case strings.Contains(v, "PATH="):
+		default:
 			new = append(new, v)
 		}
 	}

@@ -128,8 +128,7 @@ func (r *Runner) Export(config *ExportConfig, ref string) (imageID string, err e
 }
 
 func (r *Runner) pull() error {
-	progress, done := r.Image.Pull("cloudfoundry/cflinuxfs2:" + r.StackVersion)
-	return r.UI.Loading("Image", progress, done)
+	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:" + r.StackVersion))
 }
 
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {

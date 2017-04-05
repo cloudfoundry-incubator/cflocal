@@ -3,12 +3,12 @@ package engine
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
 
+	"github.com/sclevine/cflocal/ui"
 	"github.com/sclevine/cflocal/utils"
 )
 
@@ -17,50 +17,54 @@ type Image struct {
 	Exit   <-chan struct{}
 }
 
-func (i *Image) Build(tag string, dockerfile Stream) (<-chan string, <-chan error) {
-	progress, done := make(chan string), make(chan error, 1)
+func (i *Image) Build(tag string, dockerfile Stream) <-chan ui.Progress {
+	ctx := context.Background()
+	progress := make(chan ui.Progress, 1)
 
 	dockerfileTar, err := utils.TarFile("Dockerfile", dockerfile, dockerfile.Size, 0644)
 	if err != nil {
-		done <- err
-		return nil, done
+		progress <- progressError{err}
+		close(progress)
+		return progress
 	}
-	response, err := i.Docker.ImageBuild(context.Background(), dockerfileTar, types.ImageBuildOptions{
-		Tags:        []string{"cflocal"},
+	response, err := i.Docker.ImageBuild(ctx, dockerfileTar, types.ImageBuildOptions{
+		Tags:        []string{tag},
 		PullParent:  true,
 		Remove:      true,
 		ForceRemove: true,
 	})
 	if err != nil {
-		done <- err
-		return nil, done
+		progress <- progressError{err}
+		close(progress)
+		return progress
 	}
-	go i.checkBody(response.Body, progress, done)
-	return progress, done
+	go i.checkBody(response.Body, progress)
+	return progress
 }
 
-func (i *Image) Pull(image string) (<-chan string, <-chan error) {
-	progress, done := make(chan string), make(chan error, 1)
+func (i *Image) Pull(image string) <-chan ui.Progress {
+	ctx := context.Background()
+	progress := make(chan ui.Progress, 1)
 
-	body, err := i.Docker.ImagePull(context.Background(), image, types.ImagePullOptions{})
+	body, err := i.Docker.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		done <- err
-		return nil, done
+		progress <- progressError{err}
+		close(progress)
+		return progress
 	}
-	go i.checkBody(body, progress, done)
-	return progress, done
+	go i.checkBody(body, progress)
+	return progress
 }
 
-func (i *Image) checkBody(body io.ReadCloser, progress chan<- string, done chan<- error) {
+func (i *Image) checkBody(body io.ReadCloser, progress chan<- ui.Progress) {
 	defer body.Close()
 	defer close(progress)
-	defer close(done)
 
 	decoder := json.NewDecoder(body)
 	for {
 		select {
 		case <-i.Exit:
-			done <- errors.New("interrupted")
+			progress <- progressErrorString("interrupted")
 			return
 		default:
 			var stream struct {
@@ -69,15 +73,19 @@ func (i *Image) checkBody(body io.ReadCloser, progress chan<- string, done chan<
 			}
 			if err := decoder.Decode(&stream); err != nil {
 				if err != io.EOF {
-					done <- err
+					progress <- progressError{err}
 				}
 				return
 			}
 			if stream.Error != "" {
-				done <- errors.New(stream.Error)
+				progress <- progressErrorString(stream.Error)
 				return
 			}
-			progress <- stream.Progress
+			if stream.Progress == "" {
+				progress <- progressNA{}
+			} else {
+				progress <- progressMsg(stream.Progress)
+			}
 		}
 	}
 }

@@ -27,7 +27,8 @@ func NewContainer(docker *docker.Client, config *container.Config, hostConfig *c
 	if err != nil {
 		return nil, err
 	}
-	response, err := docker.ContainerCreate(context.Background(), config, hostConfig, nil, fmt.Sprintf("%s-%s", config.Hostname, uuid))
+	ctx := context.Background()
+	response, err := docker.ContainerCreate(ctx, config, hostConfig, nil, fmt.Sprintf("%s-%s", config.Hostname, uuid))
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,8 @@ func NewContainer(docker *docker.Client, config *container.Config, hostConfig *c
 }
 
 func (c *Container) Close() error {
-	return c.Docker.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{
+	ctx := context.Background()
+	return c.Docker.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{
 		Force: true,
 	})
 }
@@ -91,7 +93,8 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {
-	response, err := c.Docker.ContainerCommit(context.Background(), c.ID, types.ContainerCommitOptions{
+	ctx := context.Background()
+	response, err := c.Docker.ContainerCommit(ctx, c.ID, types.ContainerCommitOptions{
 		Reference: ref,
 		Author:    "CF Local",
 		Pause:     true,
@@ -101,7 +104,8 @@ func (c *Container) Commit(ref string) (imageID string, err error) {
 }
 
 func (c *Container) ExtractTo(tar io.Reader, path string) error {
-	return c.Docker.CopyToContainer(context.Background(), c.ID, path, tar, types.CopyToContainerOptions{})
+	ctx := context.Background()
+	return c.Docker.CopyToContainer(ctx, c.ID, path, tar, types.CopyToContainerOptions{})
 }
 
 func (c *Container) CopyTo(stream Stream, path string) error {
@@ -116,7 +120,8 @@ func (c *Container) CopyTo(stream Stream, path string) error {
 }
 
 func (c *Container) CopyFrom(path string) (Stream, error) {
-	tar, stat, err := c.Docker.CopyFromContainer(context.Background(), c.ID, path)
+	ctx := context.Background()
+	tar, stat, err := c.Docker.CopyFromContainer(ctx, c.ID, path)
 	if err != nil {
 		return Stream{}, err
 	}

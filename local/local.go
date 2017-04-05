@@ -6,12 +6,13 @@ import (
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/ui"
 )
 
 //go:generate mockgen -package mocks -destination mocks/image.go github.com/sclevine/cflocal/local Image
 type Image interface {
-	Pull(image string) (<-chan string, <-chan error)
-	Build(tag string, dockerfile engine.Stream) (<-chan string, <-chan error)
+	Pull(image string) <-chan ui.Progress
+	Build(tag string, dockerfile engine.Stream) <-chan ui.Progress
 }
 
 //go:generate mockgen -package mocks -destination mocks/container.go github.com/sclevine/cflocal/local Container
@@ -31,7 +32,7 @@ type Engine interface {
 }
 
 type UI interface {
-	Loading(message string, progress <-chan string, done <-chan error) error
+	Loading(message string, progress <-chan ui.Progress) error
 }
 
 type Colorizer func(string, ...interface{}) string
