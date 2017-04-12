@@ -76,7 +76,8 @@ var _ = Describe("Image", func() {
 					Expect(p.Status()).To(HaveSuffix("MB"))
 				}
 			}
-			Expect(naCount).To(Equal(14))
+			Expect(naCount).To(BeNumerically(">", 10))
+			Expect(naCount).To(BeNumerically("<", 30))
 
 			info, _, err := client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).NotTo(HaveOccurred())
@@ -102,7 +103,7 @@ var _ = Describe("Image", func() {
 
 			progress := image.Build(tag, dockerfileStream)
 			var progressErr ui.Progress
-			Expect(progress).To(Receive(&progressErr))
+			Eventually(progress).Should(Receive(&progressErr))
 			Expect(progressErr.Err()).To(MatchError("EOF"))
 			Expect(progress).To(BeClosed())
 
@@ -118,7 +119,7 @@ var _ = Describe("Image", func() {
 
 			progress := image.Build(tag, dockerfileStream)
 			var progressErr ui.Progress
-			Expect(progress).To(Receive(&progressErr))
+			Eventually(progress).Should(Receive(&progressErr))
 			Expect(progressErr.Err()).To(MatchError(HaveSuffix("Unknown instruction: SOME")))
 			Expect(progress).To(BeClosed())
 
@@ -166,7 +167,8 @@ var _ = Describe("Image", func() {
 					Expect(p.Status()).To(HaveSuffix("MB"))
 				}
 			}
-			Expect(naCount).To(Equal(7))
+			Expect(naCount).To(BeNumerically(">", 0))
+			Expect(naCount).To(BeNumerically("<", 20))
 
 			info, _, err := client.ImageInspectWithRaw(ctx, "sclevine/test")
 			Expect(err).NotTo(HaveOccurred())
@@ -200,7 +202,7 @@ var _ = Describe("Image", func() {
 					break
 				}
 			}
-			Expect(progressErr.Err()).To(MatchError(ContainSubstring("repository sclevine/bad-test not found")))
+			Expect(progressErr.Err()).To(MatchError(ContainSubstring("not found")))
 			Expect(progress).To(BeClosed())
 		})
 	})
