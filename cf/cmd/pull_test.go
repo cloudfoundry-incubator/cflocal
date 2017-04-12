@@ -94,7 +94,7 @@ var _ = Describe("Pull", func() {
 				mockConfig.EXPECT().Load().Return(oldLocalYML, nil),
 				mockApp.EXPECT().Env("some-app").Return(env, nil),
 				mockApp.EXPECT().Command("some-app").Return("some-command", nil),
-				mockConfig.EXPECT().Save(newLocalYML).Return(nil),
+				mockConfig.EXPECT().Save(newLocalYML),
 			)
 			Expect(cmd.Run([]string{"pull", "some-app"})).To(Succeed())
 			Expect(file.String()).To(Equal("some-droplet"))

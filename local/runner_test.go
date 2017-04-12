@@ -2,115 +2,70 @@ package local_test
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"os/exec"
-	"strconv"
-	"strings"
+	"sort"
 
-	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/go-connections/nat"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 
+	"github.com/sclevine/cflocal/engine"
 	. "github.com/sclevine/cflocal/local"
-	"github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/cflocal/local/mocks"
+	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/utils"
+	"github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("Runner", func() {
 	var (
-		runner   *Runner
-		mockUI   *mocks.MockUI
-		client   *docker.Client
-		logs     *gbytes.Buffer
-		exitChan chan struct{}
+		runner        *Runner
+		mockCtrl      *gomock.Controller
+		mockUI        *sharedmocks.MockUI
+		mockEngine    *mocks.MockEngine
+		mockImage     *mocks.MockImage
+		mockContainer *mocks.MockContainer
 	)
 
 	BeforeEach(func() {
-		mockUI = mocks.NewMockUI()
-
-		var err error
-		client, err = docker.NewEnvClient()
-		Expect(err).NotTo(HaveOccurred())
-		client.UpdateClientVersion("")
-
-		logs = gbytes.NewBuffer()
-		exitChan = make(chan struct{})
+		mockCtrl = gomock.NewController(GinkgoT())
+		mockUI = sharedmocks.NewMockUI()
+		mockEngine = mocks.NewMockEngine(mockCtrl)
+		mockImage = mocks.NewMockImage(mockCtrl)
+		mockContainer = mocks.NewMockContainer(mockCtrl)
 
 		runner = &Runner{
+			StackVersion: "some-stack-version",
+			Logs:         bytes.NewBufferString("some-logs"),
 			UI:           mockUI,
-			StackVersion: "1.86.0",
-			Docker:       client,
-			Logs:         io.MultiWriter(logs, GinkgoWriter),
-			Exit:         exitChan,
+			Engine:       mockEngine,
+			Image:        mockImage,
 		}
 	})
 
+	AfterEach(func() {
+		mockCtrl.Finish()
+	})
+
 	Describe("#Run", func() {
-		It("should run the provided droplet with the provided launcher", func() {
-			stager := &Stager{
-				UI:           mockUI,
-				DiegoVersion: "0.1482.0",
-				GoVersion:    "1.7",
-				StackVersion: "1.86.0",
-				Docker:       client,
-				Logs:         GinkgoWriter,
-			}
-
-			appFileContents := bytes.NewBufferString("some-contents")
-			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
-			Expect(err).NotTo(HaveOccurred())
-
-			droplet, err := stager.Stage(&StageConfig{
-				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
-				AppConfig:  &AppConfig{Name: "some-app"},
-			}, percentColor)
-			Expect(err).NotTo(HaveOccurred())
-			defer droplet.Close()
-
-			launcher, err := stager.Download("/tmp/lifecycle/launcher")
-			Expect(err).NotTo(HaveOccurred())
-			defer launcher.Close()
-
-			sshpassBuf := bytes.NewBufferString("echo sshpass $@")
-			sshpass := NewStream(ioutil.NopCloser(sshpassBuf), int64(sshpassBuf.Len()))
-
-			port := freePort()
-
+		It("should run the droplet in a container using the launcher", func() {
+			progress := make(chan ui.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
 			config := &RunConfig{
-				Droplet:  droplet,
-				Launcher: launcher,
-				Forwarder: Forwarder{
-					SSHPass: sshpass,
-					Config: &service.ForwardConfig{
-						Host: "some-ssh-host",
-						Port: "some-port",
-						User: "some-user",
-						Code: "some-code",
-						Forwards: []service.Forward{
-							{
-								Name: "some-name",
-								From: "some-from",
-								To:   "some-to",
-							},
-							{
-								Name: "some-other-name",
-								From: "some-other-from",
-								To:   "some-other-to",
-							},
-						},
-					},
-				},
-				Port: port,
+				Droplet:     engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
+				Launcher:    engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
+				SSHPass:     engine.NewStream(mockReadCloser{Value: "some-sshpass"}, 300),
+				IP:          "some-ip",
+				Port:        400,
+				AppDir:      "some-app-dir",
+				AppDirEmpty: false,
 				AppConfig: &AppConfig{
-					Name: "some-app",
+					Name:    "some-app",
+					Command: "some-command",
 					StagingEnv: map[string]string{
 						"SOME_NA_KEY": "some-na-value",
 					},
@@ -128,74 +83,75 @@ var _ = Describe("Runner", func() {
 						}},
 					},
 				},
+				ForwardConfig: &service.ForwardConfig{
+					Host: "some-ssh-host",
+					Port: "some-port",
+					User: "some-user",
+					Code: "some-code",
+					Forwards: []service.Forward{
+						{
+							Name: "some-name",
+							From: "some-from",
+							To:   "some-to",
+						},
+						{
+							Name: "some-other-name",
+							From: "some-other-from",
+							To:   "some-other-to",
+						},
+					},
+				},
 			}
+			gomock.InOrder(
+				mockImage.EXPECT().Pull("cloudfoundry/cflinuxfs2:some-stack-version").Return(progress),
+				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
+					Expect(config.Hostname).To(Equal("cflocal"))
+					Expect(config.User).To(Equal("vcap"))
+					Expect(config.ExposedPorts).To(HaveLen(1))
+					_, hasPort := config.ExposedPorts["8080/tcp"]
+					Expect(hasPort).To(BeTrue())
+					sort.Strings(config.Env)
+					Expect(config.Env).To(Equal(runnerEnvFixture))
+					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
+					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
+					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
+						"/bin/bash", "-c", runScriptFixture, "some-command",
+					}))
+					Expect(hostConfig.PortBindings).To(HaveLen(1))
+					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
+					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/home/vcap/app"}))
+				}).Return(mockContainer, nil),
+			)
 
-			go func() {
-				defer GinkgoRecover()
-				defer close(exitChan)
-				Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
+			launcherCopy := mockContainer.EXPECT().CopyTo(config.Launcher, "/tmp/lifecycle/launcher")
+			dropletCopy := mockContainer.EXPECT().CopyTo(config.Droplet, "/tmp/droplet")
+			sshpassCopy := mockContainer.EXPECT().CopyTo(config.SSHPass, "/usr/bin/sshpass")
 
-				Eventually(logs.Contents).Should(MatchRegexp(`\[some-app\] % \S+ Forwarding: some-name some-other-name`))
-				Eventually(logs.Contents).Should(MatchRegexp(
-					`\[some-app\] % \S+ sshpass -p some-code ssh -f -N -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no` +
-						` -o LogLevel=ERROR -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -o ServerAliveCountMax=60` +
-						` -p some-port some-user@some-ssh-host -L some-from:some-to -L some-other-from:some-other-to`,
-				))
-				Eventually(logs.Contents, "2s").Should(MatchRegexp(`\[some-app\] % \S+ Log message from stdout.`))
-				Eventually(logs.Contents, "2s").Should(MatchRegexp(`\[some-app\] % \S+ Log message from stderr.`))
-			}()
+			gomock.InOrder(
+				mockContainer.EXPECT().Start("[some-app] % ", runner.Logs).Return(int64(100), nil).
+					After(launcherCopy).After(dropletCopy).After(sshpassCopy),
+				mockContainer.EXPECT().Close(),
+			)
 
-			status, err := runner.Run(config, percentColor)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(status).To(Equal(int64(137)))
-
-			<-exitChan
-
-			// TODO: test that droplet and launcher are closed
-			// TODO: test that no containers exist
+			Expect(runner.Run(config, percentColor)).To(Equal(int64(100)))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
-		// TODO: test with custom start command
-		// TODO: test with mounted app dir
-		// TODO: test UI loading call
-
-		Context("on failure", func() {
-			// TODO: test failure cases using reverse proxy
-		})
+		// TODO: test when app dir is empty
+		// TODO: test without sshpass
 	})
 
 	Describe("#Export", func() {
 		It("should load the provided droplet into a Docker image with the launcher", func() {
-			stager := &Stager{
-				UI:           mockUI,
-				DiegoVersion: "0.1482.0",
-				GoVersion:    "1.7",
-				StackVersion: "1.86.0",
-				Docker:       client,
-				Logs:         GinkgoWriter,
-			}
-
-			appFileContents := bytes.NewBufferString("some-contents")
-			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
-			Expect(err).NotTo(HaveOccurred())
-
-			droplet, err := stager.Stage(&StageConfig{
-				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
-				AppConfig:  &AppConfig{Name: "some-app"},
-			}, percentColor)
-			Expect(err).NotTo(HaveOccurred())
-			defer droplet.Close()
-
-			launcher, err := stager.Download("/tmp/lifecycle/launcher")
-			Expect(err).NotTo(HaveOccurred())
-			defer launcher.Close()
-
+			progress := make(chan ui.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
 			config := &ExportConfig{
-				Droplet:  droplet,
-				Launcher: launcher,
+				Droplet:  engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
+				Launcher: engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
 				AppConfig: &AppConfig{
-					Name: "some-app",
+					Name:    "some-app",
+					Command: "some-command",
 					StagingEnv: map[string]string{
 						"SOME_NA_KEY": "some-na-value",
 					},
@@ -207,7 +163,6 @@ var _ = Describe("Runner", func() {
 						"TEST_ENV_KEY": "test-env-value",
 						"MEMORY_LIMIT": "1024m",
 					},
-
 					Services: service.Services{
 						"some-type": {{
 							Name: "some-name",
@@ -215,67 +170,48 @@ var _ = Describe("Runner", func() {
 					},
 				},
 			}
-			id, err := runner.Export(config, "")
-			Expect(err).NotTo(HaveOccurred())
-			defer func() {
-				rmiCmd := exec.Command("docker", "rmi", "-f", id)
-				session, err := gexec.Start(rmiCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "5s").Should(gexec.Exit(0))
-			}()
+			gomock.InOrder(
+				mockImage.EXPECT().Pull("cloudfoundry/cflinuxfs2:some-stack-version").Return(progress),
+				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
+					Expect(config.Hostname).To(Equal("cflocal"))
+					Expect(config.User).To(Equal("vcap"))
+					Expect(config.ExposedPorts).To(HaveLen(1))
+					_, hasPort := config.ExposedPorts["8080/tcp"]
+					Expect(hasPort).To(BeTrue())
+					sort.Strings(config.Env)
+					Expect(config.Env).To(Equal(runnerEnvFixture))
+					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
+					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
+						"/bin/bash", "-c", commitScriptFixture, "some-command",
+					}))
+					Expect(hostConfig).To(BeNil())
+				}).Return(mockContainer, nil),
+			)
 
-			port := freePort()
+			launcherCopy := mockContainer.EXPECT().CopyTo(config.Launcher, "/tmp/lifecycle/launcher")
+			dropletCopy := mockContainer.EXPECT().CopyTo(config.Droplet, "/tmp/droplet")
 
-			runCmd := exec.Command("docker", "run", "-d", "-h", "cflocal", "-p", fmt.Sprintf("%d:8080", port), id)
-			session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "5s").Should(gexec.Exit(0))
-			containerID := strings.TrimSpace(string(session.Out.Contents()))
-			defer func() {
-				rmCmd := exec.Command("docker", "rm", "-f", containerID)
-				session, err := gexec.Start(rmCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "5s").Should(gexec.Exit(0))
-			}()
+			gomock.InOrder(
+				mockContainer.EXPECT().Commit("some-ref").Return("some-image-id", nil).
+					After(launcherCopy).After(dropletCopy),
+				mockContainer.EXPECT().Close(),
+			)
 
-			Expect(get(fmt.Sprintf("http://localhost:%d/", port))).To(Equal(runningEnvFixture))
+			Expect(runner.Export(config, "some-ref")).To(Equal("some-image-id"))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 
-			// TODO: test that droplet and launcher are closed
-			// TODO: test that no containers exist
 		})
 
 		// TODO: test with custom start command
-
-		Context("on failure", func() {
-			// TODO: test failure cases using reverse proxy
-		})
 	})
 })
 
-func get(url string) string {
-	var body io.ReadCloser
-	EventuallyWithOffset(1, func() error {
-		response, err := http.Get(url)
-		if err != nil {
-			return err
-		}
-		body = response.Body
-		return nil
-	}, "10s").Should(Succeed())
-	defer body.Close()
-	bodyBytes, err := ioutil.ReadAll(body)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return string(bodyBytes)
+type mockProgress struct {
+	Value string
+	ui.Progress
 }
 
-func freePort() uint {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	defer listener.Close()
-
-	address := listener.Addr().String()
-	portStr := strings.SplitN(address, ":", 2)[1]
-	port, err := strconv.ParseUint(portStr, 10, 32)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return uint(port)
+type mockReadCloser struct {
+	Value string
+	io.ReadCloser
 }

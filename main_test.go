@@ -158,6 +158,7 @@ var _ = Describe("CF Local", func() {
 		})
 
 		// TODO: stage and push / service forwarding / app dir mounts
+		// TODO: confirm coverage matches previous local package coverage
 	})
 })
 

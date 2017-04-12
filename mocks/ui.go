@@ -5,18 +5,21 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/sclevine/cflocal/ui"
 )
 
 type MockUI struct {
-	Out   *gbytes.Buffer
-	Err   error
-	Reply map[string]string
+	Err      error
+	Out      *gbytes.Buffer
+	Reply    map[string]string
+	Progress chan ui.Progress
 }
 
 func NewMockUI() *MockUI {
 	return &MockUI{
-		Out:   gbytes.NewBuffer(),
-		Reply: map[string]string{},
+		Out:      gbytes.NewBuffer(),
+		Reply:    map[string]string{},
+		Progress: make(chan ui.Progress, 1),
 	}
 }
 
@@ -40,10 +43,10 @@ func (m *MockUI) Error(err error) {
 	m.Err = err
 }
 
-func (m *MockUI) Loading(message string, progress <-chan string, done <-chan error) error {
+func (m *MockUI) Loading(message string, progress <-chan ui.Progress) error {
 	fmt.Fprintln(m.Out, "Loading: "+message)
-	// TODO: move this to m.Progress and test calls to m.Loading
-	for range progress {
+	for p := range progress {
+		m.Progress <- p
 	}
-	return f(progress)
+	return nil
 }

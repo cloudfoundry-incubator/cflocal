@@ -66,11 +66,11 @@ var _ = Describe("Push", func() {
 			}
 			gomock.InOrder(
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockApp.EXPECT().SetDroplet("some-app", droplet, int64(100)).Return(nil),
+				mockApp.EXPECT().SetDroplet("some-app", droplet, int64(100)),
 				droplet.EXPECT().Close(),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
-				mockApp.EXPECT().SetEnv("some-app", map[string]string{"some": "env"}).Return(nil),
-				mockApp.EXPECT().Restart("some-app").Return(nil),
+				mockApp.EXPECT().SetEnv("some-app", map[string]string{"some": "env"}),
+				mockApp.EXPECT().Restart("some-app"),
 			)
 			Expect(cmd.Run([]string{"push", "some-app", "-e"})).To(Succeed())
 			Expect(mockUI.Out).To(gbytes.Say("Successfully pushed: some-app"))

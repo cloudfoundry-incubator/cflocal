@@ -16,30 +16,28 @@ import (
 	"github.com/sclevine/cflocal/service"
 )
 
-const runnerScript = `
+const RunnerScript = `
 	set -e
-
-	{{with .ForwardConfig}}
-	{{if .Forwards}}
-		echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
-		sshpass -p '{{.Code}}' ssh -f -N \
-			-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-			-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
-			-o ServerAliveInterval=10 -o ServerAliveCountMax=60 \
-			-p '{{.Port}}' '{{.User}}@{{.Host}}' \
-			{{range .Forwards}} -L '{{.From}}:{{.To}}' \
-			{{end}}
-	{{end}}
-	{{end}}
-
+	{{with .ForwardConfig -}}
+	{{if .Forwards -}}
+	echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
+	sshpass -p '{{.Code}}' ssh -f -N \
+		-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+		-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
+		-o ServerAliveInterval=10 -o ServerAliveCountMax=60 \
+		-p '{{.Port}}' '{{.User}}@{{.Host}}' \
+		{{- range $i, $_ := .Forwards}}
+		{{- if $i}} \{{end}}
+		-L '{{.From}}:{{.To}}'
+		{{- end}}
+	{{end -}}
+	{{end -}}
 	tar --exclude={{.Exclude}} -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
-
 	command=$1
 	if [[ -z $command ]]; then
 		command=$(jq -r .start_command /home/vcap/staging_info.yml)
 	fi
-
 	exec /tmp/lifecycle/launcher /home/vcap/app "$command" ''
 `
 
@@ -93,7 +91,6 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 		}
 	}
 	return contr.Start(color("[%s] ", config.AppConfig.Name), r.Logs)
-
 }
 
 type ExportConfig struct {
@@ -128,7 +125,7 @@ func (r *Runner) Export(config *ExportConfig, ref string) (imageID string, err e
 }
 
 func (r *Runner) pull() error {
-	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:" + r.StackVersion))
+	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:"+r.StackVersion))
 }
 
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
@@ -169,7 +166,6 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 		"CF_INSTANCE_IP":    "0.0.0.0",
 		"CF_INSTANCE_PORT":  "8080",
 		"CF_INSTANCE_PORTS": `[{"external":8080,"internal":8080}]`,
-		"HOME":              "/home/vcap",
 		"INSTANCE_GUID":     "999db41a-508b-46eb-74d8-6f9c06c006da",
 		"INSTANCE_INDEX":    "0",
 		"LANG":              "en_US.UTF-8",
@@ -191,14 +187,14 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}
 
 	scriptBuffer := &bytes.Buffer{}
-	if err := template.Must(template.New("").Parse(runnerScript)).Execute(scriptBuffer, options); err != nil {
+	if err := template.Must(template.New("").Parse(RunnerScript)).Execute(scriptBuffer, options); err != nil {
 		return nil, err
 	}
 
 	return &container.Config{
 		Hostname:     "cflocal",
 		User:         "vcap",
-		ExposedPorts: nat.PortSet(map[nat.Port]struct{}{"8080/tcp": {}}),
+		ExposedPorts: nat.PortSet{"8080/tcp": {}},
 		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
 		Image:        "cloudfoundry/cflinuxfs2:" + r.StackVersion,
 		WorkingDir:   "/home/vcap/app",

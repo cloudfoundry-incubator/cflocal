@@ -3,14 +3,14 @@ package cf_test
 import (
 	"errors"
 
-	. "github.com/sclevine/cflocal/cf"
-	"github.com/sclevine/cflocal/cf/mocks"
-	sharedmocks "github.com/sclevine/cflocal/mocks"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	. "github.com/sclevine/cflocal/cf"
+	"github.com/sclevine/cflocal/cf/mocks"
+	sharedmocks "github.com/sclevine/cflocal/mocks"
 )
 
 var _ = Describe("CF", func() {
@@ -61,7 +61,7 @@ var _ = Describe("CF", func() {
 			It("should run only that command", func() {
 				cmd1.EXPECT().Match([]string{"some-cmd"}).Return(false)
 				cmd2.EXPECT().Match([]string{"some-cmd"}).Return(true)
-				cmd2.EXPECT().Run([]string{"some-cmd"}).Return(nil)
+				cmd2.EXPECT().Run([]string{"some-cmd"})
 
 				Expect(cf.Run([]string{"some-cmd"})).To(Succeed())
 			})

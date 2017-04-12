@@ -17,11 +17,9 @@ import (
 	"github.com/sclevine/cflocal/service"
 )
 
-const stagerScript = `
+const StagerScript = `
 	set -e
-
 	chown -R vcap:vcap /tmp/app
-
 	exec su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
 `
 
@@ -90,7 +88,7 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet engine.Str
 		Image:      "cflocal",
 		WorkingDir: "/home/vcap",
 		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", stagerScript,
+			"/bin/bash", "-c", StagerScript,
 			strings.Join(config.Buildpacks, ","),
 			strconv.FormatBool(len(config.Buildpacks) == 1),
 		},

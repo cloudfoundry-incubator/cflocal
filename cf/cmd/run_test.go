@@ -81,9 +81,10 @@ var _ = Describe("Run", func() {
 					},
 				},
 			}
+			// TODO: don't aggressively assert on meaningless order
 			gomock.InOrder(
 				mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil),
-				mockFS.EXPECT().MakeDirAll("some-abs-dir").Return(nil),
+				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
 				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
@@ -94,10 +95,7 @@ var _ = Describe("Run", func() {
 				mockRunner.EXPECT().Run(&local.RunConfig{
 					Droplet:  engine.NewStream(droplet, 100),
 					Launcher: engine.NewStream(launcher, 200),
-					Forwarder: &local.Forwarder{
-						SSHPass: engine.NewStream(sshpass, 300),
-						Config:  forwardConfig,
-					},
+					SSHPass: engine.NewStream(sshpass, 300),
 					IP:          "0.0.0.0",
 					Port:        3000,
 					AppDir:      "some-abs-dir",
@@ -107,6 +105,7 @@ var _ = Describe("Run", func() {
 						Env:      map[string]string{"a": "b"},
 						Services: forwardedServices,
 					},
+					ForwardConfig:  forwardConfig,
 				}, gomock.Any()).Return(
 					int64(0), nil,
 				).Do(func(_ *local.RunConfig, c local.Colorizer) {

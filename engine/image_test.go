@@ -159,7 +159,6 @@ var _ = Describe("Image", func() {
 			progress := image.Pull("sclevine/test")
 			naCount := 0
 			for p := range progress {
-				fmt.Println(p.Status(), p.Err())
 				Expect(p.Err()).NotTo(HaveOccurred())
 				if p.Status() == "N/A" {
 					naCount++

@@ -78,6 +78,7 @@ var _ = Describe("Stage", func() {
 					},
 				},
 			}
+			// TODO: don't aggressively assert on meaningless order
 			gomock.InOrder(
 				mockConfig.EXPECT().Load().Return(localYML, nil),
 				mockFS.EXPECT().Tar(".").Return(appTar, nil),

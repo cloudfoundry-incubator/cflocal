@@ -1,55 +1,65 @@
 package local_test
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
-	"io"
 	"io/ioutil"
+	"sort"
 
-	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
+	"github.com/sclevine/cflocal/engine"
 	. "github.com/sclevine/cflocal/local"
-	"github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/cflocal/local/mocks"
+	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/utils"
+	"github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("Stager", func() {
 	var (
-		stager *Stager
-		mockUI *mocks.MockUI
-		logs   *gbytes.Buffer
+		stager        *Stager
+		mockCtrl      *gomock.Controller
+		mockUI        *sharedmocks.MockUI
+		mockEngine    *mocks.MockEngine
+		mockImage     *mocks.MockImage
+		mockContainer *mocks.MockContainer
 	)
 
 	BeforeEach(func() {
-		mockUI = mocks.NewMockUI()
+		mockCtrl = gomock.NewController(GinkgoT())
+		mockUI = sharedmocks.NewMockUI()
+		mockEngine = mocks.NewMockEngine(mockCtrl)
+		mockImage = mocks.NewMockImage(mockCtrl)
+		mockContainer = mocks.NewMockContainer(mockCtrl)
 
-		client, err := docker.NewEnvClient()
-		Expect(err).NotTo(HaveOccurred())
-		client.UpdateClientVersion("")
-		logs = gbytes.NewBuffer()
 		stager = &Stager{
+			DiegoVersion: "some-diego-version",
+			GoVersion:    "some-go-version",
+			StackVersion: "some-stack-version",
+			Logs:         bytes.NewBufferString("some-logs"),
 			UI:           mockUI,
-			DiegoVersion: "0.1482.0",
-			GoVersion:    "1.7",
-			StackVersion: "1.86.0",
-			Docker:       client,
-			Logs:         io.MultiWriter(logs, GinkgoWriter),
+			Engine:       mockEngine,
+			Image:        mockImage,
 		}
+	})
+
+	AfterEach(func() {
+		mockCtrl.Finish()
 	})
 
 	Describe("#Stage", func() {
 		It("should return a droplet of a staged app", func() {
-			appFileContents := bytes.NewBufferString("some-contents")
-			appTar, err := utils.TarFile("some-file", appFileContents, int64(appFileContents.Len()), 0644)
-			Expect(err).NotTo(HaveOccurred())
-			droplet, err := stager.Stage(&StageConfig{
-				AppTar:     appTar,
-				Buildpacks: []string{"https://github.com/sclevine/cflocal-buildpack#v0.0.2"},
+			progress := make(chan ui.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
+
+			config := &StageConfig{
+				AppTar:     bytes.NewBufferString("some-app-tar"),
+				Buildpacks: []string{"some-first-buildpack", "some-second-buildpack"},
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
@@ -69,78 +79,86 @@ var _ = Describe("Stager", func() {
 						}},
 					},
 				},
-			}, percentColor)
-			Expect(err).NotTo(HaveOccurred())
-			defer droplet.Close()
+			}
 
-			Expect(logs.Contents()).To(MatchRegexp(`\[some-app\] % \S+ Compile message from stderr\.`))
-			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile arguments: /tmp/app /tmp/cache`))
-			Expect(logs).To(gbytes.Say(`\[some-app\] % \S+ Compile message from stdout\.`))
+			gomock.InOrder(
+				mockImage.EXPECT().Build(gomock.Any(), gomock.Any()).Do(func(tag string, dockerfile engine.Stream) {
+					Expect(tag).To(Equal("cflocal"))
+					dfBytes, err := ioutil.ReadAll(dockerfile)
+					Expect(err).NotTo(HaveOccurred())
 
-			Expect(droplet.Size).To(BeNumerically(">", 500))
-			Expect(droplet.Size).To(BeNumerically("<", 1500))
+					Expect(dockerfile.Size).To(Equal(int64(len(dfBytes))))
+					Expect(dfBytes).To(ContainSubstring("FROM cloudfoundry/cflinuxfs2:some-stack-version"))
+					Expect(dfBytes).To(ContainSubstring("gosome-go-version.linux-amd64"))
+					Expect(dfBytes).To(ContainSubstring(`git checkout "vsome-diego-version"`))
+				}).Return(progress),
+				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
+					Expect(config.Hostname).To(Equal("cflocal"))
+					Expect(config.User).To(Equal("root"))
+					Expect(config.ExposedPorts).To(HaveLen(0))
+					sort.Strings(config.Env)
+					Expect(config.Env).To(Equal(stagerEnvFixture))
+					Expect(config.Image).To(Equal("cflocal"))
+					Expect(config.WorkingDir).To(Equal("/home/vcap"))
+					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
+						"/bin/bash", "-c", StagerScript,
+						"some-first-buildpack,some-second-buildpack", "false",
+					}))
+					Expect(hostConfig).To(BeNil())
+				}).Return(mockContainer, nil),
+			)
 
-			dropletTar, err := gzip.NewReader(droplet)
-			Expect(err).NotTo(HaveOccurred())
-			dropletBuffer, err := ioutil.ReadAll(dropletTar)
-			Expect(err).NotTo(HaveOccurred())
+			droplet := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100)
+			gomock.InOrder(
+				mockContainer.EXPECT().ExtractTo(config.AppTar, "/tmp/app"),
+				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs).Return(int64(0), nil),
+				mockContainer.EXPECT().CopyFrom("/tmp/droplet").Return(droplet, nil),
+				mockContainer.EXPECT().CloseAfterStream(&droplet),
+			)
 
-			file1, header1 := fileFromTar("./app/some-file", dropletBuffer)
-			Expect(file1).To(Equal("some-contents"))
-			Expect(header1.Uid).To(Equal(2000))
-			Expect(header1.Gid).To(Equal(2000))
-
-			file2, header2 := fileFromTar("./staging_info.yml", dropletBuffer)
-			Expect(file2).To(ContainSubstring("start_command"))
-			Expect(header2.Uid).To(Equal(2000))
-			Expect(header2.Gid).To(Equal(2000))
-
-			file3, header3 := fileFromTar("./app/env", dropletBuffer)
-			Expect(file3).To(Equal(stagingEnvFixture))
-			Expect(header3.Uid).To(Equal(2000))
-			Expect(header3.Gid).To(Equal(2000))
-
-			// TODO: test that no "some-app-staging-GUID" containers exist
-			// TODO: test that termination via ExitChan works
-			// TODO: test skipping detection when only one buildpack
-			// TODO: test UI loading call
+			Expect(stager.Stage(config, percentColor)).To(Equal(droplet))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
-		Context("on failure", func() {
-			// TODO: test failure cases using reverse proxy
-		})
+		// TODO: test single-buildpack case
+		// TODO: test non-zero command return status
 	})
 
 	Describe("#Download", func() {
 		It("should return the specified file", func() {
-			launcher, err := stager.Download("/tmp/lifecycle/launcher")
-			Expect(err).NotTo(HaveOccurred())
-			defer launcher.Close()
+			progress := make(chan ui.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
 
-			Expect(launcher.Size).To(Equal(int64(3053594)))
+			gomock.InOrder(
+				mockImage.EXPECT().Build(gomock.Any(), gomock.Any()).Do(func(tag string, dockerfile engine.Stream) {
+					Expect(tag).To(Equal("cflocal"))
+					dfBytes, err := ioutil.ReadAll(dockerfile)
+					Expect(err).NotTo(HaveOccurred())
 
-			launcherBytes, err := ioutil.ReadAll(launcher)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(launcherBytes).To(HaveLen(3053594))
+					Expect(dockerfile.Size).To(Equal(int64(len(dfBytes))))
+					Expect(dfBytes).To(ContainSubstring("FROM cloudfoundry/cflinuxfs2:some-stack-version"))
+					Expect(dfBytes).To(ContainSubstring("gosome-go-version.linux-amd64"))
+					Expect(dfBytes).To(ContainSubstring(`git checkout "vsome-diego-version"`))
+				}).Return(progress),
+				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
+					Expect(config.Hostname).To(Equal("cflocal"))
+					Expect(config.User).To(Equal("root"))
+					Expect(config.ExposedPorts).To(HaveLen(0))
+					Expect(config.Image).To(Equal("cflocal"))
+					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{"read"}))
+					Expect(hostConfig).To(BeNil())
+				}).Return(mockContainer, nil),
+			)
 
-			// TODO: test that no "some-app-launcher-GUID" containers exist
-			// TODO: test UI loading call
+			stream := engine.NewStream(mockReadCloser{Value: "some-stream"}, 100)
+			gomock.InOrder(
+				mockContainer.EXPECT().CopyFrom("/some-path").Return(stream, nil),
+				mockContainer.EXPECT().CloseAfterStream(&stream),
+			)
+
+			Expect(stager.Download("/some-path")).To(Equal(stream))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
-
-		Context("on failure", func() {
-			// TODO: test failure cases using reverse proxy
-		})
-	})
-
-	Describe("Dockerfile", func() {
-		// TODO: test docker image via docker info?
 	})
 })
-
-func fileFromTar(path string, tarball []byte) (string, *tar.Header) {
-	file, header, err := utils.FileFromTar(path, bytes.NewReader(tarball))
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	contents, err := ioutil.ReadAll(file)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return string(contents), header
-}
