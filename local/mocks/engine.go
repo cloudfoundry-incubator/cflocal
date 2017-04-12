@@ -4,9 +4,9 @@
 package mocks
 
 import (
+	container "github.com/docker/docker/api/types/container"
 	gomock "github.com/golang/mock/gomock"
 	local "github.com/sclevine/cflocal/local"
-	container "github.com/docker/docker/api/types/container"
 )
 
 // Mock of Engine interface

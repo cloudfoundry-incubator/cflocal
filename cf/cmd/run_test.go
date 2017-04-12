@@ -93,9 +93,9 @@ var _ = Describe("Run", func() {
 				mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil),
 				mockStager.EXPECT().Download("/usr/bin/sshpass").Return(engine.NewStream(sshpass, 300), nil),
 				mockRunner.EXPECT().Run(&local.RunConfig{
-					Droplet:  engine.NewStream(droplet, 100),
-					Launcher: engine.NewStream(launcher, 200),
-					SSHPass: engine.NewStream(sshpass, 300),
+					Droplet:     engine.NewStream(droplet, 100),
+					Launcher:    engine.NewStream(launcher, 200),
+					SSHPass:     engine.NewStream(sshpass, 300),
 					IP:          "0.0.0.0",
 					Port:        3000,
 					AppDir:      "some-abs-dir",
@@ -105,7 +105,7 @@ var _ = Describe("Run", func() {
 						Env:      map[string]string{"a": "b"},
 						Services: forwardedServices,
 					},
-					ForwardConfig:  forwardConfig,
+					ForwardConfig: forwardConfig,
 				}, gomock.Any()).Return(
 					int64(0), nil,
 				).Do(func(_ *local.RunConfig, c local.Colorizer) {

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/local"
 )
 
 type Export struct {

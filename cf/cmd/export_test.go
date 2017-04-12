@@ -8,10 +8,10 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/engine"
 )
 
 var _ = Describe("Export", func() {
