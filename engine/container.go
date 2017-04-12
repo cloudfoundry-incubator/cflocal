@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"archive/tar"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	gopath "path"
@@ -11,8 +13,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	docker "github.com/docker/docker/client"
 	gouuid "github.com/nu7hatch/gouuid"
-
-	"github.com/sclevine/cflocal/utils"
 )
 
 type Container struct {
@@ -88,8 +88,24 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 		return 0, err
 	}
 	defer out.Close()
-	go utils.CopyStream(logs, out, logPrefix)
+	go copyStream(logs, out, logPrefix)
 	return c.Docker.ContainerWait(ctx, c.ID)
+}
+
+func copyStream(dst io.Writer, src io.Reader, prefix string) {
+	header := make([]byte, 8)
+	for {
+		if _, err := io.ReadFull(src, header); err != nil {
+			break
+		}
+		if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
+			break
+		}
+		// TODO: bold STDERR
+		if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
+			break
+		}
+	}
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {
@@ -109,7 +125,7 @@ func (c *Container) ExtractTo(tar io.Reader, path string) error {
 }
 
 func (c *Container) CopyTo(stream Stream, path string) error {
-	tar, err := utils.TarFile(path, stream, stream.Size, 0755)
+	tar, err := tarFile(path, stream, stream.Size, 0755)
 	if err != nil {
 		return err
 	}
@@ -125,12 +141,26 @@ func (c *Container) CopyFrom(path string) (Stream, error) {
 	if err != nil {
 		return Stream{}, err
 	}
-	reader, _, err := utils.FileFromTar(gopath.Base(path), tar)
+	reader, _, err := fileFromTar(gopath.Base(path), tar)
 	if err != nil {
 		tar.Close()
 		return Stream{}, err
 	}
 	return NewStream(splitReadCloser{reader, tar}, stat.Size), nil
+}
+
+func fileFromTar(name string, archive io.Reader) (file io.Reader, header *tar.Header, err error) {
+	tarball := tar.NewReader(archive)
+	for {
+		header, err = tarball.Next()
+		if err != nil {
+			return nil, nil, err
+		}
+		if header.Name == name {
+			break
+		}
+	}
+	return tarball, header, nil
 }
 
 type splitReadCloser struct {

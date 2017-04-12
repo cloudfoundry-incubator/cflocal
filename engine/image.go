@@ -9,7 +9,6 @@ import (
 	docker "github.com/docker/docker/client"
 
 	"github.com/sclevine/cflocal/ui"
-	"github.com/sclevine/cflocal/utils"
 )
 
 type Image struct {
@@ -21,7 +20,7 @@ func (i *Image) Build(tag string, dockerfile Stream) <-chan ui.Progress {
 	ctx := context.Background()
 	progress := make(chan ui.Progress, 1)
 
-	dockerfileTar, err := utils.TarFile("Dockerfile", dockerfile, dockerfile.Size, 0644)
+	dockerfileTar, err := tarFile("Dockerfile", dockerfile, dockerfile.Size, 0644)
 	if err != nil {
 		progress <- progressError{err}
 		close(progress)

@@ -102,12 +102,15 @@ var _ = Describe("Image", func() {
 			dockerfileStream := NewStream(ioutil.NopCloser(dockerfile), int64(dockerfile.Len())+100)
 
 			progress := image.Build(tag, dockerfileStream)
-			var progressErr ui.Progress
-			Eventually(progress).Should(Receive(&progressErr))
-			Expect(progressErr.Err()).To(MatchError("EOF"))
-			Expect(progress).To(BeClosed())
+			var err error
+			for p := range progress {
+				if pErr := p.Err(); pErr != nil {
+					err = pErr
+				}
+			}
+			Expect(err).To(MatchError("EOF"))
 
-			_, _, err := client.ImageInspectWithRaw(ctx, tag)
+			_, _, err = client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).To(MatchError("Error: No such image: " + tag))
 		})
 
@@ -118,12 +121,15 @@ var _ = Describe("Image", func() {
 			dockerfileStream := NewStream(ioutil.NopCloser(dockerfile), int64(dockerfile.Len()))
 
 			progress := image.Build(tag, dockerfileStream)
-			var progressErr ui.Progress
-			Eventually(progress).Should(Receive(&progressErr))
-			Expect(progressErr.Err()).To(MatchError(HaveSuffix("Unknown instruction: SOME")))
-			Expect(progress).To(BeClosed())
+			var err error
+			for p := range progress {
+				if pErr := p.Err(); pErr != nil {
+					err = pErr
+				}
+			}
+			Expect(err).To(MatchError(HaveSuffix("Unknown instruction: SOME")))
 
-			_, _, err := client.ImageInspectWithRaw(ctx, tag)
+			_, _, err = client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).To(MatchError("Error: No such image: " + tag))
 		})
 

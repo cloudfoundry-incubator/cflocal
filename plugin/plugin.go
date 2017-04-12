@@ -19,9 +19,9 @@ import (
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/fs"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
-	"github.com/sclevine/cflocal/utils"
 )
 
 type Plugin struct {
@@ -105,7 +105,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		UI:   p.UI,
 		HTTP: httpClient,
 	}
-	fs := &utils.FS{}
+	sysFS := &fs.FS{}
 	config := &local.Config{Path: "./local.yml"}
 	help := &Help{
 		CLI: cliConnection,
@@ -119,14 +119,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				UI:     p.UI,
 				Stager: stager,
 				Runner: runner,
-				FS:     fs,
+				FS:     sysFS,
 				Help:   help,
 				Config: config,
 			},
 			&cmd.Pull{
 				UI:     p.UI,
 				App:    app,
-				FS:     fs,
+				FS:     sysFS,
 				Help:   help,
 				Config: config,
 			},
@@ -134,7 +134,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			&cmd.Push{
 				UI:     p.UI,
 				App:    app,
-				FS:     fs,
+				FS:     sysFS,
 				Help:   help,
 				Config: config,
 			},
@@ -143,7 +143,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				Stager: stager,
 				Runner: runner,
 				App:    app,
-				FS:     fs,
+				FS:     sysFS,
 				Help:   help,
 				Config: config,
 			},
@@ -151,7 +151,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				UI:     p.UI,
 				Stager: stager,
 				App:    app,
-				FS:     fs,
+				FS:     sysFS,
 				Help:   help,
 				Config: config,
 			},
