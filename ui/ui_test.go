@@ -84,7 +84,40 @@ var _ = Describe("UI", func() {
 		})
 	})
 
-	PDescribe("#Loading", func() {
+	Describe("#Loading", func() {
+		It("should drain the provided channel", func() {
+			progress := make(chan Progress, 2)
+			progress <- mockProgress{}
+			progress <- mockProgress{}
+			close(progress)
+			Expect(ui.Loading("some-message", progress)).To(Succeed())
+			Expect(progress).To(BeClosed())
+
+		})
+
+		It("should return the last error sent", func() {
+			progress := make(chan Progress, 3)
+			progress <- mockProgress{err: errors.New("first error")}
+			progress <- mockProgress{err: errors.New("second error")}
+			progress <- mockProgress{}
+			close(progress)
+			err := ui.Loading("some-message", progress)
+			Expect(err).To(MatchError("second error"))
+			Expect(progress).To(BeClosed())
+		})
+
 		// TODO: test loading bar
 	})
 })
+
+type mockProgress struct {
+	err error
+}
+
+func (m mockProgress) Err() error {
+	return m.err
+}
+
+func (m mockProgress) Status() string {
+	return "some-progress"
+}

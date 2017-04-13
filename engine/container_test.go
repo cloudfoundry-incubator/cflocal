@@ -6,15 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	gouuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
@@ -27,39 +23,15 @@ import (
 var _ = Describe("Container", func() {
 	var (
 		contr      *Container
-		client     *docker.Client
 		config     *container.Config
 		entrypoint strslice.StrSlice
 	)
-
-	containerFound := func(id string) bool {
-		_, err := client.ContainerInspect(context.Background(), contr.ID)
-		if err != nil {
-			ExpectWithOffset(1, docker.IsErrContainerNotFound(err)).To(BeTrue())
-			return false
-		}
-		return true
-	}
-
-	containerRunning := func(id string) bool {
-		info, err := client.ContainerInspect(context.Background(), contr.ID)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		return info.State.Running
-	}
 
 	BeforeEach(func() {
 		entrypoint = strslice.StrSlice{"bash"}
 	})
 
 	JustBeforeEach(func() {
-		var err error
-		client, err = docker.NewEnvClient()
-		Expect(err).NotTo(HaveOccurred())
-		client.UpdateClientVersion("")
-
-		progress := (&Image{Docker: client}).Pull("sclevine/test")
-		Eventually(progress, "5m").Should(BeClosed())
-
 		config = &container.Config{
 			Hostname:   "test-container",
 			Image:      "sclevine/test",
@@ -72,6 +44,7 @@ var _ = Describe("Container", func() {
 				"8080/tcp": {{HostIP: "127.0.0.1", HostPort: freePort()}},
 			},
 		}
+		var err error
 		contr, err = NewContainer(client, config, hostConfig)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -312,40 +285,3 @@ var _ = Describe("Container", func() {
 		})
 	})
 })
-
-func try(f func(string) bool, id string) func() bool {
-	return func() bool {
-		return f(id)
-	}
-}
-
-func freePort() string {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	defer listener.Close()
-	address := listener.Addr().String()
-	return strings.SplitN(address, ":", 2)[1]
-}
-
-func scrubEnv(old []string) (new []string) {
-	for _, v := range old {
-		switch {
-		case strings.Contains(v, "proxy="):
-		case strings.Contains(v, "PATH="):
-		default:
-			new = append(new, v)
-		}
-	}
-	return new
-}
-
-type closeTester struct {
-	io.Reader
-	closed bool
-	err    error
-}
-
-func (c *closeTester) Close() (err error) {
-	c.closed = true
-	return c.err
-}

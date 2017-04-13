@@ -2,7 +2,6 @@ package local_test
 
 import (
 	"bytes"
-	"io"
 	"sort"
 
 	"github.com/docker/docker/api/types/container"
@@ -205,13 +204,3 @@ var _ = Describe("Runner", func() {
 		// TODO: test with custom start command
 	})
 })
-
-type mockProgress struct {
-	Value string
-	ui.Progress
-}
-
-type mockReadCloser struct {
-	Value string
-	io.ReadCloser
-}

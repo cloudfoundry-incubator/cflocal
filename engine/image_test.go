@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/strslice"
-	docker "github.com/docker/docker/client"
 	gouuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,32 +16,10 @@ import (
 )
 
 var _ = Describe("Image", func() {
-	var (
-		image  *Image
-		client *docker.Client
-		ctx    context.Context
-	)
-
-	clearImage := func(image string) {
-		client.ImageRemove(ctx, image, types.ImageRemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-	}
+	var image *Image
 
 	BeforeEach(func() {
-		var err error
-		client, err = docker.NewEnvClient()
-		Expect(err).NotTo(HaveOccurred())
-		client.UpdateClientVersion("")
 		image = &Image{Docker: client}
-
-		ctx = context.Background()
-		clearImage("sclevine/test")
-	})
-
-	AfterEach(func() {
-		clearImage("sclevine/test")
 	})
 
 	Describe("#Build", func() {
@@ -76,9 +52,10 @@ var _ = Describe("Image", func() {
 					Expect(p.Status()).To(HaveSuffix("MB"))
 				}
 			}
-			Expect(naCount).To(BeNumerically(">", 10))
-			Expect(naCount).To(BeNumerically("<", 30))
+			Expect(naCount).To(BeNumerically(">", 0))
+			Expect(naCount).To(BeNumerically("<", 20))
 
+			ctx := context.Background()
 			info, _, err := client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info.RepoTags[0]).To(Equal(tag + ":latest"))
@@ -110,6 +87,7 @@ var _ = Describe("Image", func() {
 			}
 			Expect(err).To(MatchError("EOF"))
 
+			ctx := context.Background()
 			_, _, err = client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).To(MatchError("Error: No such image: " + tag))
 		})
@@ -129,6 +107,7 @@ var _ = Describe("Image", func() {
 			}
 			Expect(err).To(MatchError(HaveSuffix("Unknown instruction: SOME")))
 
+			ctx := context.Background()
 			_, _, err = client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).To(MatchError("Error: No such image: " + tag))
 		})
@@ -150,18 +129,14 @@ var _ = Describe("Image", func() {
 			Expect(progressErr.Err()).To(MatchError(ContainSubstring("non-zero code")))
 			Expect(progress).To(BeClosed())
 
+			ctx := context.Background()
 			_, _, err := client.ImageInspectWithRaw(ctx, tag)
 			Expect(err).To(MatchError("Error: No such image: " + tag))
 		})
 	})
 
 	Describe("#Pull", func() {
-		var ctx context.Context
-
-		BeforeEach(func() {
-			ctx = context.Background()
-		})
-
+		// TODO: consider using a new image for this test
 		It("should pull a Docker image", func() {
 			progress := image.Pull("sclevine/test")
 			naCount := 0
@@ -176,6 +151,7 @@ var _ = Describe("Image", func() {
 			Expect(naCount).To(BeNumerically(">", 0))
 			Expect(naCount).To(BeNumerically("<", 20))
 
+			ctx := context.Background()
 			info, _, err := client.ImageInspectWithRaw(ctx, "sclevine/test")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info.RepoTags[0]).To(Equal("sclevine/test:latest"))
