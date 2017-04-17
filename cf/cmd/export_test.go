@@ -1,6 +1,8 @@
 package cmd_test
 
 import (
+	"io/ioutil"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -59,8 +61,8 @@ var _ = Describe("Export", func() {
 
 	Describe("#Run", func() {
 		It("should export a droplet as a Docker image", func() {
-			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
-			launcher := newMockBufferCloser(mockCtrl, "some-launcher")
+			droplet := mocks.NewMockBuffer("some-droplet")
+			launcher := mocks.NewMockBuffer("some-launcher")
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
@@ -71,23 +73,24 @@ var _ = Describe("Export", func() {
 					},
 				},
 			}
-			gomock.InOrder(
-				mockConfig.EXPECT().Load().Return(localYML, nil),
-				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil),
-				mockRunner.EXPECT().Export(&local.ExportConfig{
-					Droplet:  engine.NewStream(droplet, 100),
-					Launcher: engine.NewStream(launcher, 200),
-					AppConfig: &local.AppConfig{
+			mockConfig.EXPECT().Load().Return(localYML, nil)
+			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
+			mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil)
+			mockRunner.EXPECT().Export(gomock.Any(), "some-reference").Do(
+				func(config *local.ExportConfig, _ string) {
+					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
+					Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+					Expect(config.AppConfig).To(Equal(&local.AppConfig{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},
 						Services: service.Services{"some": {{Name: "services"}}},
-					},
-				}, "some-reference").Return("some-id", nil),
-				launcher.EXPECT().Close(),
-				droplet.EXPECT().Close(),
-			)
+					}))
+				},
+			).Return("some-id", nil)
+
 			Expect(cmd.Run([]string{"export", "some-app", "-r", "some-reference"})).To(Succeed())
+			Expect(droplet.Result()).To(BeEmpty())
+			Expect(launcher.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
 		})
 

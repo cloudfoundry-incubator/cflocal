@@ -1,16 +1,16 @@
 package cmd_test
 
 import (
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	"github.com/sclevine/cflocal/local"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/remote"
-
-	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("Pull", func() {
@@ -55,8 +55,8 @@ var _ = Describe("Pull", func() {
 
 	Describe("#Run", func() {
 		It("should download a droplet and save its env vars", func() {
-			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
-			file := newMockBufferCloser(mockCtrl)
+			droplet := mocks.NewMockBuffer("some-droplet")
+			file := mocks.NewMockBuffer("")
 			env := &remote.AppEnv{
 				Staging: map[string]string{"a": "b"},
 				Running: map[string]string{"c": "d"},
@@ -86,18 +86,16 @@ var _ = Describe("Pull", func() {
 					},
 				},
 			}
-			gomock.InOrder(
-				mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil),
-				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
-				file.EXPECT().Close(),
-				droplet.EXPECT().Close(),
-				mockConfig.EXPECT().Load().Return(oldLocalYML, nil),
-				mockApp.EXPECT().Env("some-app").Return(env, nil),
-				mockApp.EXPECT().Command("some-app").Return("some-command", nil),
-				mockConfig.EXPECT().Save(newLocalYML),
-			)
+			mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil)
+			mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil)
+			mockConfig.EXPECT().Load().Return(oldLocalYML, nil)
+			mockApp.EXPECT().Env("some-app").Return(env, nil)
+			mockApp.EXPECT().Command("some-app").Return("some-command", nil)
+			mockConfig.EXPECT().Save(newLocalYML)
+
 			Expect(cmd.Run([]string{"pull", "some-app"})).To(Succeed())
-			Expect(file.String()).To(Equal("some-droplet"))
+			Expect(file.Result()).To(Equal("some-droplet"))
+			Expect(droplet.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Successfully downloaded: some-app"))
 		})
 

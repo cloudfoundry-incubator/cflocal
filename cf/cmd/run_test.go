@@ -1,6 +1,8 @@
 package cmd_test
 
 import (
+	"io/ioutil"
+
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -63,9 +65,9 @@ var _ = Describe("Run", func() {
 
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
-			droplet := newMockBufferCloser(mockCtrl, "some-droplet")
-			launcher := newMockBufferCloser(mockCtrl, "some-launcher")
-			sshpass := newMockBufferCloser(mockCtrl, "some-sshpass")
+			droplet := mocks.NewMockBuffer("some-droplet")
+			launcher := mocks.NewMockBuffer("some-launcher")
+			sshpass := mocks.NewMockBuffer("some-sshpass")
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
 			forwardConfig := &service.ForwardConfig{
@@ -81,41 +83,40 @@ var _ = Describe("Run", func() {
 					},
 				},
 			}
-			// TODO: don't aggressively assert on meaningless order
+			mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil)
+			mockConfig.EXPECT().Load().Return(localYML, nil)
+			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
+			mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil)
+			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
+			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
+			mockStager.EXPECT().Download("/usr/bin/sshpass").Return(engine.NewStream(sshpass, 300), nil)
+
 			gomock.InOrder(
-				mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil),
 				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
 				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
-				mockConfig.EXPECT().Load().Return(localYML, nil),
-				mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil),
-				mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil),
-				mockApp.EXPECT().Services("some-service-app").Return(services, nil),
-				mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil),
-				mockStager.EXPECT().Download("/usr/bin/sshpass").Return(engine.NewStream(sshpass, 300), nil),
-				mockRunner.EXPECT().Run(&local.RunConfig{
-					Droplet:     engine.NewStream(droplet, 100),
-					Launcher:    engine.NewStream(launcher, 200),
-					SSHPass:     engine.NewStream(sshpass, 300),
-					IP:          "0.0.0.0",
-					Port:        3000,
-					AppDir:      "some-abs-dir",
-					AppDirEmpty: true,
-					AppConfig: &local.AppConfig{
-						Name:     "some-app",
-						Env:      map[string]string{"a": "b"},
-						Services: forwardedServices,
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any()).Return(int64(0), nil).Do(
+					func(config *local.RunConfig, c local.Colorizer) {
+						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
+						Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+						Expect(ioutil.ReadAll(config.SSHPass)).To(Equal([]byte("some-sshpass")))
+						Expect(config.IP).To(Equal("0.0.0.0"))
+						Expect(config.Port).To(Equal(uint(3000)))
+						Expect(config.AppDir).To(Equal("some-abs-dir"))
+						Expect(config.AppDirEmpty).To(BeTrue())
+						Expect(config.AppConfig).To(Equal(&local.AppConfig{
+							Name:     "some-app",
+							Env:      map[string]string{"a": "b"},
+							Services: forwardedServices,
+						}))
+						Expect(config.ForwardConfig).To(Equal(forwardConfig))
+						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					},
-					ForwardConfig: forwardConfig,
-				}, gomock.Any()).Return(
-					int64(0), nil,
-				).Do(func(_ *local.RunConfig, c local.Colorizer) {
-					Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
-				}),
-				sshpass.EXPECT().Close(),
-				launcher.EXPECT().Close(),
-				droplet.EXPECT().Close(),
+				),
 			)
 			Expect(cmd.Run([]string{"run", "some-app", "-i", "0.0.0.0", "-p", "3000", "-d", "some-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(droplet.Result()).To(BeEmpty())
+			Expect(launcher.Result()).To(BeEmpty())
+			Expect(sshpass.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 
