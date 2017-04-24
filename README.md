@@ -172,5 +172,7 @@ Plugin cflocal successfully uninstalled.
 ## TODO
 
 * Permit specification of cflinuxfs2 version
+* Permit specification of remote app name for pull/push
+* Add persistent staging cache in .app-name.cache
 * Permit entirely offline usage
 * Add warnings about mismatched Docker client / server versions

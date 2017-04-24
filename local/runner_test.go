@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/fixtures"
 	. "github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/local/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
@@ -110,11 +111,11 @@ var _ = Describe("Runner", func() {
 					_, hasPort := config.ExposedPorts["8080/tcp"]
 					Expect(hasPort).To(BeTrue())
 					sort.Strings(config.Env)
-					Expect(config.Env).To(Equal(runnerEnvFixture))
+					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("MEMORY_LIMIT=1024m")))
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", runScriptFixture, "some-command",
+						"/bin/bash", "-c", fixtures.RunScript(), "some-command",
 					}))
 					Expect(hostConfig.PortBindings).To(HaveLen(1))
 					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
@@ -178,10 +179,10 @@ var _ = Describe("Runner", func() {
 					_, hasPort := config.ExposedPorts["8080/tcp"]
 					Expect(hasPort).To(BeTrue())
 					sort.Strings(config.Env)
-					Expect(config.Env).To(Equal(runnerEnvFixture))
+					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("MEMORY_LIMIT=1024m")))
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", commitScriptFixture, "some-command",
+						"/bin/bash", "-c", fixtures.CommitScript(), "some-command",
 					}))
 					Expect(hostConfig).To(BeNil())
 				}).Return(mockContainer, nil),

@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/fixtures"
 	. "github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/local/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
@@ -97,7 +98,7 @@ var _ = Describe("Stager", func() {
 					Expect(config.User).To(Equal("root"))
 					Expect(config.ExposedPorts).To(HaveLen(0))
 					sort.Strings(config.Env)
-					Expect(config.Env).To(Equal(stagerEnvFixture))
+					Expect(config.Env).To(Equal(fixtures.ProvidedStagingEnv("MEMORY_LIMIT=1024m")))
 					Expect(config.Image).To(Equal("cflocal"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{

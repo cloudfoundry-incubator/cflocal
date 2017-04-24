@@ -1,0 +1,12 @@
+applications:
+- name: some-app
+  staging_env:
+    TEST_STAGING_ENV_KEY: test-staging-env-value
+  running_env:
+    TEST_RUNNING_ENV_KEY: test-running-env-value
+  env:
+    TEST_ENV_KEY: test-env-value
+    LC_COLLATE: C
+  services:
+    some-type:
+    - name: some-name
