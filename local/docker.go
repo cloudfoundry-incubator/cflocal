@@ -36,7 +36,7 @@ RUN \
 
 USER vcap
 
-RUN mkdir -p /tmp/app /home/vcap/tmp
+RUN mkdir -p /tmp/app /tmp/cache /home/vcap/tmp
 `
 
 type DockerEngine struct {

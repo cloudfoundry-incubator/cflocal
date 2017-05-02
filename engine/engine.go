@@ -15,8 +15,9 @@ func NewStream(data io.ReadCloser, size int64) Stream {
 	return Stream{data, size}
 }
 
-func (s Stream) Write(dst io.Writer) error {
-	if _, err := io.CopyN(dst, s, s.Size); err != nil && err != io.EOF {
+func (s Stream) Out(dst io.Writer) error {
+	defer s.Close()
+	if _, err := io.CopyN(dst, s, s.Size); err != nil {
 		return err
 	}
 	return nil

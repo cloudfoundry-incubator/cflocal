@@ -33,7 +33,7 @@ func (c *Config) Save(localYML *LocalYML) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(c.Path, yamlBytes, 0644)
+	return ioutil.WriteFile(c.Path, yamlBytes, 0666)
 }
 
 type LocalYML struct {

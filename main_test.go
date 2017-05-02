@@ -166,13 +166,29 @@ var _ = Describe("CF Local", func() {
 
 		It("should setup the staging and running environments to mimic CF", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.4")
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session.Out.Contents()).To(ContainSubstring("Compile message from stdout."))
+				Expect(session).To(gbytes.Say("Compile message from stdout."))
+				Expect(session).To(gbytes.Say("Cache not detected."))
+				Expect(session.Out.Contents()).To(ContainSubstring("Compile message from stderr."))
+
+				Expect(os.Stat(filepath.Join(tempDir, "test-app", "some-app.droplet"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
+				Expect(os.Stat(filepath.Join(tempDir, "test-app", ".some-app.cache"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
+			})
+
+			By("restaging", func() {
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
+				stageCmd.Dir = filepath.Join(tempDir, "test-app")
+				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10m").Should(gexec.Exit(0))
+				Expect(session).To(gbytes.Say("Compile message from stdout."))
+				Expect(session).To(gbytes.Say("Cache detected."))
 				Expect(session.Out.Contents()).To(ContainSubstring("Compile message from stderr."))
 			})
 
@@ -195,7 +211,7 @@ var _ = Describe("CF Local", func() {
 				)
 				Expect(get(url, "10s")).To(Equal(response))
 
-				Eventually(session.Out.Contents).Should(ContainSubstring("Log message from stdout."))
+				Eventually(session).Should(gbytes.Say("Log message from stdout."))
 				Eventually(session.Out.Contents).Should(ContainSubstring("Log message from stderr."))
 
 				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
@@ -256,7 +272,7 @@ var _ = Describe("CF Local", func() {
 		})
 
 		It("should successfully pull, run, and push an app from CF", func() {
-			Expect(os.Mkdir(filepath.Join(tempDir, "local-app"), 0750)).To(Succeed())
+			Expect(os.Mkdir(filepath.Join(tempDir, "local-app"), 0777)).To(Succeed())
 
 			By("pulling", func() {
 				cfPushCmd := exec.Command("cf", "push", "some-app", "--random-route")

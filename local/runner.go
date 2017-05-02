@@ -57,11 +57,12 @@ type RunConfig struct {
 	Port          uint
 	AppDir        string
 	AppDirEmpty   bool
+	Color         Colorizer
 	AppConfig     *AppConfig
 	ForwardConfig *service.ForwardConfig
 }
 
-func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err error) {
+func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if err := r.pull(); err != nil {
 		return 0, err
 	}
@@ -90,16 +91,17 @@ func (r *Runner) Run(config *RunConfig, color Colorizer) (status int64, err erro
 			return 0, err
 		}
 	}
-	return contr.Start(color("[%s] ", config.AppConfig.Name), r.Logs)
+	return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
 }
 
 type ExportConfig struct {
 	Droplet   engine.Stream
 	Launcher  engine.Stream
+	Ref       string
 	AppConfig *AppConfig
 }
 
-func (r *Runner) Export(config *ExportConfig, ref string) (imageID string, err error) {
+func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 	if err := r.pull(); err != nil {
 		return "", err
 	}
@@ -121,7 +123,7 @@ func (r *Runner) Export(config *ExportConfig, ref string) (imageID string, err e
 		return "", err
 	}
 
-	return contr.Commit(ref)
+	return contr.Commit(config.Ref)
 }
 
 func (r *Runner) pull() error {

@@ -204,18 +204,20 @@ var _ = Describe("Container", func() {
 	})
 
 	Describe("#ExtractTo", func() {
-		It("should extract the provided tarball into the container", func() {
+		It("should extract the provided tarball into the container without closing it", func() {
 			tarBuffer := &bytes.Buffer{}
 			tarball := tar.NewWriter(tarBuffer)
 			Expect(tarball.WriteHeader(&tar.Header{Name: "some-file", Size: 9, Mode: 0755})).To(Succeed())
 			Expect(tarball.Write([]byte("some-data"))).To(Equal(9))
 			Expect(tarball.Close()).To(Succeed())
 
-			Expect(contr.ExtractTo(tarBuffer, "/root")).To(Succeed())
+			tar := &closeTester{Reader: tarBuffer}
+			Expect(contr.ExtractTo(tar, "/root")).To(Succeed())
 			outStream, err := contr.CopyFrom("/root/some-file")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ioutil.ReadAll(outStream)).To(Equal([]byte("some-data")))
 			Expect(outStream.Size).To(Equal(int64(9)))
+			Expect(tar.closed).To(BeFalse())
 		})
 
 		It("should return an error if extracting fails", func() {

@@ -63,6 +63,7 @@ var _ = Describe("Runner", func() {
 				Port:        400,
 				AppDir:      "some-app-dir",
 				AppDirEmpty: false,
+				Color:       percentColor,
 				AppConfig: &AppConfig{
 					Name:    "some-app",
 					Command: "some-command",
@@ -133,7 +134,7 @@ var _ = Describe("Runner", func() {
 				mockContainer.EXPECT().Close(),
 			)
 
-			Expect(runner.Run(config, percentColor)).To(Equal(int64(100)))
+			Expect(runner.Run(config)).To(Equal(int64(100)))
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
@@ -149,6 +150,7 @@ var _ = Describe("Runner", func() {
 			config := &ExportConfig{
 				Droplet:  engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
 				Launcher: engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
+				Ref:      "some-ref",
 				AppConfig: &AppConfig{
 					Name:    "some-app",
 					Command: "some-command",
@@ -197,7 +199,7 @@ var _ = Describe("Runner", func() {
 				mockContainer.EXPECT().Close(),
 			)
 
-			Expect(runner.Export(config, "some-ref")).To(Equal("some-image-id"))
+			Expect(runner.Export(config)).To(Equal("some-image-id"))
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 
 		})

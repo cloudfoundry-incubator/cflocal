@@ -65,9 +65,9 @@ var _ = Describe("Run", func() {
 
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
-			droplet := mocks.NewMockBuffer("some-droplet")
-			launcher := mocks.NewMockBuffer("some-launcher")
-			sshpass := mocks.NewMockBuffer("some-sshpass")
+			droplet := sharedmocks.NewMockBuffer("some-droplet")
+			launcher := sharedmocks.NewMockBuffer("some-launcher")
+			sshpass := sharedmocks.NewMockBuffer("some-sshpass")
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
 			forwardConfig := &service.ForwardConfig{
@@ -94,8 +94,8 @@ var _ = Describe("Run", func() {
 			gomock.InOrder(
 				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
 				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
-				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any()).Return(int64(0), nil).Do(
-					func(config *local.RunConfig, c local.Colorizer) {
+				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
+					func(config *local.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 						Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
 						Expect(ioutil.ReadAll(config.SSHPass)).To(Equal([]byte("some-sshpass")))
@@ -103,13 +103,13 @@ var _ = Describe("Run", func() {
 						Expect(config.Port).To(Equal(uint(3000)))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
 						Expect(config.AppDirEmpty).To(BeTrue())
+						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
 							Env:      map[string]string{"a": "b"},
 							Services: forwardedServices,
 						}))
 						Expect(config.ForwardConfig).To(Equal(forwardConfig))
-						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					},
 				),
 			)

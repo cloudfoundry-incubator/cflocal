@@ -96,9 +96,10 @@ func (r *Run) Run(args []string) error {
 		Port:          options.port,
 		AppDir:        absAppDir,
 		AppDirEmpty:   appDirEmpty,
+		Color:         color.GreenString,
 		AppConfig:     appConfig,
 		ForwardConfig: forwardConfig,
-	}, color.GreenString)
+	})
 	return err
 }
 

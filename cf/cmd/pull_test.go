@@ -55,8 +55,8 @@ var _ = Describe("Pull", func() {
 
 	Describe("#Run", func() {
 		It("should download a droplet and save its env vars", func() {
-			droplet := mocks.NewMockBuffer("some-droplet")
-			file := mocks.NewMockBuffer("")
+			droplet := sharedmocks.NewMockBuffer("some-droplet")
+			file := sharedmocks.NewMockBuffer("")
 			env := &remote.AppEnv{
 				Staging: map[string]string{"a": "b"},
 				Running: map[string]string{"c": "d"},

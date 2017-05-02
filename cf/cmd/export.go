@@ -50,8 +50,9 @@ func (e *Export) Run(args []string) error {
 	id, err := e.Runner.Export(&local.ExportConfig{
 		Droplet:   engine.NewStream(droplet, dropletSize),
 		Launcher:  launcher,
+		Ref:       options.reference,
 		AppConfig: getAppConfig(options.name, localYML),
-	}, options.reference)
+	})
 	if err != nil {
 		return err
 	}

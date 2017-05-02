@@ -9,6 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"io"
+
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	"github.com/sclevine/cflocal/engine"
@@ -62,14 +64,17 @@ var _ = Describe("Stage", func() {
 
 	Describe("#Run", func() {
 		It("should build a droplet", func() {
-			appTar := mocks.NewMockBuffer("some-app-tar")
-			droplet := mocks.NewMockBuffer("some-droplet")
-			file := mocks.NewMockBuffer("")
+			appTar := sharedmocks.NewMockBuffer("some-app-tar")
+			droplet := sharedmocks.NewMockBuffer("some-droplet")
+			dropletFile := sharedmocks.NewMockBuffer("")
+			cache := sharedmocks.NewMockBuffer("some-old-cache")
+
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
 			forwardConfig := &service.ForwardConfig{
 				Host: "some-ssh-host",
 			}
+
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
@@ -80,35 +85,42 @@ var _ = Describe("Stage", func() {
 					},
 				},
 			}
+
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().Tar(".").Return(appTar, nil)
 			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
+			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
 			gomock.InOrder(
-				mockStager.EXPECT().Stage(gomock.Any(), gomock.Any()).Do(
-					func(config *local.StageConfig, c local.Colorizer) {
+				mockStager.EXPECT().Stage(gomock.Any()).Do(
+					func(config *local.StageConfig) {
 						Expect(ioutil.ReadAll(config.AppTar)).To(Equal([]byte("some-app-tar")))
+						Expect(ioutil.ReadAll(config.Cache)).To(Equal([]byte("some-old-cache")))
+						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
+						Expect(config.CacheEmpty).To(BeFalse())
 						Expect(config.Buildpacks).To(Equal([]string{"https://github.com/cloudfoundry/go-buildpack"}))
+						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
 							Env:      map[string]string{"a": "b"},
 							Services: forwardedServices,
 						}))
-						Expect(c("some-text")).To(Equal(color.GreenString("some-text")))
 					},
-				).Return(engine.NewStream(droplet, 100), nil),
-				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil),
+				).Return(engine.NewStream(droplet, int64(droplet.Len())), nil),
+				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
 			Expect(cmd.Run([]string{"stage", "some-app", "-b", "go_buildpack", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
-			Expect(file.Result()).To(Equal("some-droplet"))
+			Expect(dropletFile.Result()).To(Equal("some-droplet"))
+			Expect(cache.Result()).To(Equal("some-new-cache"))
 			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
 			Expect(mockUI.Out).To(gbytes.Say("Buildpack: go_buildpack from https://github.com/cloudfoundry/go-buildpack"))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
 		// TODO: test not providing a buildpack
+		// TODO: test with empty cache
 	})
 })

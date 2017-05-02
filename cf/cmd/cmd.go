@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/fs"
 	"github.com/sclevine/cflocal/local"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/service"
@@ -33,19 +34,20 @@ type App interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
 type Stager interface {
-	Stage(config *local.StageConfig, color local.Colorizer) (droplet engine.Stream, err error)
+	Stage(config *local.StageConfig) (droplet engine.Stream, err error)
 	Download(path string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
 type Runner interface {
-	Run(config *local.RunConfig, color local.Colorizer) (status int64, err error)
-	Export(config *local.ExportConfig, reference string) (imageID string, err error)
+	Run(config *local.RunConfig) (status int64, err error)
+	Export(config *local.ExportConfig) (imageID string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
 type FS interface {
 	Tar(path string) (io.ReadCloser, error)
+	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
 	MakeDirAll(path string) error

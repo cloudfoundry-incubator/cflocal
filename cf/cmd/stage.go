@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 
+	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 )
 
@@ -33,6 +34,9 @@ func (s *Stage) Run(args []string) error {
 		s.Help.Short()
 		return err
 	}
+
+	dropletPath := fmt.Sprintf("./%s.droplet", options.name)
+	cachePath := fmt.Sprintf("./.%s.cache", options.name)
 
 	localYML, err := s.Config.Load()
 	if err != nil {
@@ -69,23 +73,29 @@ func (s *Stage) Run(args []string) error {
 		s.UI.Output("Buildpack: %s", options.buildpack)
 		buildpacks = []string{options.buildpack}
 	}
+
+	cache, cacheSize, err := s.FS.OpenFile(cachePath)
+	if err != nil {
+		return err
+	}
+	defer cache.Close()
+
 	droplet, err := s.Stager.Stage(&local.StageConfig{
 		AppTar:     appTar,
+		Cache:      cache,
+		CacheEmpty: cacheSize == 0,
 		Buildpacks: buildpacks,
+		Color:      color.GreenString,
 		AppConfig:  appConfig,
-	}, color.GreenString)
+	})
 	if err != nil {
 		return err
 	}
-	defer droplet.Close()
-	file, err := s.FS.WriteFile(fmt.Sprintf("./%s.droplet", options.name))
-	if err != nil {
+
+	if err := s.streamOut(droplet, dropletPath); err != nil {
 		return err
 	}
-	defer file.Close()
-	if err := droplet.Write(file); err != nil {
-		return err
-	}
+
 	s.UI.Output("Successfully staged: %s", options.name)
 	return nil
 }
@@ -99,6 +109,15 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
 	})
+}
+
+func (s *Stage) streamOut(stream engine.Stream, path string) error {
+	file, err := s.FS.WriteFile(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return stream.Out(file)
 }
 
 func valuesInOrder(m map[string]string, l []string) []string {

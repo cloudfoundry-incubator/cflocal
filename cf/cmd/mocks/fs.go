@@ -5,6 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	fs "github.com/sclevine/cflocal/fs"
 	io "io"
 )
 
@@ -59,6 +60,18 @@ func (_m *MockFS) MakeDirAll(_param0 string) error {
 
 func (_mr *_MockFSRecorder) MakeDirAll(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MakeDirAll", arg0)
+}
+
+func (_m *MockFS) OpenFile(_param0 string) (fs.ReadResetWriteCloser, int64, error) {
+	ret := _m.ctrl.Call(_m, "OpenFile", _param0)
+	ret0, _ := ret[0].(fs.ReadResetWriteCloser)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+func (_mr *_MockFSRecorder) OpenFile(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "OpenFile", arg0)
 }
 
 func (_m *MockFS) ReadFile(_param0 string) (io.ReadCloser, int64, error) {

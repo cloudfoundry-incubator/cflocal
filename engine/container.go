@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	gopath "path"
 	"strings"
 
@@ -121,7 +122,7 @@ func (c *Container) Commit(ref string) (imageID string, err error) {
 
 func (c *Container) ExtractTo(tar io.Reader, path string) error {
 	ctx := context.Background()
-	return c.Docker.CopyToContainer(ctx, c.ID, path, tar, types.CopyToContainerOptions{})
+	return c.Docker.CopyToContainer(ctx, c.ID, path, ioutil.NopCloser(tar), types.CopyToContainerOptions{})
 }
 
 func (c *Container) CopyTo(stream Stream, path string) error {

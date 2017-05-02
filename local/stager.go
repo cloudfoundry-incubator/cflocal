@@ -19,7 +19,7 @@ import (
 
 const StagerScript = `
 	set -e
-	chown -R vcap:vcap /tmp/app
+	chown -R vcap:vcap /tmp/app /tmp/cache
 	exec su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
 `
 
@@ -35,11 +35,19 @@ type Stager struct {
 
 type StageConfig struct {
 	AppTar     io.Reader
+	Cache      ReadResetWriter
+	CacheEmpty bool
 	Buildpacks []string
+	Color      Colorizer
 	AppConfig  *AppConfig
 }
 
-func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet engine.Stream, err error) {
+type ReadResetWriter interface {
+	io.ReadWriter
+	Reset() error
+}
+
+func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	if err := s.buildDockerfile(); err != nil {
 		return engine.Stream{}, err
 	}
@@ -103,7 +111,13 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet engine.Str
 	if err := contr.ExtractTo(config.AppTar, "/tmp/app"); err != nil {
 		return engine.Stream{}, err
 	}
-	status, err := contr.Start(color("[%s] ", config.AppConfig.Name), s.Logs)
+	if !config.CacheEmpty {
+		if err := contr.ExtractTo(config.Cache, "/tmp/cache"); err != nil {
+			return engine.Stream{}, err
+		}
+	}
+
+	status, err := contr.Start(config.Color("[%s] ", config.AppConfig.Name), s.Logs)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -111,7 +125,22 @@ func (s *Stager) Stage(config *StageConfig, color Colorizer) (droplet engine.Str
 		return engine.Stream{}, fmt.Errorf("container exited with status %d", status)
 	}
 
+	if err := config.Cache.Reset(); err != nil {
+		return engine.Stream{}, err
+	}
+	if err := streamOut(contr, config.Cache, "/tmp/output-cache"); err != nil {
+		return engine.Stream{}, err
+	}
+
 	return contr.CopyFrom("/tmp/droplet")
+}
+
+func streamOut(contr Container, out io.Writer, path string) error {
+	stream, err := contr.CopyFrom(path)
+	if err != nil {
+		return err
+	}
+	return stream.Out(out)
 }
 
 func (s *Stager) Download(path string) (stream engine.Stream, err error) {

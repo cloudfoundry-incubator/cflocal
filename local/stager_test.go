@@ -54,13 +54,21 @@ var _ = Describe("Stager", func() {
 
 	Describe("#Stage", func() {
 		It("should return a droplet of a staged app", func() {
+			localCache := sharedmocks.NewMockBuffer("some-old-cache")
+			remoteCache := sharedmocks.NewMockBuffer("some-new-cache")
+			remoteCacheStream := engine.NewStream(remoteCache, int64(remoteCache.Len()))
+			dropletStream := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100)
+
 			progress := make(chan ui.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 
 			config := &StageConfig{
 				AppTar:     bytes.NewBufferString("some-app-tar"),
+				Cache:      localCache,
+				CacheEmpty: false,
 				Buildpacks: []string{"some-first-buildpack", "some-second-buildpack"},
+				Color:      percentColor,
 				AppConfig: &AppConfig{
 					Name: "some-app",
 					StagingEnv: map[string]string{
@@ -109,15 +117,19 @@ var _ = Describe("Stager", func() {
 				}).Return(mockContainer, nil),
 			)
 
-			droplet := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100)
 			gomock.InOrder(
 				mockContainer.EXPECT().ExtractTo(config.AppTar, "/tmp/app"),
+				mockContainer.EXPECT().ExtractTo(localCache, "/tmp/cache"),
 				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs).Return(int64(0), nil),
-				mockContainer.EXPECT().CopyFrom("/tmp/droplet").Return(droplet, nil),
-				mockContainer.EXPECT().CloseAfterStream(&droplet),
+				mockContainer.EXPECT().CopyFrom("/tmp/output-cache").Return(remoteCacheStream, nil),
+				mockContainer.EXPECT().CopyFrom("/tmp/droplet").Return(dropletStream, nil),
+				mockContainer.EXPECT().CloseAfterStream(&dropletStream),
 			)
 
-			Expect(stager.Stage(config, percentColor)).To(Equal(droplet))
+			Expect(stager.Stage(config)).To(Equal(dropletStream))
+			Expect(localCache.Close()).To(Succeed())
+			Expect(localCache.Result()).To(Equal("some-new-cache"))
+			Expect(remoteCache.Result()).To(BeEmpty())
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 

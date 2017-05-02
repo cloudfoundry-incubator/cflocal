@@ -57,7 +57,7 @@ var _ = Describe("Push", func() {
 
 	Describe("#Run", func() {
 		It("should replace an app's droplet and env vars, then restart it", func() {
-			droplet := mocks.NewMockBuffer("some-droplet")
+			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
