@@ -2,6 +2,7 @@ package local
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/local/version"
 	"github.com/sclevine/cflocal/service"
 )
 
@@ -31,13 +33,14 @@ type Stager struct {
 	UI           UI
 	Engine       Engine
 	Image        Image
+	Versioner    Versioner
 }
 
 type StageConfig struct {
 	AppTar     io.Reader
 	Cache      ReadResetWriter
 	CacheEmpty bool
-	Buildpacks []string
+	Buildpack  string
 	Color      Colorizer
 	AppConfig  *AppConfig
 }
@@ -51,6 +54,17 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	if err := s.buildDockerfile(); err != nil {
 		return engine.Stream{}, err
 	}
+
+	var buildpacks []string
+	if config.Buildpack == "" {
+		s.UI.Output("Buildpack: will detect")
+		buildpacks = Buildpacks.names()
+	} else {
+		s.UI.Output("Buildpack: %s", config.Buildpack)
+		buildpacks = []string{config.Buildpack}
+	}
+
+	// TODO: fill with real information -- get/set container limits
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
 		ApplicationName:    config.AppConfig.Name,
@@ -97,8 +111,8 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		WorkingDir: "/home/vcap",
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", StagerScript,
-			strings.Join(config.Buildpacks, ","),
-			strconv.FormatBool(len(config.Buildpacks) == 1),
+			strings.Join(buildpacks, ","),
+			strconv.FormatBool(len(buildpacks) == 1),
 		},
 	}
 
@@ -162,11 +176,58 @@ func (s *Stager) Download(path string) (stream engine.Stream, err error) {
 }
 
 func (s *Stager) buildDockerfile() error {
+	buildpacks, err := s.buildpacks()
+	if err == version.ErrNetwork || err == version.ErrUnavailable {
+		s.UI.Output("Warning: cannot build image: %s", err)
+		return nil
+	}
+	if err != nil {
+		return err
+	}
 	dockerfileBuf := &bytes.Buffer{}
+	dockerfileData := struct {
+		DiegoVersion string
+		GoVersion    string
+		StackVersion string
+		Buildpacks   []buildpackInfo
+	}{
+		s.DiegoVersion,
+		s.GoVersion,
+		s.StackVersion,
+		buildpacks,
+	}
 	dockerfileTmpl := template.Must(template.New("Dockerfile").Parse(dockerfile))
-	if err := dockerfileTmpl.Execute(dockerfileBuf, s); err != nil {
+	if err := dockerfileTmpl.Execute(dockerfileBuf, dockerfileData); err != nil {
 		return err
 	}
 	dockerfileStream := engine.NewStream(ioutil.NopCloser(dockerfileBuf), int64(dockerfileBuf.Len()))
 	return s.UI.Loading("Image", s.Image.Build("cflocal", dockerfileStream))
+}
+
+func (s *Stager) buildpacks() ([]buildpackInfo, error) {
+	var buildpacks []buildpackInfo
+	for _, buildpack := range Buildpacks {
+		url, err := s.Versioner.Build(buildpack.URL, buildpack.VersionURL)
+		if err != nil {
+			return nil, err
+		}
+		checksum := fmt.Sprintf("%x", md5.Sum([]byte(buildpack.Name)))
+		info := buildpackInfo{buildpack.Name, url, checksum}
+		buildpacks = append(buildpacks, info)
+	}
+	return buildpacks, nil
+}
+
+type buildpackInfo struct {
+	Name, URL, MD5 string
+}
+
+type BuildpackList []Buildpack
+
+func (b BuildpackList) names() []string {
+	var names []string
+	for _, bp := range b {
+		names = append(names, bp.Name)
+	}
+	return names
 }

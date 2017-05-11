@@ -169,11 +169,15 @@ Plugin cflocal successfully uninstalled.
 * CF Local should not be used to download untrusted CF applications
 * CF Local is not intended for production use and is offered without warranty
 
+# Major Issues
+
+* No support for .cfignore files
+* JAR files must be unzipped to push
+
 ## TODO
 
-* Permit specification of cflinuxfs2 version
-* Permit specification of remote app name for pull/push
-* Permit entirely offline usage
-* Add warnings about mismatched Docker client / server versions
-* .cfignore, or similar
+* Respect .cfignore
 * Issue #4
+* Allow local buildpacks to be specified
+* Permit specification of cflinuxfs2 version
+* Add warnings about mismatched Docker client / server versions

@@ -36,7 +36,11 @@ RUN \
 
 USER vcap
 
-RUN mkdir -p /tmp/app /tmp/cache /home/vcap/tmp
+RUN mkdir -p /tmp/app /tmp/cache /home/vcap/tmp /tmp/buildpacks
+
+{{range .Buildpacks}}
+RUN curl -L -o /tmp/buildpack.zip "{{.URL}}" && unzip /tmp/buildpack.zip -d /tmp/buildpacks/{{.MD5}} && rm /tmp/buildpack.zip
+{{end}}
 `
 
 type DockerEngine struct {

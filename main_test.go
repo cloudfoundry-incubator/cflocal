@@ -29,62 +29,6 @@ var (
 	resetEnv func()
 )
 
-func setEnv() (set func(k, v string), reset func()) {
-	var new []string
-	saved := map[string]string{}
-	return func(k, v string) {
-			if old, ok := os.LookupEnv(k); ok {
-				saved[k] = old
-			} else {
-				new = append(new, k)
-			}
-			if err := os.Setenv(k, v); err != nil {
-				Fail(err.Error(), 1)
-			}
-		}, func() {
-			for k, v := range saved {
-				if err := os.Setenv(k, v); err != nil {
-					Fail(err.Error(), 1)
-				}
-				delete(saved, k)
-			}
-			for _, k := range new {
-				if err := os.Unsetenv(k); err != nil {
-					Fail(err.Error(), 1)
-				}
-			}
-			new = nil
-		}
-}
-
-func getEnv(k string) string {
-	v := os.Getenv(k)
-	if v == "" {
-		Fail("Not set: " + k)
-	}
-	return v
-}
-
-func ifSet(k string, ret string) string {
-	if v := os.Getenv(k); v != "true" && v != "1" {
-		return ""
-	}
-	return ret
-}
-
-func uniqueName(s string) string {
-	guid, err := gouuid.NewV4()
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return fmt.Sprintf("%s-%s", s, guid)
-}
-
-func cf(args ...string) {
-	cmd := exec.Command("cf", args...)
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	EventuallyWithOffset(1, session, "10s").Should(gexec.Exit(0))
-}
-
 var _ = BeforeSuite(func() {
 	var err error
 
@@ -338,6 +282,62 @@ var _ = Describe("CF Local", func() {
 		// TODO: confirm coverage matches previous local package coverage
 	})
 })
+
+func setEnv() (set func(k, v string), reset func()) {
+	var new []string
+	saved := map[string]string{}
+	return func(k, v string) {
+		if old, ok := os.LookupEnv(k); ok {
+			saved[k] = old
+		} else {
+			new = append(new, k)
+		}
+		if err := os.Setenv(k, v); err != nil {
+			Fail(err.Error(), 1)
+		}
+	}, func() {
+		for k, v := range saved {
+			if err := os.Setenv(k, v); err != nil {
+				Fail(err.Error(), 1)
+			}
+			delete(saved, k)
+		}
+		for _, k := range new {
+			if err := os.Unsetenv(k); err != nil {
+				Fail(err.Error(), 1)
+			}
+		}
+		new = nil
+	}
+}
+
+func getEnv(k string) string {
+	v := os.Getenv(k)
+	if v == "" {
+		Fail("Not set: " + k)
+	}
+	return v
+}
+
+func ifSet(k string, ret string) string {
+	if v := os.Getenv(k); v != "true" && v != "1" {
+		return ""
+	}
+	return ret
+}
+
+func uniqueName(s string) string {
+	guid, err := gouuid.NewV4()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return fmt.Sprintf("%s-%s", s, guid)
+}
+
+func cf(args ...string) {
+	cmd := exec.Command("cf", args...)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	EventuallyWithOffset(1, session, "10s").Should(gexec.Exit(0))
+}
 
 func get(url, timeout string) string {
 	var body io.ReadCloser

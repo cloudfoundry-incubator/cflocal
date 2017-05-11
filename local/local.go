@@ -9,6 +9,11 @@ import (
 	"github.com/sclevine/cflocal/ui"
 )
 
+//go:generate mockgen -package mocks -destination mocks/versioner.go github.com/sclevine/cflocal/local Versioner
+type Versioner interface {
+	Build(tmplURL, versionURL string) (string, error)
+}
+
 //go:generate mockgen -package mocks -destination mocks/image.go github.com/sclevine/cflocal/local Image
 type Image interface {
 	Pull(image string) <-chan ui.Progress
@@ -33,6 +38,7 @@ type Engine interface {
 
 type UI interface {
 	Loading(message string, progress <-chan ui.Progress) error
+	Output(format string, a ...interface{})
 }
 
 type Colorizer func(string, ...interface{}) string

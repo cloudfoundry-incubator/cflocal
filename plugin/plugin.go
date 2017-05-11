@@ -21,6 +21,7 @@ import (
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/fs"
 	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/local/version"
 	"github.com/sclevine/cflocal/remote"
 )
 
@@ -34,7 +35,6 @@ type Plugin struct {
 type UI interface {
 	local.UI
 	Prompt(prompt string) string
-	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
 }
@@ -58,7 +58,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
-	httpClient := &http.Client{
+	ccHTTPClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
@@ -84,6 +84,9 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Docker: client,
 		Exit:   p.Exit,
 	}
+	versioner := &version.URL{
+		Client: &http.Client{},
+	}
 	stager := &local.Stager{
 		DiegoVersion: "0.1482.0",
 		GoVersion:    "1.7",
@@ -92,6 +95,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		UI:           p.UI,
 		Engine:       dockerEngine,
 		Image:        image,
+		Versioner:    versioner,
 	}
 	runner := &local.Runner{
 		StackVersion: "latest",
@@ -103,7 +107,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	app := &remote.App{
 		CLI:  cliConnection,
 		UI:   p.UI,
-		HTTP: httpClient,
+		HTTP: ccHTTPClient,
 	}
 	sysFS := &fs.FS{}
 	config := &local.Config{Path: "./local.yml"}

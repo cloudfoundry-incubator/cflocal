@@ -27,6 +27,7 @@ var _ = Describe("Stager", func() {
 		mockUI        *sharedmocks.MockUI
 		mockEngine    *mocks.MockEngine
 		mockImage     *mocks.MockImage
+		mockVersioner *mocks.MockVersioner
 		mockContainer *mocks.MockContainer
 	)
 
@@ -35,6 +36,7 @@ var _ = Describe("Stager", func() {
 		mockUI = sharedmocks.NewMockUI()
 		mockEngine = mocks.NewMockEngine(mockCtrl)
 		mockImage = mocks.NewMockImage(mockCtrl)
+		mockVersioner = mocks.NewMockVersioner(mockCtrl)
 		mockContainer = mocks.NewMockContainer(mockCtrl)
 
 		stager = &Stager{
@@ -45,6 +47,7 @@ var _ = Describe("Stager", func() {
 			UI:           mockUI,
 			Engine:       mockEngine,
 			Image:        mockImage,
+			Versioner:    mockVersioner,
 		}
 	})
 
@@ -67,7 +70,7 @@ var _ = Describe("Stager", func() {
 				AppTar:     bytes.NewBufferString("some-app-tar"),
 				Cache:      localCache,
 				CacheEmpty: false,
-				Buildpacks: []string{"some-first-buildpack", "some-second-buildpack"},
+				Buildpack:  "some-buildpack",
 				Color:      percentColor,
 				AppConfig: &AppConfig{
 					Name: "some-app",
@@ -90,6 +93,11 @@ var _ = Describe("Stager", func() {
 				},
 			}
 
+			Expect(Buildpacks).NotTo(HaveLen(0))
+			for _, buildpack := range Buildpacks {
+				mockVersioner.EXPECT().Build(buildpack.URL, buildpack.VersionURL).Return(buildpack.Name+"-versioned-url", nil)
+			}
+
 			gomock.InOrder(
 				mockImage.EXPECT().Build(gomock.Any(), gomock.Any()).Do(func(tag string, dockerfile engine.Stream) {
 					Expect(tag).To(Equal("cflocal"))
@@ -100,6 +108,8 @@ var _ = Describe("Stager", func() {
 					Expect(dfBytes).To(ContainSubstring("FROM cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(dfBytes).To(ContainSubstring("gosome-go-version.linux-amd64"))
 					Expect(dfBytes).To(ContainSubstring(`git checkout "vsome-diego-version"`))
+					Expect(dfBytes).To(ContainSubstring(`"go_buildpack-versioned-url"`))
+					Expect(dfBytes).To(ContainSubstring("/tmp/buildpacks/d222e8f339cb0c77b7a3051618bf9ca7"))
 				}).Return(progress),
 				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
 					Expect(config.Hostname).To(Equal("cflocal"))
@@ -111,7 +121,7 @@ var _ = Describe("Stager", func() {
 					Expect(config.WorkingDir).To(Equal("/home/vcap"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
 						"/bin/bash", "-c", StagerScript,
-						"some-first-buildpack,some-second-buildpack", "false",
+						"some-buildpack", "true",
 					}))
 					Expect(hostConfig).To(BeNil())
 				}).Return(mockContainer, nil),
@@ -133,6 +143,7 @@ var _ = Describe("Stager", func() {
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
+		// TODO: test unavailable buildpack versions
 		// TODO: test single-buildpack case
 		// TODO: test non-zero command return status
 	})
@@ -142,6 +153,11 @@ var _ = Describe("Stager", func() {
 			progress := make(chan ui.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
+
+			Expect(Buildpacks).NotTo(HaveLen(0))
+			for _, buildpack := range Buildpacks {
+				mockVersioner.EXPECT().Build(buildpack.URL, buildpack.VersionURL).Return(buildpack.Name+"-versioned-url", nil)
+			}
 
 			gomock.InOrder(
 				mockImage.EXPECT().Build(gomock.Any(), gomock.Any()).Do(func(tag string, dockerfile engine.Stream) {
@@ -153,6 +169,8 @@ var _ = Describe("Stager", func() {
 					Expect(dfBytes).To(ContainSubstring("FROM cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(dfBytes).To(ContainSubstring("gosome-go-version.linux-amd64"))
 					Expect(dfBytes).To(ContainSubstring(`git checkout "vsome-diego-version"`))
+					Expect(dfBytes).To(ContainSubstring(`"go_buildpack-versioned-url"`))
+					Expect(dfBytes).To(ContainSubstring("/tmp/buildpacks/d222e8f339cb0c77b7a3051618bf9ca7"))
 				}).Return(progress),
 				mockEngine.EXPECT().NewContainer(gomock.Any(), gomock.Any()).Do(func(config *container.Config, hostConfig *container.HostConfig) {
 					Expect(config.Hostname).To(Equal("cflocal"))

@@ -60,20 +60,6 @@ func (s *Stage) Run(args []string) error {
 		s.UI.Warn("'%s' app selected for service forwarding will not be used", fApp)
 	}
 
-	lookupURL := Buildpacks[options.buildpack]
-	var buildpacks []string
-	switch {
-	case options.buildpack == "":
-		s.UI.Output("Buildpack: will detect")
-		buildpacks = valuesInOrder(Buildpacks, BuildpackOrder)
-	case lookupURL != "":
-		s.UI.Output("Buildpack: %s from %s", options.buildpack, lookupURL)
-		buildpacks = []string{lookupURL}
-	default:
-		s.UI.Output("Buildpack: %s", options.buildpack)
-		buildpacks = []string{options.buildpack}
-	}
-
 	cache, cacheSize, err := s.FS.OpenFile(cachePath)
 	if err != nil {
 		return err
@@ -84,7 +70,7 @@ func (s *Stage) Run(args []string) error {
 		AppTar:     appTar,
 		Cache:      cache,
 		CacheEmpty: cacheSize == 0,
-		Buildpacks: buildpacks,
+		Buildpack:  options.buildpack,
 		Color:      color.GreenString,
 		AppConfig:  appConfig,
 	})
