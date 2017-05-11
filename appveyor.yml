@@ -1,0 +1,15 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+clone_folder: c:\gopath\src\github.com\sclevine\cflocal
+environment:
+  GOPATH: c:\gopath
+  CF_API: api.run.pivotal.io
+  CF_USER:
+    secure: BX+xoZHbcvQ5aKoulc4VvA0TLXl8HO8SY/6KD7Mbbmk=
+  CF_PASSWORD:
+    secure: 7LmDH8a8mC5Mj6Q57gEdbA==
+  CF_ORG:
+    secure: akmk8E5mN9tazkf2TE8O8g==
+install:
+- curl -fsSL -o cf-cli.zip "https://cli.run.pivotal.io/stable?release=windows64-exe"
+- 7z x -y cf-cli.zip

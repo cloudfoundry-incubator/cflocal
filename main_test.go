@@ -287,28 +287,28 @@ func setEnv() (set func(k, v string), reset func()) {
 	var new []string
 	saved := map[string]string{}
 	return func(k, v string) {
-		if old, ok := os.LookupEnv(k); ok {
-			saved[k] = old
-		} else {
-			new = append(new, k)
-		}
-		if err := os.Setenv(k, v); err != nil {
-			Fail(err.Error(), 1)
-		}
-	}, func() {
-		for k, v := range saved {
+			if old, ok := os.LookupEnv(k); ok {
+				saved[k] = old
+			} else {
+				new = append(new, k)
+			}
 			if err := os.Setenv(k, v); err != nil {
 				Fail(err.Error(), 1)
 			}
-			delete(saved, k)
-		}
-		for _, k := range new {
-			if err := os.Unsetenv(k); err != nil {
-				Fail(err.Error(), 1)
+		}, func() {
+			for k, v := range saved {
+				if err := os.Setenv(k, v); err != nil {
+					Fail(err.Error(), 1)
+				}
+				delete(saved, k)
 			}
+			for _, k := range new {
+				if err := os.Unsetenv(k); err != nil {
+					Fail(err.Error(), 1)
+				}
+			}
+			new = nil
 		}
-		new = nil
-	}
 }
 
 func getEnv(k string) string {

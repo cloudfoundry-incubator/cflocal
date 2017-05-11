@@ -14,7 +14,7 @@ var _ = Describe("URL", func() {
 	var url *URL
 
 	BeforeEach(func() {
-		url = &URL{&http.Client{}}
+		url = &URL{Client: &http.Client{}}
 	})
 
 	Describe("#Build", func() {
