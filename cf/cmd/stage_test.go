@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"io"
 	"io/ioutil"
 
 	"github.com/fatih/color"
@@ -8,8 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-
-	"io"
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
@@ -98,7 +97,7 @@ var _ = Describe("Stage", func() {
 						Expect(ioutil.ReadAll(config.Cache)).To(Equal([]byte("some-old-cache")))
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
 						Expect(config.CacheEmpty).To(BeFalse())
-						Expect(config.Buildpacks).To(Equal([]string{"https://github.com/cloudfoundry/go-buildpack"}))
+						Expect(config.Buildpack).To(Equal("some-buildpack"))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
@@ -110,13 +109,12 @@ var _ = Describe("Stage", func() {
 				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
-			Expect(cmd.Run([]string{"stage", "some-app", "-b", "go_buildpack", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
 			Expect(cache.Result()).To(Equal("some-new-cache"))
 			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
-			Expect(mockUI.Out).To(gbytes.Say("Buildpack: go_buildpack from https://github.com/cloudfoundry/go-buildpack"))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 

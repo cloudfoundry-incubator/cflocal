@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/fixtures"
@@ -140,6 +141,7 @@ var _ = Describe("Stager", func() {
 			Expect(localCache.Close()).To(Succeed())
 			Expect(localCache.Result()).To(Equal("some-new-cache"))
 			Expect(remoteCache.Result()).To(BeEmpty())
+			Expect(mockUI.Out).To(gbytes.Say("Buildpack: some-buildpack"))
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
