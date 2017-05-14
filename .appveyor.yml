@@ -1,6 +1,7 @@
 version: 1.0.{build}
 image: Visual Studio 2017
 clone_folder: c:\gopath\src\github.com\sclevine\cflocal
+build: off
 environment:
   GOPATH: c:\gopath
   CF_API: api.run.pivotal.io

@@ -2,6 +2,7 @@
 
 [![Linux Build Status](https://travis-ci.org/sclevine/cflocal.svg?branch=master)](https://travis-ci.org/sclevine/cflocal)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/tbaf399k1d60q78j/branch/master?svg=true)](https://ci.appveyor.com/project/sclevine/cflocal/branch/master)
+[![GoDoc](https://godoc.org/github.com/sclevine/cflocal?status.svg)](https://godoc.org/github.com/sclevine/cflocal)
 
 ![CF Local Demo](https://raw.githubusercontent.com/sclevine/cflocal/master/assets/cflocal-demo.gif) \
 *Note: Image download/build only occurs when a new root FS is available.*
