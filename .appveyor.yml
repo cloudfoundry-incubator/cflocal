@@ -12,6 +12,7 @@ environment:
   CF_ORG:
     secure: akmk8E5mN9tazkf2TE8O8g==
 install:
+- go run c:\gopath\src\github.com\sclevine\cflocal\try.go
 - curl -fsSL -o cf-cli.zip "https://cli.run.pivotal.io/stable?release=windows64-exe"
 - 7z x -y cf-cli.zip
 - choco install virtualbox
