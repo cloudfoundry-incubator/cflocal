@@ -86,7 +86,7 @@ var _ = Describe("Stage", func() {
 			}
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
-			mockFS.EXPECT().TarApp(".").Return(appTar, nil)
+			mockFS.EXPECT().TarApp("some-app-dir").Return(appTar, nil)
 			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
@@ -109,7 +109,7 @@ var _ = Describe("Stage", func() {
 				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
-			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
@@ -119,6 +119,7 @@ var _ = Describe("Stage", func() {
 		})
 
 		// TODO: test not providing a buildpack
+		// TODO: test not providing an app dir
 		// TODO: test with empty cache
 	})
 })

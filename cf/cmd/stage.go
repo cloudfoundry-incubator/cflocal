@@ -20,7 +20,7 @@ type Stage struct {
 }
 
 type stageOptions struct {
-	name, buildpack        string
+	name, buildpack, app   string
 	serviceApp, forwardApp string
 }
 
@@ -42,7 +42,7 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	appTar, err := s.FS.TarApp(".")
+	appTar, err := s.FS.TarApp(options.app)
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,7 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 
 	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
 		options.name = name
+		set.StringVar(&options.app, "p", ".", "")
 		set.StringVar(&options.buildpack, "b", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")

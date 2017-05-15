@@ -25,7 +25,8 @@ Notably, CF Local:
 
 ```
 USAGE:
-   cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
+                           [ (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -44,6 +45,10 @@ STAGE OPTIONS:
                      Default: (uses detection)
    -b <url>       Use a buildpack specified by URL (git or zip-over-HTTP).
                      Default: (uses detection)
+   -p <dir>       Use the specified directory as the app directory.
+                     Default: current working directory
+   -p <zip>       Use the specified zip file contents as the app directory.
+                     Default: current working directory
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml)
@@ -124,20 +129,20 @@ applications:
 ## Install
 
 ```bash
-$ ./cflocal-v0.9.0-macos
-Plugin successfully installed. Current version: 0.9.0
+$ ./cflocal-v0.11.0-macos
+Plugin successfully installed. Current version: 0.11.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.9.0-macos
+$ cf install-plugin cflocal-0.11.0-macos
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
 
-Do you want to install the plugin cflocal-0.9.0-macos?> y
+Do you want to install the plugin cflocal-0.11.0-macos?> y
 
-Installing plugin cflocal-0.9.0-macos...
+Installing plugin cflocal-0.11.0-macos...
 OK
-Plugin cflocal v0.9.0 successfully installed.
+Plugin cflocal v0.11.0 successfully installed.
 ```
 ***Or***
 ```bash
@@ -148,9 +153,9 @@ $ cf install-plugin -r CF-Community cflocal
 Do you want to install the plugin cflocal?> y
 Looking up 'cflocal' from repository 'CF-Community'
 11354404 bytes downloaded...
-Installing plugin cflocal-0.8.0-macos...
+Installing plugin cflocal-0.11.0-macos...
 OK
-Plugin cflocal v0.8.0 successfully installed.
+Plugin cflocal v0.11.0 successfully installed.
 ```
 Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
 
@@ -162,10 +167,6 @@ Uninstalling plugin cflocal...
 OK
 Plugin cflocal successfully uninstalled.
 ```
-
-## Known Issues
-
-* JAR files currently must be unzipped to push
 
 ## Security Notes
 
