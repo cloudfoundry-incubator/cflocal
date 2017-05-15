@@ -3,7 +3,8 @@ package plugin
 const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
-   cf local stage   <name> [ (-b <name> | -b <URL>) (-s <app> | -f <app>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
+                           [ (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -23,6 +24,10 @@ STAGE OPTIONS:
                      Default: (uses detection)
    -b <url>       Use a buildpack specified by URL (git or zip-over-HTTP).
                      Default: (uses detection)
+   -p <dir>       Use the specified directory as the app directory.
+                     Default: current working directory
+   -p <zip>       Use the specified zip file contents as the app directory.
+                     Default: current working directory
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml)

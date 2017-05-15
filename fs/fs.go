@@ -2,6 +2,7 @@ package fs
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,7 +18,24 @@ func (f *FS) TarApp(path string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	files, err := appFiles(absPath)
+
+	var appDir string
+	zipper := appfiles.ApplicationZipper{}
+	if zipper.IsZipFile(absPath) {
+		appDir, err = ioutil.TempDir("", "cflocal-zip")
+		if err != nil {
+			return nil, err
+		}
+		if err := zipper.Unzip(absPath, appDir); err != nil {
+			return nil, err
+		}
+	} else {
+		appDir, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	files, err := appFiles(appDir)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +46,7 @@ func (f *FS) TarApp(path string) (io.ReadCloser, error) {
 
 func appFiles(path string) ([]string, error) {
 	var files []string
-	err := appfiles.ApplicationFiles{}.WalkAppFiles(path, func(relpath string, fullpath string) error {
+	err := appfiles.ApplicationFiles{}.WalkAppFiles(path, func(relpath, _ string) error {
 		filename := filepath.Base(relpath)
 		switch {
 		case
