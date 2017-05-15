@@ -86,7 +86,7 @@ var _ = Describe("Stage", func() {
 			}
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
-			mockFS.EXPECT().Tar(".").Return(appTar, nil)
+			mockFS.EXPECT().TarApp(".").Return(appTar, nil)
 			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
