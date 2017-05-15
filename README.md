@@ -163,6 +163,10 @@ OK
 Plugin cflocal successfully uninstalled.
 ```
 
+## Known Issues
+
+* JAR files currently must be unzipped to push
+
 ## Security Notes
 
 * Service forwarding tunnels are not active during staging
@@ -171,14 +175,8 @@ Plugin cflocal successfully uninstalled.
 * CF Local should not be used to download untrusted CF applications
 * CF Local is not intended for production use and is offered without warranty
 
-# Major Issues
-
-* No support for .cfignore files
-* JAR files must be unzipped to push
-
 ## TODO
 
-* Respect .cfignore
 * Issue #4
 * Allow local buildpacks to be specified
 * Permit specification of cflinuxfs2 version

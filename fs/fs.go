@@ -4,32 +4,50 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
+	"code.cloudfoundry.org/cli/cf/appfiles"
 	"github.com/docker/docker/pkg/archive"
 )
 
 type FS struct{}
 
-func (f *FS) Tar(path string) (io.ReadCloser, error) {
+func (f *FS) TarApp(path string) (io.ReadCloser, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
-	// TODO: ignore these files in subdirs + obey .cfignore
+	files, err := appFiles(absPath)
+	if err != nil {
+		return nil, err
+	}
 	return archive.TarWithOptions(absPath, &archive.TarOptions{
-		ExcludePatterns: []string{
-			"*.droplet",
-			".*.cache",
-			".cfignore",
-			"manifest.yml",
-			".gitignore",
-			".git",
-			".hg",
-			".svn",
-			"_darcs",
-			".DS_Store",
-		},
+		IncludeFiles: files,
 	})
+}
+
+func appFiles(path string) ([]string, error) {
+	var files []string
+	err := appfiles.ApplicationFiles{}.WalkAppFiles(path, func(relpath string, fullpath string) error {
+		filename := filepath.Base(relpath)
+		switch {
+		case
+			regexp.MustCompile(`^.+\.droplet$`).MatchString(filename),
+			regexp.MustCompile(`^\..+\.cache$`).MatchString(filename):
+			return nil
+		}
+		files = append(files, relpath)
+		return nil
+	})
+	return files, err
+}
+
+func (f *FS) ReadFile(path string) (io.ReadCloser, int64, error) {
+	return f.openFile(path, os.O_RDONLY, 0)
+}
+
+func (f *FS) WriteFile(path string) (io.WriteCloser, error) {
+	return os.Create(path)
 }
 
 type ReadResetWriteCloser interface {
@@ -53,10 +71,6 @@ func (r resetFile) Reset() error {
 	return r.Truncate(0)
 }
 
-func (f *FS) ReadFile(path string) (io.ReadCloser, int64, error) {
-	return f.openFile(path, os.O_RDONLY, 0)
-}
-
 func (f *FS) openFile(path string, flag int, perm os.FileMode) (*os.File, int64, error) {
 	file, err := os.OpenFile(path, flag, perm)
 	if err != nil {
@@ -67,10 +81,6 @@ func (f *FS) openFile(path string, flag int, perm os.FileMode) (*os.File, int64,
 		return nil, 0, err
 	}
 	return file, fileInfo.Size(), nil
-}
-
-func (f *FS) WriteFile(path string) (io.WriteCloser, error) {
-	return os.Create(path)
 }
 
 func (f *FS) MakeDirAll(path string) error {

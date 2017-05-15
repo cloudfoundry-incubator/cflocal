@@ -46,10 +46,10 @@ type Runner interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
 type FS interface {
-	Tar(path string) (io.ReadCloser, error)
-	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
+	TarApp(path string) (io.ReadCloser, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
+	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
 	MakeDirAll(path string) error
 	IsDirEmpty(path string) (bool, error)
 	Abs(path string) (string, error)

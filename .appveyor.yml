@@ -16,6 +16,6 @@ install:
 - 7z x -y cf-cli.zip
 - choco install virtualbox
 - choco install docker-machine
-- docker-machine create -d virtualbox --virtualbox-no-vtx-check --virtualbox-nat-nictype "Am79C973" --virtualbox-hostonly-nictype "Am79C973" default
-- docker-machine env --shell powershell default | iex
-- docker run -it --rm cloudfoundry/cflinuxfs2 ls
+#- docker-machine create -d virtualbox --virtualbox-no-vtx-check --virtualbox-nat-nictype "Am79C973" --virtualbox-hostonly-nictype "Am79C973" default
+#- docker-machine env --shell powershell default | iex
+#- docker run -it --rm cloudfoundry/cflinuxfs2 ls

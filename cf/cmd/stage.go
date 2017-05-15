@@ -42,7 +42,7 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	appTar, err := s.FS.Tar(".")
+	appTar, err := s.FS.TarApp(".")
 	if err != nil {
 		return err
 	}
