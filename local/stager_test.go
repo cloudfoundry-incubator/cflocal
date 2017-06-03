@@ -72,6 +72,7 @@ var _ = Describe("Stager", func() {
 				Cache:      localCache,
 				CacheEmpty: false,
 				Buildpack:  "some-buildpack",
+				AppDir:     "some-app-dir",
 				Color:      percentColor,
 				AppConfig: &AppConfig{
 					Name: "some-app",
@@ -124,7 +125,7 @@ var _ = Describe("Stager", func() {
 						"/bin/bash", "-c", StagerScript,
 						"some-buildpack", "true",
 					}))
-					Expect(hostConfig).To(BeNil())
+					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/app"}))
 				}).Return(mockContainer, nil),
 			)
 
@@ -148,6 +149,7 @@ var _ = Describe("Stager", func() {
 		// TODO: test unavailable buildpack versions
 		// TODO: test single-buildpack case
 		// TODO: test non-zero command return status
+		// TODO: test no app dir case
 	})
 
 	Describe("#Download", func() {

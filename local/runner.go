@@ -72,8 +72,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := buildHostConfig(config.IP, config.Port, config.AppDir)
-
+	hostConfig := r.buildHostConfig(config.IP, config.Port, config.AppDir)
 	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return 0, err
@@ -206,7 +205,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}, nil
 }
 
-func buildHostConfig(ip string, port uint, appDir string) *container.HostConfig {
+func (*Runner) buildHostConfig(ip string, port uint, appDir string) *container.HostConfig {
 	config := &container.HostConfig{
 		PortBindings: nat.PortMap{
 			"8080/tcp": {{HostIP: ip, HostPort: strconv.FormatUint(uint64(port), 10)}},

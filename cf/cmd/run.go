@@ -40,15 +40,15 @@ func (r *Run) Run(args []string) error {
 		r.Help.Short()
 		return err
 	}
-	absAppDir, appDirEmpty := "", false
+	appDir, appDirEmpty := "", false
 	if options.appDir != "" {
-		if absAppDir, err = r.FS.Abs(options.appDir); err != nil {
+		if appDir, err = r.FS.Abs(options.appDir); err != nil {
 			return err
 		}
-		if err := r.FS.MakeDirAll(absAppDir); err != nil {
+		if err := r.FS.MakeDirAll(appDir); err != nil {
 			return err
 		}
-		if appDirEmpty, err = r.FS.IsDirEmpty(absAppDir); err != nil {
+		if appDirEmpty, err = r.FS.IsDirEmpty(appDir); err != nil {
 			return err
 		}
 	}
@@ -94,7 +94,7 @@ func (r *Run) Run(args []string) error {
 		SSHPass:       sshpass,
 		IP:            options.ip,
 		Port:          options.port,
-		AppDir:        absAppDir,
+		AppDir:        appDir,
 		AppDirEmpty:   appDirEmpty,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,

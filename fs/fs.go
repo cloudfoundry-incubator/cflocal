@@ -132,6 +132,14 @@ func (f *FS) MakeDirAll(path string) error {
 	return os.MkdirAll(path, 0777)
 }
 
+func (f *FS) IsDir(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return info.IsDir(), nil
+}
+
 func (f *FS) IsDirEmpty(path string) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {

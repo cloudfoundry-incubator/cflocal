@@ -120,6 +120,7 @@ var _ = Describe("Stage", func() {
 
 		// TODO: test not providing a buildpack
 		// TODO: test not providing an app dir
+		// TODO: test mounting the app dir
 		// TODO: test with empty cache
 	})
 })

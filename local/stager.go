@@ -41,6 +41,7 @@ type StageConfig struct {
 	Cache      ReadResetWriter
 	CacheEmpty bool
 	Buildpack  string
+	AppDir     string
 	Color      Colorizer
 	AppConfig  *AppConfig
 }
@@ -64,59 +65,12 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		buildpacks = []string{config.Buildpack}
 	}
 
-	// TODO: fill with real information -- get/set container limits
-	vcapApp, err := json.Marshal(&vcapApplication{
-		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
-		ApplicationName:    config.AppConfig.Name,
-		ApplicationURIs:    []string{"localhost"},
-		ApplicationVersion: "2b860df9-a0a1-474c-b02f-5985f53ea0bb",
-		Limits:             map[string]uint{"fds": 16384, "mem": 512, "disk": 1024},
-		Name:               config.AppConfig.Name,
-		SpaceID:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
-		SpaceName:          "cflocal-space",
-		URIs:               []string{"localhost"},
-		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
-	})
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks)
 	if err != nil {
 		return engine.Stream{}, err
 	}
-
-	services := config.AppConfig.Services
-	if services == nil {
-		services = service.Services{}
-	}
-	vcapServices, err := json.Marshal(services)
-	if err != nil {
-		return engine.Stream{}, err
-	}
-	env := map[string]string{
-		"CF_INSTANCE_ADDR":  "",
-		"CF_INSTANCE_IP":    "0.0.0.0",
-		"CF_INSTANCE_PORT":  "",
-		"CF_INSTANCE_PORTS": "[]",
-		"CF_STACK":          "cflinuxfs2",
-		"HOME":              "/home/vcap",
-		"LANG":              "en_US.UTF-8",
-		"MEMORY_LIMIT":      "512m",
-		"PATH":              "/usr/local/bin:/usr/bin:/bin",
-		"USER":              "vcap",
-		"VCAP_APPLICATION":  string(vcapApp),
-		"VCAP_SERVICES":     string(vcapServices),
-	}
-	containerConfig := &container.Config{
-		Hostname:   "cflocal",
-		User:       "root",
-		Env:        mapToEnv(mergeMaps(env, config.AppConfig.StagingEnv, config.AppConfig.Env)),
-		Image:      "cflocal",
-		WorkingDir: "/home/vcap",
-		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", StagerScript,
-			strings.Join(buildpacks, ","),
-			strconv.FormatBool(len(buildpacks) == 1),
-		},
-	}
-
-	contr, err := s.Engine.NewContainer(containerConfig, nil)
+	hostConfig := s.buildHostConfig(config.AppDir)
+	contr, err := s.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -147,6 +101,68 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	}
 
 	return contr.CopyFrom("/tmp/droplet")
+}
+
+func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*container.Config, error) {
+	// TODO: fill with real information -- get/set container limits
+	vcapApp, err := json.Marshal(&vcapApplication{
+		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
+		ApplicationName:    config.Name,
+		ApplicationURIs:    []string{"localhost"},
+		ApplicationVersion: "2b860df9-a0a1-474c-b02f-5985f53ea0bb",
+		Limits:             map[string]uint{"fds": 16384, "mem": 512, "disk": 1024},
+		Name:               config.Name,
+		SpaceID:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
+		SpaceName:          "cflocal-space",
+		URIs:               []string{"localhost"},
+		Version:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	services := config.Services
+	if services == nil {
+		services = service.Services{}
+	}
+	vcapServices, err := json.Marshal(services)
+	if err != nil {
+		return nil, err
+	}
+	env := map[string]string{
+		"CF_INSTANCE_ADDR":  "",
+		"CF_INSTANCE_IP":    "0.0.0.0",
+		"CF_INSTANCE_PORT":  "",
+		"CF_INSTANCE_PORTS": "[]",
+		"CF_STACK":          "cflinuxfs2",
+		"HOME":              "/home/vcap",
+		"LANG":              "en_US.UTF-8",
+		"MEMORY_LIMIT":      "512m",
+		"PATH":              "/usr/local/bin:/usr/bin:/bin",
+		"USER":              "vcap",
+		"VCAP_APPLICATION":  string(vcapApp),
+		"VCAP_SERVICES":     string(vcapServices),
+	}
+	return &container.Config{
+		Hostname:   "cflocal",
+		User:       "root",
+		Env:        mapToEnv(mergeMaps(env, config.StagingEnv, config.Env)),
+		Image:      "cflocal",
+		WorkingDir: "/home/vcap",
+		Entrypoint: strslice.StrSlice{
+			"/bin/bash", "-c", StagerScript,
+			strings.Join(buildpacks, ","),
+			strconv.FormatBool(len(buildpacks) == 1),
+		},
+	}, nil
+}
+
+func (*Stager) buildHostConfig(appDir string) *container.HostConfig {
+	config := &container.HostConfig{}
+	if appDir != "" {
+		config.Binds = []string{appDir + ":/tmp/app"}
+	}
+	return config
 }
 
 func streamOut(contr Container, out io.Writer, path string) error {

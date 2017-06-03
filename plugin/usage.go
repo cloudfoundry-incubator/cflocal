@@ -4,7 +4,7 @@ const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
    cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
-                           [ (-s <app> | -f <app>) ]
+                           [ -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -29,6 +29,10 @@ STAGE OPTIONS:
    -p <zip>       Use the specified ZIP file contents as the app directory.
                      Note that JAR and WAR files use ZIP file format.
                      Default: current working directory
+   -m             Use a volume mount for the app directory instead of copying
+                     it into the container. Note that this results in
+                     modifications to the local app directory.
+                     Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml)

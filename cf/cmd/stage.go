@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 
 	"github.com/fatih/color"
 
@@ -22,6 +24,7 @@ type Stage struct {
 type stageOptions struct {
 	name, buildpack, app   string
 	serviceApp, forwardApp string
+	mount                  bool
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -42,11 +45,27 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	appTar, err := s.FS.TarApp(options.app)
-	if err != nil {
-		return err
+
+	var (
+		appTar io.ReadCloser
+		appDir string
+	)
+	if options.mount {
+		if appDir, err = s.FS.Abs(options.app); err != nil {
+			return err
+		}
+		if isDir, err := s.FS.IsDir(appDir); err != nil {
+			return err
+		} else if !isDir {
+			return errors.New("path specified with -p must be a directory to use -v")
+		}
+	} else {
+		appTar, err = s.FS.TarApp(options.app)
+		if err != nil {
+			return err
+		}
+		defer appTar.Close()
 	}
-	defer appTar.Close()
 
 	appConfig := getAppConfig(options.name, localYML)
 	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
@@ -71,6 +90,7 @@ func (s *Stage) Run(args []string) error {
 		Cache:      cache,
 		CacheEmpty: cacheSize == 0,
 		Buildpack:  options.buildpack,
+		AppDir:     appDir,
 		Color:      color.GreenString,
 		AppConfig:  appConfig,
 	})
@@ -95,6 +115,7 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		set.StringVar(&options.buildpack, "b", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
+		set.BoolVar(&options.mount, "m", false, "")
 	})
 }
 

@@ -26,7 +26,7 @@ Notably, CF Local:
 ```
 USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
-                           [ (-s <app> | -f <app>) ]
+                           [ -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -49,6 +49,10 @@ STAGE OPTIONS:
                      Default: current working directory
    -p <zip>       Use the specified zip file contents as the app directory.
                      Default: current working directory
+   -m             Use a volume mount for the app directory instead of copying
+                     it into the container. Note that this results in
+                     modifications to the local app directory.
+                     Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml)
