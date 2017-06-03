@@ -106,11 +106,3 @@ func (s *Stage) streamOut(stream engine.Stream, path string) error {
 	defer file.Close()
 	return stream.Out(file)
 }
-
-func valuesInOrder(m map[string]string, l []string) []string {
-	var result []string
-	for _, lv := range l {
-		result = append(result, m[lv])
-	}
-	return result
-}

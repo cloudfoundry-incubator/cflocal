@@ -178,7 +178,8 @@ Plugin cflocal successfully uninstalled.
 
 ## TODO
 
-* Issue #4
+* Allow specification of resource limits
+* Re-establish SSH tunnel if it closes
 * Allow local buildpacks to be specified
 * Permit specification of cflinuxfs2 version
 * Add warnings about mismatched Docker client / server versions
