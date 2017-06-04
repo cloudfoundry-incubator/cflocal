@@ -122,10 +122,10 @@ var _ = Describe("Stager", func() {
 					Expect(config.Image).To(Equal("cflocal"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", StagerScript,
+						"/bin/bash", "-c", fixtures.StageSyncScript(),
 						"some-buildpack", "true",
 					}))
-					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/app"}))
+					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
 				}).Return(mockContainer, nil),
 			)
 

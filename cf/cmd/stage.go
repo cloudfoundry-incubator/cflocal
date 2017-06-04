@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 
 	"github.com/fatih/color"
 
@@ -46,10 +45,13 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 
-	var (
-		appTar io.ReadCloser
-		appDir string
-	)
+	appTar, err := s.FS.TarApp(options.app)
+	if err != nil {
+		return err
+	}
+	defer appTar.Close()
+
+	var appDir string
 	if options.mount {
 		if appDir, err = s.FS.Abs(options.app); err != nil {
 			return err
@@ -57,14 +59,8 @@ func (s *Stage) Run(args []string) error {
 		if isDir, err := s.FS.IsDir(appDir); err != nil {
 			return err
 		} else if !isDir {
-			return errors.New("path specified with -p must be a directory to use -v")
+			return errors.New("path specified with -p must be a directory to use -m")
 		}
-	} else {
-		appTar, err = s.FS.TarApp(options.app)
-		if err != nil {
-			return err
-		}
-		defer appTar.Close()
 	}
 
 	appConfig := getAppConfig(options.name, localYML)

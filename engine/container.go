@@ -70,6 +70,7 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 	go func() {
 		select {
 		case <-done:
+			cancel()
 		case <-c.Exit:
 			cancel()
 		}

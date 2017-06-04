@@ -57,6 +57,7 @@ type RunConfig struct {
 	Port          uint
 	AppDir        string
 	AppDirEmpty   bool
+	Watch         bool
 	Color         Colorizer
 	AppConfig     *AppConfig
 	ForwardConfig *service.ForwardConfig
@@ -90,7 +91,13 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 			return 0, err
 		}
 	}
+	if !config.Watch {
+		return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
+	}
 	return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
+
+	// loop on start, goroutine for restart, monitor r.Exit
+
 }
 
 type ExportConfig struct {
@@ -186,9 +193,9 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	if excludeApp {
 		options.Exclude = "./app"
 	}
-
-	scriptBuffer := &bytes.Buffer{}
-	if err := template.Must(template.New("").Parse(RunnerScript)).Execute(scriptBuffer, options); err != nil {
+	scriptBuf := &bytes.Buffer{}
+	tmpl := template.Must(template.New("").Parse(RunnerScript))
+	if err := tmpl.Execute(scriptBuf, options); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +207,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 		Image:        "cloudfoundry/cflinuxfs2:" + r.StackVersion,
 		WorkingDir:   "/home/vcap/app",
 		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", scriptBuffer.String(), config.Command,
+			"/bin/bash", "-c", scriptBuf.String(), config.Command,
 		},
 	}, nil
 }

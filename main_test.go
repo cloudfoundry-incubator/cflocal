@@ -279,8 +279,6 @@ var _ = Describe("CF Local", func() {
 		})
 
 		It("should successfully stage and run a mounted app", func() {
-			Expect(os.Remove(filepath.Join(tempDir, "go-app", "broken.go"))).To(Succeed())
-
 			By("staging", func() {
 				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-m")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")

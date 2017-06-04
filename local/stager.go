@@ -22,7 +22,8 @@ import (
 const StagerScript = `
 	set -e
 	chown -R vcap:vcap /tmp/app /tmp/cache
-	exec su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
+	{{if not .Sync}}exec {{end}}su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
+	{{if .Sync}}rsync -a /tmp/app/ /tmp/local/{{end}}
 `
 
 type Stager struct {
@@ -65,7 +66,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		buildpacks = []string{config.Buildpack}
 	}
 
-	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks)
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks, config.AppDir != "")
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -103,7 +104,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	return contr.CopyFrom("/tmp/droplet")
 }
 
-func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*container.Config, error) {
+func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string, syncApp bool) (*container.Config, error) {
 	// TODO: fill with real information -- get/set container limits
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -129,6 +130,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*
 	if err != nil {
 		return nil, err
 	}
+
 	env := map[string]string{
 		"CF_INSTANCE_ADDR":  "",
 		"CF_INSTANCE_IP":    "0.0.0.0",
@@ -143,6 +145,13 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*
 		"VCAP_APPLICATION":  string(vcapApp),
 		"VCAP_SERVICES":     string(vcapServices),
 	}
+
+	scriptBuf := &bytes.Buffer{}
+	tmpl := template.Must(template.New("").Parse(StagerScript))
+	if err := tmpl.Execute(scriptBuf, struct{ Sync bool }{syncApp}); err != nil {
+		return nil, err
+	}
+
 	return &container.Config{
 		Hostname:   "cflocal",
 		User:       "root",
@@ -150,7 +159,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*
 		Image:      "cflocal",
 		WorkingDir: "/home/vcap",
 		Entrypoint: strslice.StrSlice{
-			"/bin/bash", "-c", StagerScript,
+			"/bin/bash", "-c", scriptBuf.String(),
 			strings.Join(buildpacks, ","),
 			strconv.FormatBool(len(buildpacks) == 1),
 		},
@@ -158,11 +167,10 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string) (*
 }
 
 func (*Stager) buildHostConfig(appDir string) *container.HostConfig {
-	config := &container.HostConfig{}
-	if appDir != "" {
-		config.Binds = []string{appDir + ":/tmp/app"}
+	if appDir == "" {
+		return nil
 	}
-	return config
+	return &container.HostConfig{Binds: []string{appDir + ":/tmp/local"}}
 }
 
 func streamOut(contr Container, out io.Writer, path string) error {

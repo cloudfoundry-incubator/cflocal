@@ -10,6 +10,10 @@ func CommitScript() string {
 	return fmt.Sprintf(runnerScript, "", "")
 }
 
+func StageSyncScript() string {
+	return fmt.Sprintf(stageScript, "", "rsync -a /tmp/app/ /tmp/local/")
+}
+
 const forwardScript = `
 	echo 'Forwarding: some-name some-other-name'
 	sshpass -p 'some-code' ssh -f -N \
@@ -29,4 +33,11 @@ const runnerScript = `
 		command=$(jq -r .start_command /home/vcap/staging_info.yml)
 	fi
 	exec /tmp/lifecycle/launcher /home/vcap/app "$command" ''
+`
+
+const stageScript = `
+	set -e
+	chown -R vcap:vcap /tmp/app /tmp/cache
+	%ssu vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
+	%s
 `

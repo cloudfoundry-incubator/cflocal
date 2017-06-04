@@ -87,6 +87,8 @@ var _ = Describe("Stage", func() {
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().TarApp("some-app-dir").Return(appTar, nil)
+			mockFS.EXPECT().Abs("some-app-dir").Return("some-abs-app-dir", nil)
+			mockFS.EXPECT().IsDir("some-abs-app-dir").Return(true, nil)
 			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
@@ -98,6 +100,7 @@ var _ = Describe("Stage", func() {
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
 						Expect(config.CacheEmpty).To(BeFalse())
 						Expect(config.Buildpack).To(Equal("some-buildpack"))
+						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
@@ -109,7 +112,7 @@ var _ = Describe("Stage", func() {
 				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
-			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-m", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
@@ -120,7 +123,8 @@ var _ = Describe("Stage", func() {
 
 		// TODO: test not providing a buildpack
 		// TODO: test not providing an app dir
-		// TODO: test mounting the app dir
+		// TODO: test not mounting the app dir
+		// TODO: test error when attempting to mount a file
 		// TODO: test with empty cache
 	})
 })
