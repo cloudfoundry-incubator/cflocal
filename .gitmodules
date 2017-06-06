@@ -50,5 +50,8 @@
 	path = vendor/golang.org/x/sys
 	url = http://github.com/golang/sys
 [submodule "vendor/github.com/go-fsnotify/fsnotify"]
-	path = vendor/github.com/go-fsnotify/fsnotify
+	path = vendor/github.com/fsnotify/fsnotify
 	url = https://github.com/go-fsnotify/fsnotify
+[submodule "vendor/github.com/fsnotify/fsevents"]
+	path = vendor/github.com/fsnotify/fsevents
+	url = https://github.com/fsnotify/fsevents

@@ -9,12 +9,13 @@
 
 CF Local is a Cloud Foundry CLI plugin that enables you to:
 
-* Build and launch CF application droplets locally in Docker
+* Build and run CF app droplets locally in Docker
 * Download droplets from Cloud Foundry and run them locally in Docker
 * Build droplets locally in Docker and push them to Cloud Foundry
 * Automatically tunnel service connections from a local app to an app running in Cloud Foundry
 * Launch droplets with their active app root mounted to a local directory
-* Export droplets as Docker images that do not require CF Local to run
+* Rapidly iterate on CF app development with only Docker installed
+* Export CF apps as Docker images that do not require CF Local to run
 
 Notably, CF Local:
 
@@ -27,7 +28,7 @@ Notably, CF Local:
 USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
                            [ -m (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
@@ -49,9 +50,11 @@ STAGE OPTIONS:
                      Default: current working directory
    -p <zip>       Use the specified zip file contents as the app directory.
                      Default: current working directory
-   -m             Use a volume mount for the app directory instead of copying
-                     it into the container. Note that this results in
-                     modifications to the local app directory.
+   -m             Mount the local app directory into the container and copy any
+                     files that were created, modified, or moved during staging
+                     back into it. No local files are deleted. Not valid when
+                     the app directory is a zip file. Should not be used
+                     without a VCS to track changes. Ideal for use with run -d.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
@@ -73,6 +76,9 @@ RUN OPTIONS:
                      If empty, the app root is copied into the directory.
                      If not empty, the app root is replaced by the directory.
                      Default: none
+   -w             When used with -d, restart the app when the contents of the
+                     mounted directory are changed.
+                     Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml or app provided by -f)

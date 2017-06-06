@@ -8,6 +8,7 @@ import (
 	"io"
 	gopath "path"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -59,7 +60,7 @@ type causer interface {
 
 func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err error) {
 	defer func() {
-		if err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled")) {
+		if isErrCanceled(err) {
 			status, err = 128, nil
 			return
 		}
@@ -91,6 +92,32 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 	defer out.Close()
 	go copyStream(logs, out, logPrefix)
 	return c.Docker.ContainerWait(ctx, c.ID)
+}
+
+func (c *Container) Stop() (err error) {
+	defer func() {
+		if isErrCanceled(err) {
+			err = nil
+		}
+	}()
+	done := make(chan struct{})
+	defer close(done)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-done:
+			cancel()
+		case <-c.Exit:
+			cancel()
+		}
+	}()
+
+	wait := time.Second
+	return c.Docker.ContainerStop(ctx, c.ID, &wait)
+}
+
+func isErrCanceled(err error) bool {
+	return err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled"))
 }
 
 func copyStream(dst io.Writer, src io.Reader, prefix string) {

@@ -290,7 +290,7 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".")
+				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
@@ -299,11 +299,13 @@ var _ = Describe("CF Local", func() {
 				message := `Running some-app on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
-				url := fmt.Sprintf("http://localhost:%s/some-path", port)
+				url := fmt.Sprintf("http://localhost:%s/file", port)
 
-				Expect(get(url, "10s")).To(Equal("Path: /some-path"))
+				Expect(get(url, "10s")).To(Equal("some-contents"))
+				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
+				Expect(get(url, "10s")).To(Equal("some-other-contents"))
+
 				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
-
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})

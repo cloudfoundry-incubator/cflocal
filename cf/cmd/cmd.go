@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/fs"
@@ -54,6 +55,7 @@ type FS interface {
 	IsDir(path string) (bool, error)
 	IsDirEmpty(path string) (bool, error)
 	Abs(path string) (string, error)
+	Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf/cmd Help

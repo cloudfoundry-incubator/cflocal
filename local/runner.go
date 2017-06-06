@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
@@ -57,7 +58,7 @@ type RunConfig struct {
 	Port          uint
 	AppDir        string
 	AppDirEmpty   bool
-	Watch         bool
+	Restart       <-chan time.Time
 	Color         Colorizer
 	AppConfig     *AppConfig
 	ForwardConfig *service.ForwardConfig
@@ -91,13 +92,26 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 			return 0, err
 		}
 	}
-	if !config.Watch {
-		return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
+
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		for {
+			select {
+			case <-config.Restart:
+				contr.Stop() // TODO: log stop errors
+			case <-done:
+				return
+			}
+		}
+	}()
+	for status != 128 && err == nil {
+		status, err = contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
+		if config.Restart == nil {
+			break
+		}
 	}
-	return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
-
-	// loop on start, goroutine for restart, monitor r.Exit
-
+	return status, err
 }
 
 type ExportConfig struct {

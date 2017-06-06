@@ -161,6 +161,10 @@ var _ = Describe("Container", func() {
 		})
 	})
 
+	PDescribe("#Stop", func() {
+
+	})
+
 	Describe("#Commit", func() {
 		It("should create an image using the state of the container", func() {
 			ctx := context.Background()

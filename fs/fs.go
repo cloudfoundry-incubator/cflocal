@@ -6,11 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"time"
 
 	"code.cloudfoundry.org/cli/cf/appfiles"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/go-fsnotify/fsnotify"
 )
 
 type FS struct{}
@@ -157,38 +155,4 @@ func (f *FS) IsDirEmpty(path string) (bool, error) {
 
 func (f *FS) Abs(path string) (string, error) {
 	return filepath.Abs(path)
-}
-
-func (f *FS) Watch(dir string, wait time.Duration) (<-chan struct{}, error) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-	defer watcher.Close()
-
-	// TODO: log errors (but don't fail on them)
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && info.Mode().IsDir() {
-			watcher.Add(path)
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	change := make(chan struct{})
-	go func() {
-		var after <-chan time.Time
-		for {
-			select {
-			case <-watcher.Errors:
-			case <-watcher.Events:
-				after = time.After(wait)
-			case <-after:
-				change <- struct{}{}
-			}
-		}
-	}()
-
-	return change, nil
 }

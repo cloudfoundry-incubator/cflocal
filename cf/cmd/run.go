@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 
@@ -28,6 +30,7 @@ type runOptions struct {
 	serviceApp, forwardApp string
 	ip                     string
 	port                   uint
+	watch                  bool
 }
 
 func (r *Run) Match(args []string) bool {
@@ -40,7 +43,11 @@ func (r *Run) Run(args []string) error {
 		r.Help.Short()
 		return err
 	}
-	appDir, appDirEmpty := "", false
+	var (
+		appDir      string
+		appDirEmpty bool
+		restart     <-chan time.Time
+	)
 	if options.appDir != "" {
 		if appDir, err = r.FS.Abs(options.appDir); err != nil {
 			return err
@@ -51,6 +58,16 @@ func (r *Run) Run(args []string) error {
 		if appDirEmpty, err = r.FS.IsDirEmpty(appDir); err != nil {
 			return err
 		}
+		if options.watch {
+			var done chan<- struct{}
+			restart, done, err = r.FS.Watch(appDir, time.Second)
+			if err != nil {
+				return err
+			}
+			defer close(done)
+		}
+	} else if options.watch {
+		return errors.New("-w is only valid with -d")
 	}
 
 	localYML, err := r.Config.Load()
@@ -96,6 +113,7 @@ func (r *Run) Run(args []string) error {
 		Port:          options.port,
 		AppDir:        appDir,
 		AppDirEmpty:   appDirEmpty,
+		Restart:       restart,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
 		ForwardConfig: forwardConfig,
@@ -117,6 +135,7 @@ func (*Run) options(args []string) (*runOptions, error) {
 		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
+		set.BoolVar(&options.watch, "w", false, "")
 	})
 }
 

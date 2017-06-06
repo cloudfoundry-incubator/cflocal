@@ -5,7 +5,7 @@ const Usage = ShortUsage + "\n" + LongUsage
 const ShortUsage = `
    cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
                            [ -m (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
@@ -29,9 +29,11 @@ STAGE OPTIONS:
    -p <zip>       Use the specified ZIP file contents as the app directory.
                      Note that JAR and WAR files use ZIP file format.
                      Default: current working directory
-   -m             Use a volume mount for the app directory instead of copying
-                     it into the container. Note that this results in
-                     modifications to the local app directory.
+   -m             Mount the local app directory into the container and copy any
+                     files that were created, modified, or moved during staging
+                     back into it. No local files are deleted. Not valid when
+                     the app directory is a zip file. Should not be used
+                     without a VCS to track changes. Ideal for use with run -d.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
@@ -53,6 +55,9 @@ RUN OPTIONS:
                      If empty, the app root is copied into the directory.
                      If not empty, the app root is replaced by the directory.
                      Default: none
+   -w             When used with -d, restart the app when the contents of the
+                     mounted directory are changed.
+                     Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml or app provided by -f)
