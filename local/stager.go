@@ -22,8 +22,8 @@ import (
 const StagerScript = `
 	set -e
 	chown -R vcap:vcap /tmp/app /tmp/cache
-	{{if not .Sync}}exec {{end}}su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
-	{{if .Sync}}rsync -a /tmp/app/ /tmp/local/{{end}}
+	{{if not .RSync}}exec {{end}}su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
+	{{if .RSync}}rsync -a /tmp/app/ /tmp/local/{{end}}
 `
 
 type Stager struct {
@@ -42,7 +42,7 @@ type StageConfig struct {
 	Cache      ReadResetWriter
 	CacheEmpty bool
 	Buildpack  string
-	AppDir     string
+	RSyncDir   string
 	Color      Colorizer
 	AppConfig  *AppConfig
 }
@@ -66,11 +66,11 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		buildpacks = []string{config.Buildpack}
 	}
 
-	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks, config.AppDir != "")
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks, config.RSyncDir != "")
 	if err != nil {
 		return engine.Stream{}, err
 	}
-	hostConfig := s.buildHostConfig(config.AppDir)
+	hostConfig := s.buildHostConfig(config.RSyncDir)
 	contr, err := s.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return engine.Stream{}, err
@@ -148,7 +148,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string, sy
 
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(StagerScript))
-	if err := tmpl.Execute(scriptBuf, struct{ Sync bool }{syncApp}); err != nil {
+	if err := tmpl.Execute(scriptBuf, struct{ RSync bool }{syncApp}); err != nil {
 		return nil, err
 	}
 
@@ -166,11 +166,11 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string, sy
 	}, nil
 }
 
-func (*Stager) buildHostConfig(appDir string) *container.HostConfig {
-	if appDir == "" {
+func (*Stager) buildHostConfig(rsyncDir string) *container.HostConfig {
+	if rsyncDir == "" {
 		return nil
 	}
-	return &container.HostConfig{Binds: []string{appDir + ":/tmp/local"}}
+	return &container.HostConfig{Binds: []string{rsyncDir + ":/tmp/local"}}
 }
 
 func streamOut(contr Container, out io.Writer, path string) error {

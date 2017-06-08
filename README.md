@@ -50,7 +50,7 @@ STAGE OPTIONS:
                      Default: current working directory
    -p <zip>       Use the specified zip file contents as the app directory.
                      Default: current working directory
-   -m             Mount the local app directory into the container and copy any
+   -r <dir>       Mount the provided directory into the container and rsync any
                      files that were created, modified, or moved during staging
                      back into it. No local files are deleted. Not valid when
                      the app directory is a zip file. Should not be used

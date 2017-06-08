@@ -280,7 +280,7 @@ var _ = Describe("CF Local", func() {
 
 		It("should successfully stage and run a mounted app", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-m")
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-r", ".")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())

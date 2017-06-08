@@ -100,7 +100,7 @@ var _ = Describe("Stage", func() {
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
 						Expect(config.CacheEmpty).To(BeFalse())
 						Expect(config.Buildpack).To(Equal("some-buildpack"))
-						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
+						Expect(config.RSyncDir).To(Equal("some-abs-app-dir"))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
@@ -112,7 +112,7 @@ var _ = Describe("Stage", func() {
 				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
-			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-m", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-r", ".", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))

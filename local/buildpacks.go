@@ -6,6 +6,7 @@ type Buildpack struct {
 	VersionURL string
 }
 
+// TODO: merge the version URLs into a single JSON file with download URLs
 var Buildpacks BuildpackList = []Buildpack{
 	{
 		Name:       "staticfile_buildpack",

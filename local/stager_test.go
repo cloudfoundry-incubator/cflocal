@@ -72,7 +72,7 @@ var _ = Describe("Stager", func() {
 				Cache:      localCache,
 				CacheEmpty: false,
 				Buildpack:  "some-buildpack",
-				AppDir:     "some-app-dir",
+				RSyncDir:   "some-app-dir",
 				Color:      percentColor,
 				AppConfig: &AppConfig{
 					Name: "some-app",

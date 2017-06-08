@@ -29,7 +29,7 @@ STAGE OPTIONS:
    -p <zip>       Use the specified ZIP file contents as the app directory.
                      Note that JAR and WAR files use ZIP file format.
                      Default: current working directory
-   -m             Mount the local app directory into the container and copy any
+   -r <dir>       Mount the provided directory into the container and rsync any
                      files that were created, modified, or moved during staging
                      back into it. No local files are deleted. Not valid when
                      the app directory is a zip file. Should not be used

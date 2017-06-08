@@ -23,7 +23,7 @@ type Stage struct {
 type stageOptions struct {
 	name, buildpack, app   string
 	serviceApp, forwardApp string
-	mount                  bool
+	rsync                  string
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -51,12 +51,12 @@ func (s *Stage) Run(args []string) error {
 	}
 	defer appTar.Close()
 
-	var appDir string
-	if options.mount {
-		if appDir, err = s.FS.Abs(options.app); err != nil {
+	var rsyncDir string
+	if options.rsync != "" {
+		if rsyncDir, err = s.FS.Abs(options.rsync); err != nil {
 			return err
 		}
-		if isDir, err := s.FS.IsDir(appDir); err != nil {
+		if isDir, err := s.FS.IsDir(rsyncDir); err != nil {
 			return err
 		} else if !isDir {
 			return errors.New("path specified with -p must be a directory to use -m")
@@ -86,7 +86,7 @@ func (s *Stage) Run(args []string) error {
 		Cache:      cache,
 		CacheEmpty: cacheSize == 0,
 		Buildpack:  options.buildpack,
-		AppDir:     appDir,
+		RSyncDir:   rsyncDir,
 		Color:      color.GreenString,
 		AppConfig:  appConfig,
 	})
@@ -111,7 +111,7 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		set.StringVar(&options.buildpack, "b", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
-		set.BoolVar(&options.mount, "m", false, "")
+		set.StringVar(&options.rsync, "r", "", "")
 	})
 }
 
