@@ -30,7 +30,7 @@ type runOptions struct {
 	serviceApp, forwardApp string
 	ip                     string
 	port                   uint
-	watch                  bool
+	rsync, watch           bool
 }
 
 func (r *Run) Match(args []string) bool {
@@ -68,6 +68,8 @@ func (r *Run) Run(args []string) error {
 		}
 	} else if options.watch {
 		return errors.New("-w is only valid with -d")
+	} else if options.rsync {
+		return errors.New("-r is only valid with -d")
 	}
 
 	localYML, err := r.Config.Load()
@@ -113,6 +115,7 @@ func (r *Run) Run(args []string) error {
 		Port:          options.port,
 		AppDir:        appDir,
 		AppDirEmpty:   appDirEmpty,
+		RSync:         options.rsync,
 		Restart:       restart,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
@@ -135,6 +138,7 @@ func (*Run) options(args []string) (*runOptions, error) {
 		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
+		set.BoolVar(&options.rsync, "r", false, "")
 		set.BoolVar(&options.watch, "w", false, "")
 	})
 }

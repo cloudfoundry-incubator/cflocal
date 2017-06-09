@@ -102,3 +102,13 @@ func (_m *MockContainer) Start(_param0 string, _param1 io.Writer) (int64, error)
 func (_mr *_MockContainerRecorder) Start(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start", arg0, arg1)
 }
+
+func (_m *MockContainer) Stop() error {
+	ret := _m.ctrl.Call(_m, "Stop")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockContainerRecorder) Stop() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Stop")
+}

@@ -52,7 +52,6 @@ type FS interface {
 	WriteFile(path string) (io.WriteCloser, error)
 	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
 	MakeDirAll(path string) error
-	IsDir(path string) (bool, error)
 	IsDirEmpty(path string) (bool, error)
 	Abs(path string) (string, error)
 	Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error)

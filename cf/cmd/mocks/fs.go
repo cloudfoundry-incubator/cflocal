@@ -7,6 +7,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	fs "github.com/sclevine/cflocal/fs"
 	io "io"
+	time "time"
 )
 
 // Mock of FS interface
@@ -39,17 +40,6 @@ func (_m *MockFS) Abs(_param0 string) (string, error) {
 
 func (_mr *_MockFSRecorder) Abs(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Abs", arg0)
-}
-
-func (_m *MockFS) IsDir(_param0 string) (bool, error) {
-	ret := _m.ctrl.Call(_m, "IsDir", _param0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockFSRecorder) IsDir(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsDir", arg0)
 }
 
 func (_m *MockFS) IsDirEmpty(_param0 string) (bool, error) {
@@ -106,6 +96,18 @@ func (_m *MockFS) TarApp(_param0 string) (io.ReadCloser, error) {
 
 func (_mr *_MockFSRecorder) TarApp(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TarApp", arg0)
+}
+
+func (_m *MockFS) Watch(_param0 string, _param1 time.Duration) (<-chan time.Time, chan<- struct{}, error) {
+	ret := _m.ctrl.Call(_m, "Watch", _param0, _param1)
+	ret0, _ := ret[0].(<-chan time.Time)
+	ret1, _ := ret[1].(chan<- struct{})
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+func (_mr *_MockFSRecorder) Watch(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Watch", arg0, arg1)
 }
 
 func (_m *MockFS) WriteFile(_param0 string) (io.WriteCloser, error) {

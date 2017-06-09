@@ -33,7 +33,9 @@ const RunnerScript = `
 		{{- end}}
 	{{end -}}
 	{{end -}}
-	tar --exclude={{.Exclude}} -C /home/vcap -xzf /tmp/droplet
+	{{if .RSync}}rsync -a /tmp/local/ /home/vcap/app/
+	{{end -}}
+	tar{{if .ExcludeApp}} --exclude=./app{{end}} -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
 	command=$1
 	if [[ -z $command ]]; then
@@ -58,6 +60,7 @@ type RunConfig struct {
 	Port          uint
 	AppDir        string
 	AppDirEmpty   bool
+	RSync         bool
 	Restart       <-chan time.Time
 	Color         Colorizer
 	AppConfig     *AppConfig
@@ -70,11 +73,15 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	}
 
 	excludeApp := config.AppDir != "" && !config.AppDirEmpty
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, excludeApp)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, excludeApp, config.RSync)
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := r.buildHostConfig(config.IP, config.Port, config.AppDir)
+	remoteDir := "/home/vcap/app"
+	if config.RSync {
+		remoteDir = "/tmp/local"
+	}
+	hostConfig := r.buildHostConfig(config.IP, config.Port, config.AppDir, remoteDir)
 	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return 0, err
@@ -126,7 +133,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 		return "", err
 	}
 
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false, false)
 	if err != nil {
 		return "", err
 	}
@@ -150,7 +157,7 @@ func (r *Runner) pull() error {
 	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:"+r.StackVersion))
 }
 
-func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp bool) (*container.Config, error) {
+func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp, rsync bool) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -201,12 +208,10 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}
 
 	options := struct {
-		Exclude       string
+		RSync         bool
+		ExcludeApp    bool
 		ForwardConfig *service.ForwardConfig
-	}{"", forwardConfig}
-	if excludeApp {
-		options.Exclude = "./app"
-	}
+	}{rsync, excludeApp, forwardConfig}
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(RunnerScript))
 	if err := tmpl.Execute(scriptBuf, options); err != nil {
@@ -226,14 +231,14 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}, nil
 }
 
-func (*Runner) buildHostConfig(ip string, port uint, appDir string) *container.HostConfig {
+func (*Runner) buildHostConfig(ip string, port uint, appDir, remoteDir string) *container.HostConfig {
 	config := &container.HostConfig{
 		PortBindings: nat.PortMap{
 			"8080/tcp": {{HostIP: ip, HostPort: strconv.FormatUint(uint64(port), 10)}},
 		},
 	}
-	if appDir != "" {
-		config.Binds = []string{appDir + ":/home/vcap/app"}
+	if appDir != "" && remoteDir != "" {
+		config.Binds = []string{appDir + ":" + remoteDir}
 	}
 	return config
 }

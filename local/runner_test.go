@@ -63,6 +63,7 @@ var _ = Describe("Runner", func() {
 				Port:        400,
 				AppDir:      "some-app-dir",
 				AppDirEmpty: false,
+				RSync:       true,
 				Color:       percentColor,
 				AppConfig: &AppConfig{
 					Name:    "some-app",
@@ -116,11 +117,11 @@ var _ = Describe("Runner", func() {
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", fixtures.RunScript(), "some-command",
+						"/bin/bash", "-c", fixtures.RunRSyncExcludeAppScript(), "some-command",
 					}))
 					Expect(hostConfig.PortBindings).To(HaveLen(1))
 					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
-					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/home/vcap/app"}))
+					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
 				}).Return(mockContainer, nil),
 			)
 
@@ -205,5 +206,6 @@ var _ = Describe("Runner", func() {
 		})
 
 		// TODO: test with custom start command
+		// TODO: test with empty app dir / without rsync
 	})
 })

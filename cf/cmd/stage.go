@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 
@@ -22,8 +21,9 @@ type Stage struct {
 
 type stageOptions struct {
 	name, buildpack, app   string
+	appDir                 string
 	serviceApp, forwardApp string
-	rsync                  string
+	rsync                  bool
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -51,15 +51,13 @@ func (s *Stage) Run(args []string) error {
 	}
 	defer appTar.Close()
 
-	var rsyncDir string
-	if options.rsync != "" {
-		if rsyncDir, err = s.FS.Abs(options.rsync); err != nil {
+	var appDir string
+	if options.appDir != "" {
+		if appDir, err = s.FS.Abs(options.appDir); err != nil {
 			return err
 		}
-		if isDir, err := s.FS.IsDir(rsyncDir); err != nil {
+		if err := s.FS.MakeDirAll(appDir); err != nil {
 			return err
-		} else if !isDir {
-			return errors.New("path specified with -p must be a directory to use -m")
 		}
 	}
 
@@ -86,7 +84,8 @@ func (s *Stage) Run(args []string) error {
 		Cache:      cache,
 		CacheEmpty: cacheSize == 0,
 		Buildpack:  options.buildpack,
-		RSyncDir:   rsyncDir,
+		AppDir:     appDir,
+		RSync:      options.rsync,
 		Color:      color.GreenString,
 		AppConfig:  appConfig,
 	})
@@ -109,9 +108,10 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		options.name = name
 		set.StringVar(&options.app, "p", ".", "")
 		set.StringVar(&options.buildpack, "b", "", "")
+		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
-		set.StringVar(&options.rsync, "r", "", "")
+		set.BoolVar(&options.rsync, "r", false, "")
 	})
 }
 

@@ -278,9 +278,11 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
-		It("should successfully stage and run a mounted app", func() {
+		It("should use a volume to stage and run an app", func() {
+			Expect(os.RemoveAll(filepath.Join(tempDir, "go-app", "broken.go"))).To(Succeed())
+
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-r", ".")
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", ".")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -303,7 +305,39 @@ var _ = Describe("CF Local", func() {
 
 				Expect(get(url, "10s")).To(Equal("some-contents"))
 				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
-				Expect(get(url, "10s")).To(Equal("some-other-contents"))
+				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
+
+				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				Eventually(session, "5s").Should(gexec.Exit(130))
+			})
+		})
+
+		It("should use a volume and rsync to stage and run an app", func() {
+			By("staging", func() {
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", ".", "-r")
+				stageCmd.Dir = filepath.Join(tempDir, "go-app")
+				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10m").Should(gexec.Exit(0))
+				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+			})
+
+			By("running", func() {
+				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-r", "-w")
+				runCmd.Dir = filepath.Join(tempDir, "go-app")
+				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				url := fmt.Sprintf("http://localhost:%s/file", port)
+
+				Expect(get(url, "10s")).To(Equal("some-contents"))
+				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
+				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
 
 				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
 				Eventually(session, "5s").Should(gexec.Exit(130))

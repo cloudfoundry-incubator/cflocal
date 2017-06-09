@@ -29,11 +29,14 @@ STAGE OPTIONS:
    -p <zip>       Use the specified ZIP file contents as the app directory.
                      Note that JAR and WAR files use ZIP file format.
                      Default: current working directory
-   -r <dir>       Mount the provided directory into the container and rsync any
-                     files that were created, modified, or moved during staging
-                     back into it. No local files are deleted. Not valid when
-                     the app directory is a zip file. Should not be used
-                     without a VCS to track changes. Ideal for use with run -d.
+   -d <dir>       Mount the provided directory into the app root before
+                     staging. Should be used with a VCS to track changes.
+                     Ideal for use with run -d.
+                     Default: (not mounted)
+   -r             When used with -d, rsync any files that were created,
+                     modified, or moved during staging into the specified
+                     directory. The directory is mounted elsewhere in the
+                     container. No files are deleted.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
@@ -51,12 +54,16 @@ RUN OPTIONS:
                      Default: localhost
    -p <port>      Listen on the specified port
                      Default: (arbitrary free port)
-   -d <dir>       Mount the specified directory into the app at the app root.
+   -d <dir>       Mount the specified directory into the app root.
                      If empty, the app root is copied into the directory.
                      If not empty, the app root is replaced by the directory.
-                     Default: none
+                     Default: (not mounted)
+   -r             When used with -d, rsync the contents of the specified
+                     directory into the container app root. The directory is
+                     mounted elsewhere in the container. No files are deleted.
+                     Default: false
    -w             When used with -d, restart the app when the contents of the
-                     mounted directory are changed.
+                     specified directory are changed.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.

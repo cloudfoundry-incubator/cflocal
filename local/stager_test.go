@@ -72,7 +72,8 @@ var _ = Describe("Stager", func() {
 				Cache:      localCache,
 				CacheEmpty: false,
 				Buildpack:  "some-buildpack",
-				RSyncDir:   "some-app-dir",
+				AppDir:     "some-app-dir",
+				RSync:      true,
 				Color:      percentColor,
 				AppConfig: &AppConfig{
 					Name: "some-app",
@@ -122,7 +123,7 @@ var _ = Describe("Stager", func() {
 					Expect(config.Image).To(Equal("cflocal"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", fixtures.StageSyncScript(),
+						"/bin/bash", "-c", fixtures.StageRSyncScript(),
 						"some-buildpack", "true",
 					}))
 					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
@@ -150,6 +151,7 @@ var _ = Describe("Stager", func() {
 		// TODO: test single-buildpack case
 		// TODO: test non-zero command return status
 		// TODO: test no app dir case
+		// TODO: test without rsync
 	})
 
 	Describe("#Download", func() {
