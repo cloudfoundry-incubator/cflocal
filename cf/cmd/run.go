@@ -44,18 +44,14 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	var (
-		appDir      string
-		appDirEmpty bool
-		restart     <-chan time.Time
+		appDir  string
+		restart <-chan time.Time
 	)
 	if options.appDir != "" {
 		if appDir, err = r.FS.Abs(options.appDir); err != nil {
 			return err
 		}
 		if err := r.FS.MakeDirAll(appDir); err != nil {
-			return err
-		}
-		if appDirEmpty, err = r.FS.IsDirEmpty(appDir); err != nil {
 			return err
 		}
 		if options.watch {
@@ -114,7 +110,6 @@ func (r *Run) Run(args []string) error {
 		IP:            options.ip,
 		Port:          options.port,
 		AppDir:        appDir,
-		AppDirEmpty:   appDirEmpty,
 		RSync:         options.rsync,
 		Restart:       restart,
 		Color:         color.GreenString,

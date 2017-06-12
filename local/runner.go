@@ -33,10 +33,19 @@ const RunnerScript = `
 		{{- end}}
 	{{end -}}
 	{{end -}}
-	{{if .RSync}}rsync -a /tmp/local/ /home/vcap/app/
+	{{if .RSync -}}
+	rsync -a /tmp/local/ /home/vcap/app/
 	{{end -}}
-	tar{{if .ExcludeApp}} --exclude=./app{{end}} -C /home/vcap -xzf /tmp/droplet
+	if [[ ! -z $(ls -A /home/vcap/app) ]]; then
+		exclude='--exclude=./app'
+	fi
+	tar $exclude -C /home/vcap -xzf /tmp/droplet
 	chown -R vcap:vcap /home/vcap
+	{{if .RSync -}}
+	if [[ -z $(ls -A /tmp/local) ]]; then
+		rsync -a /home/vcap/app/ /tmp/local/
+	fi
+	{{end -}}
 	command=$1
 	if [[ -z $command ]]; then
 		command=$(jq -r .start_command /home/vcap/staging_info.yml)
@@ -59,7 +68,6 @@ type RunConfig struct {
 	IP            string
 	Port          uint
 	AppDir        string
-	AppDirEmpty   bool
 	RSync         bool
 	Restart       <-chan time.Time
 	Color         Colorizer
@@ -72,8 +80,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 		return 0, err
 	}
 
-	excludeApp := config.AppDir != "" && !config.AppDirEmpty
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, excludeApp, config.RSync)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, config.RSync)
 	if err != nil {
 		return 0, err
 	}
@@ -99,26 +106,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 			return 0, err
 		}
 	}
-
-	done := make(chan struct{})
-	defer close(done)
-	go func() {
-		for {
-			select {
-			case <-config.Restart:
-				contr.Stop() // TODO: log stop errors
-			case <-done:
-				return
-			}
-		}
-	}()
-	for status != 128 && err == nil {
-		status, err = contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs)
-		if config.Restart == nil {
-			break
-		}
-	}
-	return status, err
+	return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs, config.Restart)
 }
 
 type ExportConfig struct {
@@ -133,7 +121,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 		return "", err
 	}
 
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false, false)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +145,7 @@ func (r *Runner) pull() error {
 	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:"+r.StackVersion))
 }
 
-func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, excludeApp, rsync bool) (*container.Config, error) {
+func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, rsync bool) (*container.Config, error) {
 	name := config.Name
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
@@ -209,9 +197,8 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 
 	options := struct {
 		RSync         bool
-		ExcludeApp    bool
 		ForwardConfig *service.ForwardConfig
-	}{rsync, excludeApp, forwardConfig}
+	}{rsync, forwardConfig}
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(RunnerScript))
 	if err := tmpl.Execute(scriptBuf, options); err != nil {

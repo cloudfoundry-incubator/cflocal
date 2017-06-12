@@ -344,6 +344,38 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
+		It("should use a volume and rsync to stage and run an app in an empty directory", func() {
+			By("staging", func() {
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", "some-dir", "-r")
+				stageCmd.Dir = filepath.Join(tempDir, "go-app")
+				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10m").Should(gexec.Exit(0))
+				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+			})
+
+			By("running", func() {
+				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", "some-dir", "-r", "-w")
+				runCmd.Dir = filepath.Join(tempDir, "go-app")
+				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				url := fmt.Sprintf("http://localhost:%s/file", port)
+
+				Expect(get(url, "10s")).To(Equal("some-contents"))
+				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "some-dir", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
+				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
+
+				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				Eventually(session, "5s").Should(gexec.Exit(130))
+			})
+		})
+
 		// TODO: service forwarding / app dir mounts
 		// TODO: confirm coverage matches previous local package coverage
 	})

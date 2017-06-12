@@ -7,6 +7,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	engine "github.com/sclevine/cflocal/engine"
 	io "io"
+	time "time"
 )
 
 // Mock of Container interface
@@ -92,23 +93,13 @@ func (_mr *_MockContainerRecorder) ExtractTo(arg0, arg1 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ExtractTo", arg0, arg1)
 }
 
-func (_m *MockContainer) Start(_param0 string, _param1 io.Writer) (int64, error) {
-	ret := _m.ctrl.Call(_m, "Start", _param0, _param1)
+func (_m *MockContainer) Start(_param0 string, _param1 io.Writer, _param2 <-chan time.Time) (int64, error) {
+	ret := _m.ctrl.Call(_m, "Start", _param0, _param1, _param2)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockContainerRecorder) Start(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start", arg0, arg1)
-}
-
-func (_m *MockContainer) Stop() error {
-	ret := _m.ctrl.Call(_m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockContainerRecorder) Stop() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Stop")
+func (_mr *_MockContainerRecorder) Start(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Start", arg0, arg1, arg2)
 }

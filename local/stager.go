@@ -93,7 +93,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		}
 	}
 
-	status, err := contr.Start(config.Color("[%s] ", config.AppConfig.Name), s.Logs)
+	status, err := contr.Start(config.Color("[%s] ", config.AppConfig.Name), s.Logs, nil)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -177,7 +177,7 @@ func (*Stager) buildHostConfig(appDir, remoteDir string) *container.HostConfig {
 	if appDir == "" || remoteDir == "" {
 		return nil
 	}
-	return &container.HostConfig{Binds: []string{appDir + ":"+ remoteDir}}
+	return &container.HostConfig{Binds: []string{appDir + ":" + remoteDir}}
 }
 
 func streamOut(contr Container, out io.Writer, path string) error {

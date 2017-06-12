@@ -5,24 +5,24 @@
 [![GoDoc](https://godoc.org/github.com/sclevine/cflocal?status.svg)](https://godoc.org/github.com/sclevine/cflocal)
 
 ![CF Local Demo](https://raw.githubusercontent.com/sclevine/cflocal/master/assets/cflocal-demo.gif) \
-*Note: Image download/build only occurs when a new root FS is available.*
+*Note: Image download/build only occurs when a new rootfs is available.*
 
 CF Local is a Cloud Foundry CLI plugin that enables you to:
 
-* Build and run CF app droplets locally in Docker
-* Download droplets from Cloud Foundry and run them locally in Docker
-* Build droplets locally in Docker and push them to Cloud Foundry
-* Automatically tunnel service connections from a local app to an app running in Cloud Foundry
-* Launch droplets with their active app root mounted to a local directory
-* Rapidly iterate on CF app development with only Docker installed
-* Export CF apps as Docker images that do not require CF Local to run
+* Stage and run Cloud Foundry apps in Docker
+* Download pre-staged apps from Cloud Foundry and run them in Docker
+* Stage apps in Docker and push them to Cloud Foundry
+* Make Cloud Foundry service instances instantly available to Docker apps
+* Share a local directory with an app running in Docker, and monitor it for changes
+* Rapidly iterate on Cloud Foundry app development with only Docker installed
+* Convert Cloud Foundry apps to Docker images that do not require Cloud Foundry or CF Local to run
 
 Notably, CF Local:
 
 * Does not require the Docker CLI
 * Can run against a remote Docker daemon
-* Uses the latest official CF buildpack releases by default
-* Always uses the latest CF root filesystem (cflinuxfs2) release
+* Uses the latest official Cloud Foundry buildpack releases by default
+* Always uses the latest Cloud Foundry rootfs (cflinuxfs2) release
 
 ```
 USAGE:
@@ -52,7 +52,9 @@ STAGE OPTIONS:
                      Default: current working directory
    -d <dir>       Mount the provided directory into the app root before
                      staging. Should be used with a VCS to track changes.
-                     Ideal for use with run -d.
+                     Ideal for use with: cf local run <name> -d <dir>
+                     Use of -r is STRONGLY RECOMMENDED to avoid staging with
+                     files that should be ignored.
                      Default: (not mounted)
    -r             When used with -d, rsync any files that were created,
                      modified, or moved during staging into the specified
@@ -64,7 +66,7 @@ STAGE OPTIONS:
                      Default: (uses local.yml)
    -f <app>       Same as -s, but re-writes the service bindings to match
                      what they would be if they were tunneled through the app
-                     with cf local run <name> -f <app>.
+                     with: cf local run <name> -f <app>
                      Default: (uses local.yml)
 
 RUN OPTIONS:
@@ -146,20 +148,20 @@ applications:
 ## Install
 
 ```bash
-$ ./cflocal-v0.11.0-macos
-Plugin successfully installed. Current version: 0.11.0
+$ ./cflocal-v0.12.0-macos
+Plugin successfully installed. Current version: 0.12.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.11.0-macos
+$ cf install-plugin cflocal-0.12.0-macos
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
 
-Do you want to install the plugin cflocal-0.11.0-macos?> y
+Do you want to install the plugin cflocal-0.12.0-macos?> y
 
-Installing plugin cflocal-0.11.0-macos...
+Installing plugin cflocal-0.12.0-macos...
 OK
-Plugin cflocal v0.11.0 successfully installed.
+Plugin cflocal v0.12.0 successfully installed.
 ```
 ***Or***
 ```bash
@@ -170,9 +172,9 @@ $ cf install-plugin -r CF-Community cflocal
 Do you want to install the plugin cflocal?> y
 Looking up 'cflocal' from repository 'CF-Community'
 11354404 bytes downloaded...
-Installing plugin cflocal-0.11.0-macos...
+Installing plugin cflocal-0.12.0-macos...
 OK
-Plugin cflocal v0.11.0 successfully installed.
+Plugin cflocal v0.12.0 successfully installed.
 ```
 Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
 
@@ -187,10 +189,10 @@ Plugin cflocal successfully uninstalled.
 
 ## Security Notes
 
-* Service forwarding tunnels are not active during staging
-* Containers are never exported with remote service credentials
+* Forwarded services (`-f`) are not reachable during staging
+* Images are never exported with remote service credentials
 * Service credentials from remote apps are never stored in local.yml
-* CF Local should not be used to download untrusted CF applications
+* CF Local should not be used to download untrusted Cloud Foundry applications
 * CF Local is not intended for production use and is offered without warranty
 
 ## TODO

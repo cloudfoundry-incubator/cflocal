@@ -3,6 +3,7 @@ package local_test
 import (
 	"bytes"
 	"sort"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
@@ -56,15 +57,15 @@ var _ = Describe("Runner", func() {
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 			config := &RunConfig{
-				Droplet:     engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
-				Launcher:    engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
-				SSHPass:     engine.NewStream(mockReadCloser{Value: "some-sshpass"}, 300),
-				IP:          "some-ip",
-				Port:        400,
-				AppDir:      "some-app-dir",
-				AppDirEmpty: false,
-				RSync:       true,
-				Color:       percentColor,
+				Droplet:  engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
+				Launcher: engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
+				SSHPass:  engine.NewStream(mockReadCloser{Value: "some-sshpass"}, 300),
+				IP:       "some-ip",
+				Port:     400,
+				AppDir:   "some-app-dir",
+				RSync:    true,
+				Restart:  make(<-chan time.Time),
+				Color:    percentColor,
 				AppConfig: &AppConfig{
 					Name:    "some-app",
 					Command: "some-command",
@@ -117,7 +118,7 @@ var _ = Describe("Runner", func() {
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
-						"/bin/bash", "-c", fixtures.RunRSyncExcludeAppScript(), "some-command",
+						"/bin/bash", "-c", fixtures.RunRSyncScript(), "some-command",
 					}))
 					Expect(hostConfig.PortBindings).To(HaveLen(1))
 					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
@@ -130,7 +131,7 @@ var _ = Describe("Runner", func() {
 			sshpassCopy := mockContainer.EXPECT().CopyTo(config.SSHPass, "/usr/bin/sshpass")
 
 			gomock.InOrder(
-				mockContainer.EXPECT().Start("[some-app] % ", runner.Logs).Return(int64(100), nil).
+				mockContainer.EXPECT().Start("[some-app] % ", runner.Logs, config.Restart).Return(int64(100), nil).
 					After(launcherCopy).After(dropletCopy).After(sshpassCopy),
 				mockContainer.EXPECT().Close(),
 			)

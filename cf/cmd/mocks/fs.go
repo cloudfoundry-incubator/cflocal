@@ -42,17 +42,6 @@ func (_mr *_MockFSRecorder) Abs(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Abs", arg0)
 }
 
-func (_m *MockFS) IsDirEmpty(_param0 string) (bool, error) {
-	ret := _m.ctrl.Call(_m, "IsDirEmpty", _param0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockFSRecorder) IsDirEmpty(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsDirEmpty", arg0)
-}
-
 func (_m *MockFS) MakeDirAll(_param0 string) error {
 	ret := _m.ctrl.Call(_m, "MakeDirAll", _param0)
 	ret0, _ := ret[0].(error)

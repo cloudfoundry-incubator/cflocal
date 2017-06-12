@@ -17,6 +17,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"time"
+
 	. "github.com/sclevine/cflocal/engine"
 )
 
@@ -121,9 +123,9 @@ var _ = Describe("Container", func() {
 
 				logs := gbytes.NewBuffer()
 				go func() {
+					defer close(done)
 					defer GinkgoRecover()
-					Expect(contr.Start("some-prefix", logs)).To(Equal(int64(128)))
-					close(done)
+					Expect(contr.Start("some-prefix", logs, nil)).To(Equal(int64(128)))
 				}()
 				Eventually(try(containerRunning, contr.ID)).Should(BeTrue())
 				Eventually(logs.Contents).Should(ContainSubstring("Z some-logs-stdout"))
@@ -133,6 +135,41 @@ var _ = Describe("Container", func() {
 
 				Eventually(try(containerRunning, contr.ID)).Should(BeFalse())
 			}, 5)
+		})
+
+		Context("when signaled to restart", func() {
+			BeforeEach(func() {
+				entrypoint = strslice.StrSlice{
+					"sh", "-c",
+					`echo some-logs-stdout && \
+					 >&2 echo some-logs-stderr && \
+					 sleep 60`,
+				}
+			})
+
+			It("should restart until signaled to exit then return status 128", func(done Done) {
+				exit := make(chan struct{})
+				restart := make(chan time.Time)
+				contr.Exit = exit
+
+				logs := gbytes.NewBuffer()
+				go func() {
+					defer close(done)
+					defer GinkgoRecover()
+					Expect(contr.Start("some-prefix", logs, restart)).To(Equal(int64(128)))
+				}()
+				Eventually(try(containerRunning, contr.ID)).Should(BeTrue())
+				Eventually(logs).Should(gbytes.Say("Z some-logs-stdout"))
+				restart <- time.Time{}
+				Eventually(logs, "5s").Should(gbytes.Say("Z some-logs-stdout"))
+				restart <- time.Time{}
+				Eventually(logs, "5s").Should(gbytes.Say("Z some-logs-stdout"))
+
+				Consistently(logs, "2s").ShouldNot(gbytes.Say("Z some-logs-stdout"))
+				close(exit)
+
+				Eventually(try(containerRunning, contr.ID)).Should(BeFalse())
+			}, 15)
 		})
 
 		Context("when the command finishes successfully", func() {
@@ -147,7 +184,7 @@ var _ = Describe("Container", func() {
 
 			It("should start the container, stream logs, and return status 0", func() {
 				logs := gbytes.NewBuffer()
-				Expect(contr.Start("some-prefix", logs)).To(Equal(int64(0)))
+				Expect(contr.Start("some-prefix", logs, nil)).To(Equal(int64(0)))
 				Expect(containerRunning(contr.ID)).To(BeFalse())
 				Expect(logs.Contents()).To(ContainSubstring("Z some-logs-stdout"))
 				Expect(logs.Contents()).To(ContainSubstring("Z some-logs-stderr"))
@@ -156,13 +193,9 @@ var _ = Describe("Container", func() {
 
 		It("should return an error when the container cannot be started", func() {
 			Expect(contr.Close()).To(Succeed())
-			_, err := contr.Start("some-prefix", gbytes.NewBuffer())
+			_, err := contr.Start("some-prefix", gbytes.NewBuffer(), nil)
 			Expect(err).To(MatchError(ContainSubstring("No such container")))
 		})
-	})
-
-	PDescribe("#Stop", func() {
-
 	})
 
 	Describe("#Commit", func() {

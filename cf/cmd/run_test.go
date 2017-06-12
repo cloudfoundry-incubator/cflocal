@@ -71,7 +71,7 @@ var _ = Describe("Run", func() {
 			sshpass := sharedmocks.NewMockBuffer("some-sshpass")
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
-			restart := make(chan time.Time)
+			restart := make(<-chan time.Time)
 			done := make(chan struct{})
 
 			forwardConfig := &service.ForwardConfig{
@@ -97,7 +97,6 @@ var _ = Describe("Run", func() {
 
 			gomock.InOrder(
 				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
-				mockFS.EXPECT().IsDirEmpty("some-abs-dir").Return(true, nil),
 				mockFS.EXPECT().Watch("some-abs-dir", time.Second).Return(restart, done, nil),
 				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
 					func(config *local.RunConfig) {
@@ -107,9 +106,8 @@ var _ = Describe("Run", func() {
 						Expect(config.IP).To(Equal("0.0.0.0"))
 						Expect(config.Port).To(Equal(uint(3000)))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
-						Expect(config.AppDirEmpty).To(BeTrue())
 						Expect(config.RSync).To(BeTrue())
-						Expect(config.Restart).To(Equal((<-chan time.Time)(restart)))
+						Expect(config.Restart).To(Equal(restart))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:     "some-app",
@@ -124,13 +122,12 @@ var _ = Describe("Run", func() {
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(launcher.Result()).To(BeEmpty())
 			Expect(sshpass.Result()).To(BeEmpty())
-			Expect(restart).NotTo(BeClosed())
 			Expect(done).To(BeClosed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 
 		// TODO: test app dir when app dir is unspecified (currently tested by integration)
-		// TODO: test without watching / without rsync / without empty app dir
+		// TODO: test without watching / without rsync
 		// TODO: test -w / -r without -d
 		// TODO: test free port picker when port is unspecified (currently tested by integration)
 		// TODO: test different combinations of -s and -f

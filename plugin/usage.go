@@ -31,7 +31,9 @@ STAGE OPTIONS:
                      Default: current working directory
    -d <dir>       Mount the provided directory into the app root before
                      staging. Should be used with a VCS to track changes.
-                     Ideal for use with run -d.
+                     Ideal for use with: cf local run <name> -d <dir>
+                     Use of -r is STRONGLY RECOMMENDED to avoid staging with
+                     files that should be ignored.
                      Default: (not mounted)
    -r             When used with -d, rsync any files that were created,
                      modified, or moved during staging into the specified
@@ -43,7 +45,7 @@ STAGE OPTIONS:
                      Default: (uses local.yml)
    -f <app>       Same as -s, but re-writes the service bindings to match
                      what they would be if they were tunneled through the app
-                     with cf local run <name> -f <app>.
+                     with: cf local run <name> -f <app>
                      Default: (uses local.yml)
 
 RUN OPTIONS:

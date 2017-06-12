@@ -133,7 +133,7 @@ var _ = Describe("Stager", func() {
 			gomock.InOrder(
 				mockContainer.EXPECT().ExtractTo(config.AppTar, "/tmp/app"),
 				mockContainer.EXPECT().ExtractTo(localCache, "/tmp/cache"),
-				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs).Return(int64(0), nil),
+				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs, nil).Return(int64(0), nil),
 				mockContainer.EXPECT().CopyFrom("/tmp/output-cache").Return(remoteCacheStream, nil),
 				mockContainer.EXPECT().CopyFrom("/tmp/droplet").Return(dropletStream, nil),
 				mockContainer.EXPECT().CloseAfterStream(&dropletStream),

@@ -58,7 +58,7 @@ type causer interface {
 	Cause() error
 }
 
-func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err error) {
+func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error) {
 	defer func() {
 		if isErrCanceled(err) {
 			status, err = 128, nil
@@ -73,14 +73,18 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 		case <-done:
 			cancel()
 		case <-c.Exit:
+			restart = nil
 			cancel()
 		}
 	}()
+	srcs := make(chan io.Reader)
+	defer close(srcs)
+	go copyStreams(logs, srcs, logPrefix)
 
 	if err := c.Docker.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return 0, err
 	}
-	out, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+	src, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Timestamps: true,
@@ -89,49 +93,64 @@ func (c *Container) Start(logPrefix string, logs io.Writer) (status int64, err e
 	if err != nil {
 		return 0, err
 	}
-	defer out.Close()
-	go copyStream(logs, out, logPrefix)
-	return c.Docker.ContainerWait(ctx, c.ID)
-}
+	defer func() { src.Close() }()
+	srcs <- src
 
-func (c *Container) Stop() (err error) {
-	defer func() {
-		if isErrCanceled(err) {
-			err = nil
-		}
-	}()
-	done := make(chan struct{})
-	defer close(done)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
+	if restart == nil {
+		return c.Docker.ContainerWait(ctx, c.ID)
+	}
+
+	for {
 		select {
-		case <-done:
-			cancel()
+		case <-restart:
+			wait := time.Second
+			if err := c.Docker.ContainerRestart(ctx, c.ID, &wait); err != nil {
+				continue
+			}
+			contJSON, err := c.Docker.ContainerInspect(ctx, c.ID)
+			if err != nil {
+				continue
+			}
+			startedAt, err := time.Parse(time.RFC3339Nano, contJSON.State.StartedAt)
+			if err != nil {
+				startedAt = time.Unix(0, 0)
+			}
+			src.Close()
+			src, err = c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+				Timestamps: true,
+				ShowStdout: true,
+				ShowStderr: true,
+				Follow:     true,
+				Since:      startedAt.Add(-10 * time.Millisecond).Format(time.RFC3339Nano),
+			})
+			if err != nil {
+				continue
+			}
+			srcs <- src
 		case <-c.Exit:
-			cancel()
+			return 128, nil
 		}
-	}()
-
-	wait := time.Second
-	return c.Docker.ContainerStop(ctx, c.ID, &wait)
+	}
 }
 
 func isErrCanceled(err error) bool {
 	return err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled"))
 }
 
-func copyStream(dst io.Writer, src io.Reader, prefix string) {
-	header := make([]byte, 8)
-	for {
-		if _, err := io.ReadFull(src, header); err != nil {
-			break
-		}
-		if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
-			break
-		}
-		// TODO: bold STDERR
-		if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
-			break
+func copyStreams(dst io.Writer, srcs <-chan io.Reader, prefix string) {
+	for src := range srcs {
+		header := make([]byte, 8)
+		for {
+			if _, err := io.ReadFull(src, header); err != nil {
+				break
+			}
+			if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
+				break
+			}
+			// TODO: bold STDERR
+			if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
+				break
+			}
 		}
 	}
 }
