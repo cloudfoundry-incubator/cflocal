@@ -277,6 +277,10 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
+		if os.Getenv("SKIP_VOLUME_SPECS") == "true" {
+			return
+		}
+
 		It("should use a volume to stage and run an app", func() {
 			Expect(os.RemoveAll(filepath.Join(tempDir, "go-app", "broken.go"))).To(Succeed())
 
@@ -375,8 +379,7 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
-		// TODO: service forwarding / app dir mounts
-		// TODO: confirm coverage matches previous local package coverage
+		// TODO: service forwarding tests
 	})
 })
 
