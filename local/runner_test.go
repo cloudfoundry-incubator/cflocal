@@ -67,18 +67,20 @@ var _ = Describe("Runner", func() {
 				Restart:  make(<-chan time.Time),
 				Color:    percentColor,
 				AppConfig: &AppConfig{
-					Name:    "some-app",
-					Command: "some-command",
+					Name:      "some-app",
+					Command:   "some-command",
+					Memory:    "512m",
+					DiskQuota: "1G",
 					StagingEnv: map[string]string{
 						"SOME_NA_KEY": "some-na-value",
 					},
 					RunningEnv: map[string]string{
 						"TEST_RUNNING_ENV_KEY": "test-running-env-value",
-						"MEMORY_LIMIT":         "256m",
+						"LANG":                 "some-overridden-lang",
 					},
 					Env: map[string]string{
 						"TEST_ENV_KEY": "test-env-value",
-						"MEMORY_LIMIT": "1024m",
+						"LANG":         "some-lang",
 					},
 					Services: service.Services{
 						"some-type": {{
@@ -114,7 +116,7 @@ var _ = Describe("Runner", func() {
 					_, hasPort := config.ExposedPorts["8080/tcp"]
 					Expect(hasPort).To(BeTrue())
 					sort.Strings(config.Env)
-					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("MEMORY_LIMIT=1024m")))
+					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("LANG=some-lang")))
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
@@ -122,6 +124,7 @@ var _ = Describe("Runner", func() {
 					}))
 					Expect(hostConfig.PortBindings).To(HaveLen(1))
 					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
+					Expect(hostConfig.Memory).To(Equal(int64(512 * 1024 * 1024)))
 					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
 				}).Return(mockContainer, nil),
 			)
@@ -154,18 +157,20 @@ var _ = Describe("Runner", func() {
 				Launcher: engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
 				Ref:      "some-ref",
 				AppConfig: &AppConfig{
-					Name:    "some-app",
-					Command: "some-command",
+					Name:      "some-app",
+					Command:   "some-command",
+					Memory:    "512m",
+					DiskQuota: "1G",
 					StagingEnv: map[string]string{
 						"SOME_NA_KEY": "some-na-value",
 					},
 					RunningEnv: map[string]string{
 						"TEST_RUNNING_ENV_KEY": "test-running-env-value",
-						"MEMORY_LIMIT":         "256m",
+						"LANG":                 "some-overridden-lang",
 					},
 					Env: map[string]string{
 						"TEST_ENV_KEY": "test-env-value",
-						"MEMORY_LIMIT": "1024m",
+						"LANG":         "some-lang",
 					},
 					Services: service.Services{
 						"some-type": {{
@@ -183,7 +188,7 @@ var _ = Describe("Runner", func() {
 					_, hasPort := config.ExposedPorts["8080/tcp"]
 					Expect(hasPort).To(BeTrue())
 					sort.Strings(config.Env)
-					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("MEMORY_LIMIT=1024m")))
+					Expect(config.Env).To(Equal(fixtures.ProvidedRunningEnv("LANG=some-lang")))
 					Expect(config.Image).To(Equal("cloudfoundry/cflinuxfs2:some-stack-version"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
 						"/bin/bash", "-c", fixtures.CommitScript(), "some-command",

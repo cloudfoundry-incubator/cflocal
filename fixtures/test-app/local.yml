@@ -1,5 +1,7 @@
 applications:
 - name: some-app
+  memory: 512m
+  disk_quota: 1G
   staging_env:
     TEST_STAGING_ENV_KEY: test-staging-env-value
   running_env:

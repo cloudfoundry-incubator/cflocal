@@ -135,6 +135,8 @@ SAMPLE: local.yml
 applications:
 - name: first-app
   command: "some start command"
+  memory: 2G
+  disk_quota: 4G
   staging_env:
     SOME_STAGING_VAR: "some staging value"
   running_env:

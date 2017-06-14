@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 
+	"code.cloudfoundry.org/cli/cf/formatters"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/service"
 )
@@ -80,6 +81,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 		return 0, err
 	}
 
+	r.setDefaults(config.AppConfig)
 	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, config.RSync)
 	if err != nil {
 		return 0, err
@@ -88,7 +90,11 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if config.RSync {
 		remoteDir = "/tmp/local"
 	}
-	hostConfig := r.buildHostConfig(config.IP, config.Port, config.AppDir, remoteDir)
+	memory, err := formatters.ToMegabytes(config.AppConfig.Memory)
+	if err != nil {
+		return 0, err
+	}
+	hostConfig := r.buildHostConfig(config.IP, config.Port, memory, config.AppDir, remoteDir)
 	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return 0, err
@@ -121,6 +127,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 		return "", err
 	}
 
+	r.setDefaults(config.AppConfig)
 	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
 	if err != nil {
 		return "", err
@@ -145,8 +152,25 @@ func (r *Runner) pull() error {
 	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:"+r.StackVersion))
 }
 
+func (r *Runner) setDefaults(config *AppConfig) {
+	if config.Memory == "" {
+		config.Memory = "1024m"
+	}
+	if config.DiskQuota == "" {
+		config.DiskQuota = "1024m"
+	}
+}
+
 func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, rsync bool) (*container.Config, error) {
 	name := config.Name
+	memory, err := formatters.ToMegabytes(config.Memory)
+	if err != nil {
+		return nil, err
+	}
+	disk, err := formatters.ToMegabytes(config.DiskQuota)
+	if err != nil {
+		return nil, err
+	}
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",
 		ApplicationName:    name,
@@ -155,7 +179,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 		Host:               "0.0.0.0",
 		InstanceID:         "999db41a-508b-46eb-74d8-6f9c06c006da",
 		InstanceIndex:      uintPtr(0),
-		Limits:             map[string]uint{"fds": 16384, "mem": 512, "disk": 1024},
+		Limits:             map[string]int64{"fds": 16384, "mem": memory, "disk": disk},
 		Name:               name,
 		Port:               uintPtr(8080),
 		SpaceID:            "18300c1c-1aa4-4ae7-81e6-ae59c6cdbaf1",
@@ -186,7 +210,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 		"INSTANCE_GUID":     "999db41a-508b-46eb-74d8-6f9c06c006da",
 		"INSTANCE_INDEX":    "0",
 		"LANG":              "en_US.UTF-8",
-		"MEMORY_LIMIT":      "512m",
+		"MEMORY_LIMIT":      fmt.Sprintf("%dm", memory),
 		"PATH":              "/usr/local/bin:/usr/bin:/bin",
 		"PORT":              "8080",
 		"TMPDIR":            "/home/vcap/tmp",
@@ -218,16 +242,24 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 	}, nil
 }
 
-func (*Runner) buildHostConfig(ip string, port uint, appDir, remoteDir string) *container.HostConfig {
+func (*Runner) buildHostConfig(ip string, port uint, memory int64, appDir, remoteDir string) *container.HostConfig {
 	config := &container.HostConfig{
 		PortBindings: nat.PortMap{
 			"8080/tcp": {{HostIP: ip, HostPort: strconv.FormatUint(uint64(port), 10)}},
+		},
+		Resources: container.Resources{
+			Memory: memory * 1024 * 1024,
 		},
 	}
 	if appDir != "" && remoteDir != "" {
 		config.Binds = []string{appDir + ":" + remoteDir}
 	}
 	return config
+}
+
+func parseBytes(s string) uint64 {
+
+	return 0
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
