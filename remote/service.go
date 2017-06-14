@@ -108,64 +108,83 @@ func (a *App) sshEndpoint() (host, port string, err error) {
 	return net.SplitHostPort(result.AppSSHEndpoint)
 }
 
-func forward(creds map[string]string, toPort uint) (fromAddress string) {
+func forward(creds map[string]interface{}, toPort uint) (fromAddress string) {
 	if creds == nil {
 		return ""
 	}
 
-	forwardedPort := strconv.FormatUint(uint64(toPort), 10)
-	override := map[string]string{}
-	host, port := creds["hostname"], creds["port"]
-	if host != "" || port != "" {
-		override["port"] = forwardedPort
+	override := map[string]interface{}{}
+
+	host, port := str(creds["hostname"]), f64(creds["port"])
+	if host != "" || port != 0 {
+		override["port"] = float64(toPort)
 	}
 	if host != "" {
 		override["hostname"] = "localhost"
 	}
 
-	if creds["uri"] != "" {
-		u, err := url.Parse(creds["uri"])
+	uri, jdbcURL := str(creds["uri"]), str(creds["jdbcUrl"])
+	if uri != "" {
+		u, err := url.Parse(uri)
 		if err != nil || u.Host == "" {
 			return ""
 		}
 		host, port = ensureHostPort(host, port, u.Host)
-		u.Host = "localhost:" + forwardedPort
+		u.Host = fmt.Sprintf("localhost:%d", toPort)
 		override["uri"] = u.String()
 	}
-
-	if creds["jdbcUrl"] != "" {
-		u, err := url.Parse(strings.TrimPrefix(creds["jdbcUrl"], "jdbc:"))
+	if jdbcURL != "" {
+		u, err := url.Parse(strings.TrimPrefix(jdbcURL, "jdbc:"))
 		if err != nil || u.Host == "" {
 			return ""
 		}
 		host, port = ensureHostPort(host, port, u.Host)
-		u.Host = "localhost:" + forwardedPort
+		u.Host = fmt.Sprintf("localhost:%d", toPort)
 		override["jdbcUrl"] = "jdbc:" + u.String()
 	}
 
-	if host == "" || port == "" {
+	if host == "" || port == 0 {
 		return ""
 	}
 	merge(override, creds)
-	return host + ":" + port
+	return fmt.Sprintf("%s:%.0f", host, port)
 }
 
-func ensureHostPort(knownHost, knownPort, address string) (host, port string) {
+func f64(v interface{}) float64 {
+	f, ok := v.(float64)
+	if !ok {
+		return 0
+	}
+	return f
+}
+
+func str(v interface{}) string {
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func ensureHostPort(knownHost string, knownPort float64, address string) (host string, port float64) {
 	if h, p, err := net.SplitHostPort(address); err == nil {
-		host, port = h, p
+		host = h
+		if p, err := strconv.ParseFloat(p, 32); err == nil {
+			port = p
+		}
 	} else {
 		host = address
 	}
 	if knownHost != "" {
 		host = knownHost
 	}
-	if knownPort != "" {
+	if knownPort != 0 {
 		port = knownPort
 	}
 	return
 }
 
-func merge(from, to map[string]string) {
+func merge(from, to map[string]interface{}) {
 	for k, v := range from {
 		to[k] = v
 	}

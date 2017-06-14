@@ -61,7 +61,7 @@ var _ = Describe("App - Service", func() {
 						Label:          "some-label",
 						Tags:           []string{"some", "tags"},
 						Plan:           "some-plan",
-						Credentials:    map[string]string{"some": "credentials"},
+						Credentials:    map[string]interface{}{"some": "credentials"},
 						SyslogDrainURL: strPtr("some-url"),
 						Provider:       strPtr("some-provider"),
 						VolumeMounts:   []string{"some", "mounts"},
@@ -89,9 +89,9 @@ var _ = Describe("App - Service", func() {
 						Label: "some-label",
 						Tags:  []string{"some", "tags"},
 						Plan:  "some-plan",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
-							"port":     "3306",
+							"port":     float64(3306),
 							"uri":      "mysql://some-user:some-password@some-host:3306/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 							"some-key": "some-value",
@@ -104,30 +104,30 @@ var _ = Describe("App - Service", func() {
 				"full-url": {
 					{
 						Name: "some-name-1",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
-							"port":     "3306",
+							"port":     float64(3306),
 							"uri":      "mysql://some-user:some-password@some-host:3306/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-2",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
 							"uri":      "mysql://some-user:some-password@some-host:3306/some-db?reconnect=true",
 						},
 					},
 					{
 						Name: "some-name-3",
-						Credentials: map[string]string{
-							"port":    "3306",
+						Credentials: map[string]interface{}{
+							"port":    float64(3306),
 							"jdbcUrl": "jdbc:mysql://some-host:3306/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-4",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"uri":     "mysql://some-user:some-password@some-host:3306/some-db?reconnect=true",
 							"jdbcUrl": "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
@@ -136,30 +136,30 @@ var _ = Describe("App - Service", func() {
 				"host-url": {
 					{
 						Name: "some-name-5",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
-							"port":     "3306",
+							"port":     float64(3306),
 							"uri":      "mysql://some-user:some-password@some-host/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-6",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
 							"uri":      "mysql://some-user:some-password@some-host/some-db?reconnect=true",
 						},
 					},
 					{
 						Name: "some-name-7",
-						Credentials: map[string]string{
-							"port":    "3306",
+						Credentials: map[string]interface{}{
+							"port":    float64(3306),
 							"jdbcUrl": "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-8",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"uri":     "mysql://some-user:some-password@some-host/some-db?reconnect=true",
 							"jdbcUrl": "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
@@ -168,21 +168,21 @@ var _ = Describe("App - Service", func() {
 				"no-url": {
 					{
 						Name: "some-name-9",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
-							"port":     "3306",
+							"port":     float64(3306),
 						},
 					},
 					{
 						Name: "some-name-10",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
 						},
 					},
 					{
 						Name: "some-name-11",
-						Credentials: map[string]string{
-							"port": "3306",
+						Credentials: map[string]interface{}{
+							"port": float64(3306),
 						},
 					},
 				},
@@ -195,9 +195,9 @@ var _ = Describe("App - Service", func() {
 						Label: "some-label",
 						Tags:  []string{"some", "tags"},
 						Plan:  "some-plan",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "localhost",
-							"port":     "40000",
+							"port":     float64(40000),
 							"uri":      "mysql://some-user:some-password@localhost:40000/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://localhost:40000/some-db?user=some-user\u0026password=some-password",
 							"some-key": "some-value",
@@ -210,31 +210,31 @@ var _ = Describe("App - Service", func() {
 				"full-url": {
 					{
 						Name: "some-name-1",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "localhost",
-							"port":     "40001",
+							"port":     float64(40001),
 							"uri":      "mysql://some-user:some-password@localhost:40001/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://localhost:40001/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-2",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "localhost",
-							"port":     "40002",
+							"port":     float64(40002),
 							"uri":      "mysql://some-user:some-password@localhost:40002/some-db?reconnect=true",
 						},
 					},
 					{
 						Name: "some-name-3",
-						Credentials: map[string]string{
-							"port":    "40003",
+						Credentials: map[string]interface{}{
+							"port":    float64(40003),
 							"jdbcUrl": "jdbc:mysql://localhost:40003/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-4",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"uri":     "mysql://some-user:some-password@localhost:40004/some-db?reconnect=true",
 							"jdbcUrl": "jdbc:mysql://localhost:40004/some-db?user=some-user\u0026password=some-password",
 						},
@@ -243,30 +243,30 @@ var _ = Describe("App - Service", func() {
 				"host-url": {
 					{
 						Name: "some-name-5",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "localhost",
-							"port":     "40005",
+							"port":     float64(40005),
 							"uri":      "mysql://some-user:some-password@localhost:40005/some-db?reconnect=true",
 							"jdbcUrl":  "jdbc:mysql://localhost:40005/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-6",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
 							"uri":      "mysql://some-user:some-password@some-host/some-db?reconnect=true",
 						},
 					},
 					{
 						Name: "some-name-7",
-						Credentials: map[string]string{
-							"port":    "40007",
+						Credentials: map[string]interface{}{
+							"port":    float64(40007),
 							"jdbcUrl": "jdbc:mysql://localhost:40007/some-db?user=some-user\u0026password=some-password",
 						},
 					},
 					{
 						Name: "some-name-8",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"uri":     "mysql://some-user:some-password@some-host/some-db?reconnect=true",
 							"jdbcUrl": "jdbc:mysql://some-host/some-db?user=some-user\u0026password=some-password",
 						},
@@ -275,21 +275,21 @@ var _ = Describe("App - Service", func() {
 				"no-url": {
 					{
 						Name: "some-name-9",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "localhost",
-							"port":     "40009",
+							"port":     float64(40009),
 						},
 					},
 					{
 						Name: "some-name-10",
-						Credentials: map[string]string{
+						Credentials: map[string]interface{}{
 							"hostname": "some-host",
 						},
 					},
 					{
 						Name: "some-name-11",
-						Credentials: map[string]string{
-							"port": "3306",
+						Credentials: map[string]interface{}{
+							"port": float64(3306),
 						},
 					},
 				},

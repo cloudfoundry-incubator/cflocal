@@ -142,7 +142,7 @@ applications:
   env:
     SOME_VAR: "some value"
   services:
-    (( contents of VCAP_SERVICES ))
+    (( VCAP_SERVICES object in YAML ))
 ```
 
 ## Install
