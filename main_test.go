@@ -108,7 +108,7 @@ var _ = Describe("CF Local", func() {
 			Expect(os.RemoveAll(tempDir)).To(Succeed())
 		})
 
-		It("should setup the staging and running environments to mimic CF", func() {
+		FIt("should setup the staging and running environments to mimic CF", func() {
 			By("staging", func() {
 				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
@@ -139,7 +139,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app")
 				runCmd.Dir = filepath.Join(tempDir, "test-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -177,7 +177,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -240,7 +240,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app")
 				runCmd.Dir = filepath.Join(tempDir, "local-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -294,7 +294,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -326,7 +326,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-r", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -358,7 +358,7 @@ var _ = Describe("CF Local", func() {
 			By("running", func() {
 				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", "some-dir", "-r", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
-				runCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 

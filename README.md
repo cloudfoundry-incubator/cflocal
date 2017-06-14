@@ -150,20 +150,20 @@ applications:
 ## Install
 
 ```bash
-$ ./cflocal-v0.12.0-macos
-Plugin successfully installed. Current version: 0.12.0
+$ ./cflocal-v0.13.0-macos
+Plugin successfully installed. Current version: 0.13.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.12.0-macos
+$ cf install-plugin cflocal-0.13.0-macos
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
 
-Do you want to install the plugin cflocal-0.12.0-macos?> y
+Do you want to install the plugin cflocal-0.13.0-macos?> y
 
-Installing plugin cflocal-0.12.0-macos...
+Installing plugin cflocal-0.13.0-macos...
 OK
-Plugin cflocal v0.12.0 successfully installed.
+Plugin cflocal v0.13.0 successfully installed.
 ```
 ***Or***
 ```bash
@@ -174,9 +174,9 @@ $ cf install-plugin -r CF-Community cflocal
 Do you want to install the plugin cflocal?> y
 Looking up 'cflocal' from repository 'CF-Community'
 11354404 bytes downloaded...
-Installing plugin cflocal-0.12.0-macos...
+Installing plugin cflocal-0.13.0-macos...
 OK
-Plugin cflocal v0.12.0 successfully installed.
+Plugin cflocal v0.13.0 successfully installed.
 ```
 Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
 
