@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 
 	"github.com/docker/docker/pkg/archive"
 	gouuid "github.com/nu7hatch/gouuid"
@@ -108,7 +107,7 @@ var _ = Describe("CF Local", func() {
 			Expect(os.RemoveAll(tempDir)).To(Succeed())
 		})
 
-		FIt("should setup the staging and running environments to mimic CF", func() {
+		It("should setup the staging and running environments to mimic CF", func() {
 			By("staging", func() {
 				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
@@ -158,7 +157,7 @@ var _ = Describe("CF Local", func() {
 				Eventually(session).Should(gbytes.Say("Log message from stdout."))
 				Eventually(session.Out.Contents).Should(ContainSubstring("Log message from stderr."))
 
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
@@ -187,7 +186,7 @@ var _ = Describe("CF Local", func() {
 				url := fmt.Sprintf("http://localhost:%s/some-path", port)
 
 				Expect(get(url, "10s")).To(Equal("Path: /some-path"))
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
@@ -250,7 +249,7 @@ var _ = Describe("CF Local", func() {
 				url := fmt.Sprintf("http://localhost:%s/some-path", port)
 
 				Expect(get(url, "10s")).To(Equal("Path: /some-path"))
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
@@ -307,7 +306,7 @@ var _ = Describe("CF Local", func() {
 				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
 				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
 
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
@@ -339,7 +338,7 @@ var _ = Describe("CF Local", func() {
 				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
 				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
 
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
@@ -371,7 +370,7 @@ var _ = Describe("CF Local", func() {
 				Expect(ioutil.WriteFile(filepath.Join(tempDir, "go-app", "some-dir", "file"), []byte("some-other-contents"), 0666)).To(Succeed())
 				Eventually(func() string { return get(url, "10s") }, "10s").Should(Equal("some-other-contents"))
 
-				Expect(syscall.Kill(-runCmd.Process.Pid, syscall.SIGINT)).To(Succeed())
+				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
