@@ -45,18 +45,18 @@ type UI interface {
 type Colorizer func(string, ...interface{}) string
 
 type vcapApplication struct {
-	ApplicationID      string            `json:"application_id"`
-	ApplicationName    string            `json:"application_name"`
-	ApplicationURIs    []string          `json:"application_uris"`
-	ApplicationVersion string            `json:"application_version"`
-	Host               string            `json:"host,omitempty"`
-	InstanceID         string            `json:"instance_id,omitempty"`
-	InstanceIndex      *uint             `json:"instance_index,omitempty"`
+	ApplicationID      string           `json:"application_id"`
+	ApplicationName    string           `json:"application_name"`
+	ApplicationURIs    []string         `json:"application_uris"`
+	ApplicationVersion string           `json:"application_version"`
+	Host               string           `json:"host,omitempty"`
+	InstanceID         string           `json:"instance_id,omitempty"`
+	InstanceIndex      *uint            `json:"instance_index,omitempty"`
 	Limits             map[string]int64 `json:"limits"`
-	Name               string            `json:"name"`
-	Port               *uint             `json:"port,omitempty"`
-	SpaceID            string            `json:"space_id"`
-	SpaceName          string            `json:"space_name"`
-	URIs               []string          `json:"uris"`
-	Version            string            `json:"version"`
+	Name               string           `json:"name"`
+	Port               *uint            `json:"port,omitempty"`
+	SpaceID            string           `json:"space_id"`
+	SpaceName          string           `json:"space_name"`
+	URIs               []string         `json:"uris"`
+	Version            string           `json:"version"`
 }
