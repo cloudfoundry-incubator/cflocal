@@ -9,11 +9,11 @@ import (
 	"text/template"
 	"time"
 
+	"code.cloudfoundry.org/cli/cf/formatters"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 
-	"code.cloudfoundry.org/cli/cf/formatters"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/service"
 )
@@ -255,11 +255,6 @@ func (*Runner) buildHostConfig(ip string, port uint, memory int64, appDir, remot
 		config.Binds = []string{appDir + ":" + remoteDir}
 	}
 	return config
-}
-
-func parseBytes(s string) uint64 {
-
-	return 0
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
