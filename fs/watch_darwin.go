@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsevents"
-	"github.com/sclevine/cflocal/engine"
 )
 
 var changeEvents = []fsevents.EventFlags{
@@ -13,7 +12,7 @@ var changeEvents = []fsevents.EventFlags{
 	fsevents.ItemRenamed, fsevents.ItemModified,
 }
 
-func (f *FS) Watch(dir string, wait time.Duration) (change <-chan map[string]string, done chan<- struct{}, err error) {
+func (f *FS) Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error) {
 	dev, err := fsevents.DeviceForPath(dir)
 	if err != nil {
 		return nil, nil, err
@@ -27,7 +26,7 @@ func (f *FS) Watch(dir string, wait time.Duration) (change <-chan map[string]str
 	stream.Start()
 	source := stream.Events
 
-	out := make(chan map[string]string)
+	out := make(chan time.Time)
 	stop := make(chan struct{})
 	go func() {
 		for {
@@ -35,7 +34,7 @@ func (f *FS) Watch(dir string, wait time.Duration) (change <-chan map[string]str
 			case events := <-source:
 				for _, e := range events {
 					if hasFlags(e.Flags, changeEvents...) {
-						out <- map[string]string{"time": time.Now().Format(time.RFC3339)}
+						out <- time.Now()
 						break
 					}
 				}

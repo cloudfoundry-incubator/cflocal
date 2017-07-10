@@ -2,10 +2,8 @@ package engine
 
 import (
 	"archive/tar"
-	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	gopath "path"
@@ -56,7 +54,7 @@ func (c *Container) CloseAfterStream(stream *Stream) error {
 	return nil
 }
 
-func (c *Container) Start(logPrefix string, logs io.Writer, config <-chan interface{}, restart <-chan time.Time) (status int64, err error) {
+func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error) {
 	defer func() {
 		if isErrCanceled(err) {
 			status, err = 128, nil
@@ -93,29 +91,18 @@ func (c *Container) Start(logPrefix string, logs io.Writer, config <-chan interf
 	logQueue <- contLogs
 
 	if restart != nil {
-		return c.restart(ctx, contLogs, logQueue, config, restart)
+		return c.restart(ctx, contLogs, logQueue, restart)
 	}
 	defer contLogs.Close()
 	return c.Docker.ContainerWait(ctx, c.ID)
 }
 
-func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan io.Reader, config <-chan interface{}, restart <-chan time.Time) (status int64, err error) {
+func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan<- io.Reader, restart <-chan time.Time) (status int64, err error) {
 	// TODO: log on each continue
-
-	// FIXME: new strategy: restart channel backed by container-wait OR by watcher
 
 	for {
 		select {
-		case config := <-config:
-			if config != nil {
-				configJSON := &bytes.Buffer{}
-				if err := json.NewEncoder(configJSON).Encode(config); err != nil {
-					continue
-				}
-				if err := c.Docker.CopyToContainer(ctx, c.ID, "/tmp/config.json", configJSON, types.CopyToContainerOptions{}); err != nil {
-					continue
-				}
-			}
+		case <-restart:
 			wait := time.Second
 			if err := c.Docker.ContainerRestart(ctx, c.ID, &wait); err != nil {
 				continue

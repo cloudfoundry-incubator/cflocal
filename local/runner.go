@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"text/template"
+	"time"
 
 	"code.cloudfoundry.org/cli/cf/formatters"
 	"github.com/docker/docker/api/types/container"
@@ -69,7 +70,7 @@ type RunConfig struct {
 	Port          uint
 	AppDir        string
 	RSync         bool
-	Restart       chan interface{}
+	Restart       <-chan time.Time
 	Color         Colorizer
 	AppConfig     *AppConfig
 	ForwardConfig *service.ForwardConfig
