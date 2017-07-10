@@ -2,8 +2,10 @@ package engine
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	gopath "path"
@@ -54,11 +56,7 @@ func (c *Container) CloseAfterStream(stream *Stream) error {
 	return nil
 }
 
-type causer interface {
-	Cause() error
-}
-
-func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error) {
+func (c *Container) Start(logPrefix string, logs io.Writer, config <-chan interface{}, restart <-chan time.Time) (status int64, err error) {
 	defer func() {
 		if isErrCanceled(err) {
 			status, err = 128, nil
@@ -77,14 +75,13 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 			cancel()
 		}
 	}()
-	srcs := make(chan io.Reader)
-	defer close(srcs)
-	go copyStreams(logs, srcs, logPrefix)
+	logQueue := copyStreams(logs, logPrefix)
+	defer close(logQueue)
 
 	if err := c.Docker.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return 0, err
 	}
-	src, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+	contLogs, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Timestamps: true,
@@ -93,16 +90,32 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 	if err != nil {
 		return 0, err
 	}
-	defer func() { src.Close() }()
-	srcs <- src
+	logQueue <- contLogs
 
-	if restart == nil {
-		return c.Docker.ContainerWait(ctx, c.ID)
+	if restart != nil {
+		return c.restart(ctx, contLogs, logQueue, config, restart)
 	}
+	defer contLogs.Close()
+	return c.Docker.ContainerWait(ctx, c.ID)
+}
+
+func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan io.Reader, config <-chan interface{}, restart <-chan time.Time) (status int64, err error) {
+	// TODO: log on each continue
+
+	// FIXME: new strategy: restart channel backed by container-wait OR by watcher
 
 	for {
 		select {
-		case <-restart:
+		case config := <-config:
+			if config != nil {
+				configJSON := &bytes.Buffer{}
+				if err := json.NewEncoder(configJSON).Encode(config); err != nil {
+					continue
+				}
+				if err := c.Docker.CopyToContainer(ctx, c.ID, "/tmp/config.json", configJSON, types.CopyToContainerOptions{}); err != nil {
+					continue
+				}
+			}
 			wait := time.Second
 			if err := c.Docker.ContainerRestart(ctx, c.ID, &wait); err != nil {
 				continue
@@ -115,8 +128,8 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 			if err != nil {
 				startedAt = time.Unix(0, 0)
 			}
-			src.Close()
-			src, err = c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+			contLogs.Close()
+			contLogs, err = c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 				Timestamps: true,
 				ShowStdout: true,
 				ShowStderr: true,
@@ -126,8 +139,9 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 			if err != nil {
 				continue
 			}
-			srcs <- src
+			logQueue <- contLogs
 		case <-c.Exit:
+			defer contLogs.Close()
 			return 128, nil
 		}
 	}
@@ -137,22 +151,26 @@ func isErrCanceled(err error) bool {
 	return err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled"))
 }
 
-func copyStreams(dst io.Writer, srcs <-chan io.Reader, prefix string) {
-	for src := range srcs {
+func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
+	srcs := make(chan io.Reader)
+	go func() {
 		header := make([]byte, 8)
-		for {
-			if _, err := io.ReadFull(src, header); err != nil {
-				break
-			}
-			if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
-				break
-			}
-			// TODO: bold STDERR
-			if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
-				break
+		for src := range srcs {
+			for {
+				if _, err := io.ReadFull(src, header); err != nil {
+					break
+				}
+				if n, err := io.WriteString(dst, prefix); err != nil || n != len(prefix) {
+					break
+				}
+				// TODO: bold STDERR
+				if _, err := io.CopyN(dst, src, int64(binary.BigEndian.Uint32(header[4:]))); err != nil {
+					break
+				}
 			}
 		}
-	}
+	}()
+	return srcs
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {

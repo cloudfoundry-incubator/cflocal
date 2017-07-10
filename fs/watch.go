@@ -10,7 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func (f *FS) Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error) {
+func (f *FS) Watch(dir string, wait time.Duration) (change <-chan map[string]string, done chan<- struct{}, err error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, nil, err
@@ -25,7 +25,7 @@ func (f *FS) Watch(dir string, wait time.Duration) (change <-chan time.Time, don
 		return nil, nil, err
 	}
 
-	out := make(chan time.Time)
+	out := make(chan map[string]string)
 	stop := make(chan struct{})
 	go func() {
 		var (
@@ -42,7 +42,7 @@ func (f *FS) Watch(dir string, wait time.Duration) (change <-chan time.Time, don
 				}
 			case t = <-after:
 				send = out
-			case send <- t:
+			case send <- map[string]string{"time": t.Format(time.RFC3339)}:
 				send = nil
 			case <-stop:
 				watcher.Close()
