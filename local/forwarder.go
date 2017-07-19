@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"text/template"
 
 	"github.com/docker/docker/api/types/container"
@@ -13,13 +12,14 @@ import (
 
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/service"
+	"io/ioutil"
 )
 
 const ForwardScript = `
 	set -e
 	{{if .Forwards -}}
 	echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
-	sshpass -p '{{.Code}}' ssh -N \
+	sshpass -f /tmp/ssh-code ssh -N \
 	    -o PermitLocalCommand=yes -o LocalCommand="touch /tmp/healthy" \
 		-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 		-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
@@ -46,62 +46,54 @@ type ForwardConfig struct {
 	ForwardConfig *service.ForwardConfig
 }
 
-func (f *Forwarder) Run(config *ForwardConfig) (health <-chan string, err error) {
-	sshpassBuf := &bytes.Buffer{}
-	if err := config.SSHPass.Out(sshpassBuf); err != nil {
+func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, err error) {
+	containerConfig, err := f.buildContainerConfig(config.ForwardConfig)
+	if err != nil {
 		return nil, err
 	}
-
-	prefix := config.Color("[%s tunnel] ", config.AppName)
-	sshHealth := make(chan string)
+	contr, err := f.Engine.NewContainer(containerConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := contr.CopyTo(config.SSHPass, "/usr/bin/sshpass"); err != nil {
+		return nil, err
+	}
+	health, done := contr.HealthCheck()
 	go func() {
+		defer contr.Close()
+		defer close(done)
+		prefix := config.Color("[%s tunnel] ", config.AppName)
 		for {
 			select {
 			case <-f.Exit:
 				return
 			default:
-				if err := f.start(sshHealth, config.ForwardConfig, prefix, sshpassBuf.Bytes()); err != nil {
-					fmt.Fprintf(f.Logs, "%s%s", prefix, err)
+				code, err := config.ForwardConfig.Code()
+				if err != nil {
+					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
+					break
 				}
+				codeStream := engine.NewStream(ioutil.NopCloser(bytes.NewBufferString(code)), int64(len(code)))
+				if err := contr.CopyTo(codeStream, "/tmp/ssh-code"); err != nil {
+					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
+					break
+				}
+				status, err := contr.Start(prefix, f.Logs, nil)
+				if err != nil {
+					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
+					break
+				}
+				fmt.Fprintf(f.Logs, "%sExited with status: %d", prefix, status)
 			}
 		}
 	}()
-	return sshHealth, nil
-}
-
-func (f *Forwarder) start(health chan<- string, config *service.ForwardConfig, prefix string, sshpass []byte) error {
-	containerConfig, err := f.buildContainerConfig(config)
-	if err != nil {
-		return err
-	}
-	contr, err := f.Engine.NewContainer(containerConfig, nil)
-	if err != nil {
-		return err
-	}
-	defer contr.Close()
-
-	sshpassStream := engine.NewStream(ioutil.NopCloser(bytes.NewBuffer(sshpass)), int64(len(sshpass)))
-	if err := contr.CopyTo(sshpassStream, "/usr/bin/sshpass"); err != nil {
-		return err
-	}
-	defer close(contr.HealthCheck(health))
-	_, err = contr.Start(prefix, f.Logs, nil)
-	return err
+	return health, nil
 }
 
 func (f *Forwarder) buildContainerConfig(forwardConfig *service.ForwardConfig) (*container.Config, error) {
-	code, err := forwardConfig.Code()
-	if err != nil {
-		return nil, err
-	}
-
-	options := struct {
-		*service.ForwardConfig
-		Code string
-	}{forwardConfig, code}
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(ForwardScript))
-	if err := tmpl.Execute(scriptBuf, options); err != nil {
+	if err := tmpl.Execute(scriptBuf, forwardConfig); err != nil {
 		return nil, err
 	}
 	ports := nat.PortSet{}

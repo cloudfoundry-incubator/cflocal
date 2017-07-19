@@ -26,7 +26,7 @@ type Container interface {
 	io.Closer
 	CloseAfterStream(stream *engine.Stream) error
 	Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error)
-	HealthCheck(health chan<- string) chan<- struct{}
+	HealthCheck() (health <-chan string, done chan<- struct{})
 	Commit(ref string) (imageID string, err error)
 	ExtractTo(tar io.Reader, path string) error
 	CopyTo(stream engine.Stream, path string) error

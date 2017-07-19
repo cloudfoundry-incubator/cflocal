@@ -60,7 +60,7 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 	forwardedPort := firstForwardedServicePort
 	for _, svcType := range serviceTypes(svcs) {
 		for i, svc := range svcs[svcType] {
-			if address := forward(svc.Credentials, forwardedPort); address != "" {
+			if address := forward(svc.Credentials, "localhost", forwardedPort); address != "" {
 				config.Forwards = append(config.Forwards, service.Forward{
 					Name: fmt.Sprintf("%s[%d]", svcType, i),
 					From: strconv.FormatUint(uint64(forwardedPort), 10),
@@ -110,7 +110,7 @@ func (a *App) sshEndpoint() (host, port string, err error) {
 	return net.SplitHostPort(result.AppSSHEndpoint)
 }
 
-func forward(creds map[string]interface{}, toPort uint) (fromAddress string) {
+func forward(creds map[string]interface{}, toHost string, toPort uint) (fromAddress string) {
 	if creds == nil {
 		return ""
 	}
@@ -122,7 +122,7 @@ func forward(creds map[string]interface{}, toPort uint) (fromAddress string) {
 		override["port"] = float64(toPort)
 	}
 	if host != "" {
-		override["hostname"] = "localhost"
+		override["hostname"] = toHost
 	}
 
 	uri, jdbcURL := str(creds["uri"]), str(creds["jdbcUrl"])
@@ -132,7 +132,7 @@ func forward(creds map[string]interface{}, toPort uint) (fromAddress string) {
 			return ""
 		}
 		host, port = ensureHostPort(host, port, u.Host)
-		u.Host = fmt.Sprintf("localhost:%d", toPort)
+		u.Host = fmt.Sprintf("%s:%d", toHost, toPort)
 		override["uri"] = u.String()
 	}
 	if jdbcURL != "" {
@@ -141,7 +141,7 @@ func forward(creds map[string]interface{}, toPort uint) (fromAddress string) {
 			return ""
 		}
 		host, port = ensureHostPort(host, port, u.Host)
-		u.Host = fmt.Sprintf("localhost:%d", toPort)
+		u.Host = fmt.Sprintf("%s:%d", toHost, toPort)
 		override["jdbcUrl"] = "jdbc:" + u.String()
 	}
 

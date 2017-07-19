@@ -159,13 +159,13 @@ func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
 	return srcs
 }
 
-func (c *Container) HealthCheck(health chan<- string) chan<- struct{} {
-	done := make(chan struct{})
+func (c *Container) HealthCheck() (health <-chan string, done chan<- struct{}) {
+	healthC, doneC := make(chan string), make(chan struct{})
 	go func() {
 		ctx := context.Background()
 		for {
 			select {
-			case <-done:
+			case <-doneC:
 				break
 			default:
 				contJSON, err := c.Docker.ContainerInspect(ctx, c.ID)
@@ -173,11 +173,11 @@ func (c *Container) HealthCheck(health chan<- string) chan<- struct{} {
 					health <- types.NoHealthcheck
 					continue
 				}
-				health <- contJSON.State.Health.Status
+				healthC <- contJSON.State.Health.Status
 			}
 		}
 	}()
-	return done
+	return healthC, doneC
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {

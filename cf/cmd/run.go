@@ -103,7 +103,7 @@ func (r *Run) Run(args []string) error {
 		}
 		defer sshpass.Close()
 	}
-	health, err := r.Forwarder.Run(&local.ForwardConfig{
+	health, err := r.Forwarder.Forward(&local.ForwardConfig{
 		AppName:       appConfig.Name,
 		SSHPass:       sshpass,
 		Color:         color.GreenString,
