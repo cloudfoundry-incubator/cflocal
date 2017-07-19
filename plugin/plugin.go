@@ -104,6 +104,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Engine:       dockerEngine,
 		Image:        image,
 	}
+	forwarder := &local.Forwarder{
+		StackVersion: "latest",
+		Logs:         color.Output,
+		Exit:         p.Exit,
+		Engine:       dockerEngine,
+	}
 	app := &remote.App{
 		CLI:  cliConnection,
 		UI:   p.UI,
@@ -143,13 +149,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				Config: config,
 			},
 			&cmd.Run{
-				UI:     p.UI,
-				Stager: stager,
-				Runner: runner,
-				App:    app,
-				FS:     sysFS,
-				Help:   help,
-				Config: config,
+				UI:        p.UI,
+				Stager:    stager,
+				Runner:    runner,
+				Forwarder: forwarder,
+				App:       app,
+				FS:        sysFS,
+				Help:      help,
+				Config:    config,
 			},
 			&cmd.Stage{
 				UI:     p.UI,

@@ -69,7 +69,6 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 		case <-done:
 			cancel()
 		case <-c.Exit:
-			restart = nil
 			cancel()
 		}
 	}()
@@ -158,6 +157,27 @@ func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
 		}
 	}()
 	return srcs
+}
+
+func (c *Container) HealthCheck(health chan<- string) chan<- struct{} {
+	done := make(chan struct{})
+	go func() {
+		ctx := context.Background()
+		for {
+			select {
+			case <-done:
+				break
+			default:
+				contJSON, err := c.Docker.ContainerInspect(ctx, c.ID)
+				if err != nil || contJSON.State == nil || contJSON.State.Health == nil {
+					health <- types.NoHealthcheck
+					continue
+				}
+				health <- contJSON.State.Health.Status
+			}
+		}
+	}()
+	return done
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {

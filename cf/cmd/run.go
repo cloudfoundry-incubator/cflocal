@@ -11,18 +11,20 @@ import (
 
 	"github.com/fatih/color"
 
+	"github.com/docker/docker/api/types"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
 )
 
 type Run struct {
-	UI     UI
-	Stager Stager
-	Runner Runner
-	App    App
-	FS     FS
-	Help   Help
-	Config Config
+	UI        UI
+	Stager    Stager
+	Runner    Runner
+	Forwarder Forwarder
+	App       App
+	FS        FS
+	Help      Help
+	Config    Config
 }
 
 type runOptions struct {
@@ -101,20 +103,26 @@ func (r *Run) Run(args []string) error {
 		}
 		defer sshpass.Close()
 	}
-
+	health, err := r.Forwarder.Run(&local.ForwardConfig{
+		AppName:       appConfig.Name,
+		SSHPass:       sshpass,
+		Color:         color.GreenString,
+		ForwardConfig: forwardConfig,
+	})
+	if err := waitForHealthy(health); err != nil {
+		return fmt.Errorf("error forwarding services: %s", err)
+	}
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:       engine.NewStream(droplet, dropletSize),
-		Launcher:      launcher,
-		SSHPass:       sshpass,
-		IP:            options.ip,
-		Port:          options.port,
-		AppDir:        appDir,
-		RSync:         options.rsync,
-		Restart:       restart,
-		Color:         color.GreenString,
-		AppConfig:     appConfig,
-		ForwardConfig: forwardConfig,
+		Droplet:   engine.NewStream(droplet, dropletSize),
+		Launcher:  launcher,
+		IP:        options.ip,
+		Port:      options.port,
+		AppDir:    appDir,
+		RSync:     options.rsync,
+		Restart:   restart,
+		Color:     color.GreenString,
+		AppConfig: appConfig,
 	})
 	return err
 }
@@ -152,4 +160,18 @@ func freePort() (uint, error) {
 		return 0, err
 	}
 	return uint(port), nil
+}
+
+func waitForHealthy(health <-chan string) error {
+	timeout := time.NewTimer(30 * time.Second).C
+	for {
+		select {
+		case status := <-health:
+			if status == types.Healthy {
+				return nil
+			}
+		case <-timeout:
+			return errors.New("timeout")
+		}
+	}
 }

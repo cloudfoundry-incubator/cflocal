@@ -49,11 +49,13 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 	}
 	config.User = fmt.Sprintf("cf:%s/0", appModel.Guid)
 
-	sshCodeLines, err := a.CLI.CliCommandWithoutTerminalOutput("ssh-code")
-	if err != nil {
-		return nil, nil, err
+	config.Code = func() (string, error) {
+		sshCodeLines, err := a.CLI.CliCommandWithoutTerminalOutput("ssh-code")
+		if err != nil {
+			return "", err
+		}
+		return sshCodeLines[0], nil
 	}
-	config.Code = sshCodeLines[0]
 
 	forwardedPort := firstForwardedServicePort
 	for _, svcType := range serviceTypes(svcs) {
@@ -61,7 +63,7 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 			if address := forward(svc.Credentials, forwardedPort); address != "" {
 				config.Forwards = append(config.Forwards, service.Forward{
 					Name: fmt.Sprintf("%s[%d]", svcType, i),
-					From: fmt.Sprintf("localhost:%d", forwardedPort),
+					From: strconv.FormatUint(uint64(forwardedPort), 10),
 					To:   address,
 				})
 			} else {

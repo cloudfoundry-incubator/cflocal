@@ -17,7 +17,7 @@ type ForwardConfig struct {
 	Host     string
 	Port     string
 	User     string
-	Code     string
+	Code     func() (string, error)
 	Forwards []Forward
 }
 

@@ -20,20 +20,6 @@ import (
 
 const RunnerScript = `
 	set -e
-	{{with .ForwardConfig -}}
-	{{if .Forwards -}}
-	echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
-	sshpass -p '{{.Code}}' ssh -f -N \
-		-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
-		-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
-		-o ServerAliveInterval=10 -o ServerAliveCountMax=60 \
-		-p '{{.Port}}' '{{.User}}@{{.Host}}' \
-		{{- range $i, $_ := .Forwards}}
-		{{- if $i}} \{{end}}
-		-L '{{.From}}:{{.To}}'
-		{{- end}}
-	{{end -}}
-	{{end -}}
 	{{if .RSync -}}
 	rsync -a /tmp/local/ /home/vcap/app/
 	{{end -}}
@@ -63,17 +49,15 @@ type Runner struct {
 }
 
 type RunConfig struct {
-	Droplet       engine.Stream
-	Launcher      engine.Stream
-	SSHPass       engine.Stream
-	IP            string
-	Port          uint
-	AppDir        string
-	RSync         bool
-	Restart       <-chan time.Time
-	Color         Colorizer
-	AppConfig     *AppConfig
-	ForwardConfig *service.ForwardConfig
+	Droplet   engine.Stream
+	Launcher  engine.Stream
+	IP        string
+	Port      uint
+	AppDir    string
+	RSync     bool
+	Restart   <-chan time.Time
+	Color     Colorizer
+	AppConfig *AppConfig
 }
 
 func (r *Runner) Run(config *RunConfig) (status int64, err error) {
@@ -82,7 +66,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.ForwardConfig, config.RSync)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync)
 	if err != nil {
 		return 0, err
 	}
@@ -107,11 +91,6 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if err := contr.CopyTo(config.Droplet, "/tmp/droplet"); err != nil {
 		return 0, err
 	}
-	if config.SSHPass.Size > 0 {
-		if err := contr.CopyTo(config.SSHPass, "/usr/bin/sshpass"); err != nil {
-			return 0, err
-		}
-	}
 	return contr.Start(config.Color("[%s] ", config.AppConfig.Name), r.Logs, config.Restart)
 }
 
@@ -128,7 +107,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, nil, false)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, false)
 	if err != nil {
 		return "", err
 	}
@@ -149,7 +128,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 }
 
 func (r *Runner) pull() error {
-	return r.UI.Loading("Image", r.Image.Pull("cloudfoundry/cflinuxfs2:"+r.StackVersion))
+	return r.UI.Loading("Image", r.Image.Pull(fmt.Sprintf("cloudfoundry/cflinuxfs2:%s", r.StackVersion)))
 }
 
 func (r *Runner) setDefaults(config *AppConfig) {
@@ -161,7 +140,7 @@ func (r *Runner) setDefaults(config *AppConfig) {
 	}
 }
 
-func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.ForwardConfig, rsync bool) (*container.Config, error) {
+func (r *Runner) buildContainerConfig(config *AppConfig, rsync bool) (*container.Config, error) {
 	name := config.Name
 	memory, err := formatters.ToMegabytes(config.Memory)
 	if err != nil {
@@ -219,10 +198,7 @@ func (r *Runner) buildContainerConfig(config *AppConfig, forwardConfig *service.
 		"VCAP_SERVICES":     string(vcapServices),
 	}
 
-	options := struct {
-		RSync         bool
-		ForwardConfig *service.ForwardConfig
-	}{rsync, forwardConfig}
+	options := struct{ RSync bool }{rsync}
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(RunnerScript))
 	if err := tmpl.Execute(scriptBuf, options); err != nil {

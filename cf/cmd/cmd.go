@@ -45,6 +45,11 @@ type Runner interface {
 	Export(config *local.ExportConfig) (imageID string, err error)
 }
 
+//go:generate mockgen -package mocks -destination mocks/forwarder.go github.com/sclevine/cflocal/cf/cmd Forwarder
+type Forwarder interface {
+	Run(config *local.ForwardConfig) (health <-chan string, err error)
+}
+
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
 type FS interface {
 	TarApp(path string) (io.ReadCloser, error)
