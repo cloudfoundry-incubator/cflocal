@@ -4,22 +4,23 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"text/template"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-connections/nat"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/cflocal/local/outlock"
 	"github.com/sclevine/cflocal/service"
-	"io/ioutil"
 )
 
 const ForwardScript = `
-	set -e
 	{{if .Forwards -}}
 	echo 'Forwarding:{{range .Forwards}} {{.Name}}{{end}}'
-	sshpass -f /tmp/ssh-code ssh -N \
+	sshpass -f /tmp/ssh-code ssh -4 -N \
 	    -o PermitLocalCommand=yes -o LocalCommand="touch /tmp/healthy" \
 		-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 		-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
@@ -29,6 +30,7 @@ const ForwardScript = `
 		{{- if $i}} \{{end}}
 		-L '{{.From}}:{{.To}}'
 		{{- end}}
+	rm -f /tmp/healthy
 	{{end -}}
 `
 
@@ -44,50 +46,72 @@ type ForwardConfig struct {
 	SSHPass       engine.Stream
 	Color         Colorizer
 	ForwardConfig *service.ForwardConfig
+	PortBindings  nat.PortMap
 }
 
-func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, err error) {
+func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done func(), networkMode string, err error) {
+	output := outlock.New(f.Logs)
+
+	netHostConfig := &container.HostConfig{PortBindings: config.PortBindings}
+	networkContr, err := f.Engine.NewContainer(f.buildNetContainerConfig(), netHostConfig)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	// TODO: wait for network container to fully start in Background
+	if err := networkContr.Background(); err != nil {
+		return nil, nil, "", err
+	}
+
+	networkMode = "container:" + networkContr.ID()
 	containerConfig, err := f.buildContainerConfig(config.ForwardConfig)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
-	contr, err := f.Engine.NewContainer(containerConfig, nil)
+	hostConfig := &container.HostConfig{NetworkMode: container.NetworkMode(networkMode)}
+	contr, err := f.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
+
 	if err := contr.CopyTo(config.SSHPass, "/usr/bin/sshpass"); err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
-	health, done := contr.HealthCheck()
+
+	prefix := config.Color("[%s tunnel] ", config.AppName)
+	timer := time.NewTimer(0) // TODO: inject channel and reset method
 	go func() {
-		defer contr.Close()
-		defer close(done)
-		prefix := config.Color("[%s tunnel] ", config.AppName)
 		for {
 			select {
 			case <-f.Exit:
 				return
-			default:
+			case <-timer.C:
+				timer.Reset(5*time.Second)
 				code, err := config.ForwardConfig.Code()
 				if err != nil {
-					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
-					break
+					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
+					continue
 				}
 				codeStream := engine.NewStream(ioutil.NopCloser(bytes.NewBufferString(code)), int64(len(code)))
 				if err := contr.CopyTo(codeStream, "/tmp/ssh-code"); err != nil {
-					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
-					break
+					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
+					continue
 				}
-				status, err := contr.Start(prefix, f.Logs, nil)
+				status, err := contr.Start(prefix, output, nil)
 				if err != nil {
-					fmt.Fprintf(f.Logs, "%sError: %s", prefix, err)
-					break
+					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
+					continue
 				}
-				fmt.Fprintf(f.Logs, "%sExited with status: %d", prefix, status)
+				fmt.Fprintf(output, "%sExited with status: %d\n", prefix, status)
 			}
 		}
 	}()
-	return health, nil
+	done = func() {
+		defer networkContr.Close()
+		defer contr.Close()
+		fmt.Fprintf(output, "%sClosing.\n", prefix)
+		output.Disable()
+	}
+	return contr.HealthCheck(), done, networkMode, nil
 }
 
 func (f *Forwarder) buildContainerConfig(forwardConfig *service.ForwardConfig) (*container.Config, error) {
@@ -96,21 +120,29 @@ func (f *Forwarder) buildContainerConfig(forwardConfig *service.ForwardConfig) (
 	if err := tmpl.Execute(scriptBuf, forwardConfig); err != nil {
 		return nil, err
 	}
-	ports := nat.PortSet{}
-	for _, f := range forwardConfig.Forwards {
-		ports[nat.Port(fmt.Sprintf("%s/tcp", f.From))] = struct{}{}
-	}
 
 	return &container.Config{
-		Hostname:     "cflocal",
-		User:         "vcap",
-		ExposedPorts: ports,
+		User: "vcap",
 		Healthcheck: &container.HealthConfig{
-			Test: []string{"CMD", "test", "-f", "/tmp/healthy"},
+			Test:     []string{"CMD", "test", "-f", "/tmp/healthy"},
+			Interval: time.Second,
+			Retries:  30,
 		},
 		Image: "cloudfoundry/cflinuxfs2:" + f.StackVersion,
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", scriptBuf.String(),
 		},
 	}, nil
+}
+
+func (f *Forwarder) buildNetContainerConfig() *container.Config {
+	return &container.Config{
+		Hostname:     "cflocal",
+		User:         "vcap",
+		ExposedPorts: nat.PortSet{"8080/tcp": {}},
+		Image:        "cloudfoundry/cflinuxfs2:" + f.StackVersion,
+		Entrypoint: strslice.StrSlice{
+			"tail", "-f", "/dev/null",
+		},
+	}
 }

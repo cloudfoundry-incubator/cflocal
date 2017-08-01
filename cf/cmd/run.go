@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
+	"github.com/docker/go-connections/nat"
 )
 
 type Run struct {
@@ -95,34 +96,46 @@ func (r *Run) Run(args []string) error {
 		appConfig.Services = remoteServices
 	}
 
-	var sshpass engine.Stream
+	// TODO: create network config, don't leak Docker nat package
+	var network string
+	portBindings := nat.PortMap{
+		"8080/tcp": {{HostIP: options.ip, HostPort: strconv.FormatUint(uint64(options.port), 10)}},
+	}
 	if forwardConfig != nil {
-		sshpass, err = r.Stager.Download("/usr/bin/sshpass")
+		sshpass, err := r.Stager.Download("/usr/bin/sshpass")
 		if err != nil {
 			return err
 		}
 		defer sshpass.Close()
+		health, done, networkMode, err := r.Forwarder.Forward(&local.ForwardConfig{
+			AppName:       appConfig.Name,
+			SSHPass:       sshpass,
+			Color:         color.GreenString,
+			ForwardConfig: forwardConfig,
+			PortBindings:  portBindings,
+		})
+		if err != nil {
+			return err
+		}
+		defer done()
+		if err := waitForHealthy(health); err != nil {
+			return fmt.Errorf("error forwarding services: %s", err)
+		}
+		network = networkMode
+		portBindings = nil
 	}
-	health, err := r.Forwarder.Forward(&local.ForwardConfig{
-		AppName:       appConfig.Name,
-		SSHPass:       sshpass,
-		Color:         color.GreenString,
-		ForwardConfig: forwardConfig,
-	})
-	if err := waitForHealthy(health); err != nil {
-		return fmt.Errorf("error forwarding services: %s", err)
-	}
+
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:   engine.NewStream(droplet, dropletSize),
-		Launcher:  launcher,
-		IP:        options.ip,
-		Port:      options.port,
-		AppDir:    appDir,
-		RSync:     options.rsync,
-		Restart:   restart,
-		Color:     color.GreenString,
-		AppConfig: appConfig,
+		Droplet:     engine.NewStream(droplet, dropletSize),
+		Launcher:    launcher,
+		NetworkMode: network,
+		AppDir:      appDir,
+		RSync:       options.rsync,
+		Restart:     restart,
+		Color:       color.GreenString,
+		AppConfig:   appConfig,
+		PortBindngs: portBindings,
 	})
 	return err
 }

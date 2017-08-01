@@ -19,7 +19,7 @@ import (
 type Container struct {
 	Docker *docker.Client
 	Exit   <-chan struct{}
-	ID     string
+	id     string
 	config *container.Config
 }
 
@@ -29,16 +29,20 @@ func NewContainer(docker *docker.Client, config *container.Config, hostConfig *c
 		return nil, err
 	}
 	ctx := context.Background()
-	response, err := docker.ContainerCreate(ctx, config, hostConfig, nil, fmt.Sprintf("%s-%s", config.Hostname, uuid))
+	response, err := docker.ContainerCreate(ctx, config, hostConfig, nil, fmt.Sprintf("cflocal-%s", uuid))
 	if err != nil {
 		return nil, err
 	}
 	return &Container{docker, nil, response.ID, config}, nil
 }
 
+func (c *Container) ID() string {
+	return c.id
+}
+
 func (c *Container) Close() error {
 	ctx := context.Background()
-	return c.Docker.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{
+	return c.Docker.ContainerRemove(ctx, c.id, types.ContainerRemoveOptions{
 		Force: true,
 	})
 }
@@ -52,6 +56,11 @@ func (c *Container) CloseAfterStream(stream *Stream) error {
 		After:      c.Close,
 	}
 	return nil
+}
+
+func (c *Container) Background() error {
+	ctx := context.Background()
+	return c.Docker.ContainerStart(ctx, c.id, types.ContainerStartOptions{})
 }
 
 func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error) {
@@ -75,10 +84,10 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 	logQueue := copyStreams(logs, logPrefix)
 	defer close(logQueue)
 
-	if err := c.Docker.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+	if err := c.Docker.ContainerStart(ctx, c.id, types.ContainerStartOptions{}); err != nil {
 		return 0, err
 	}
-	contLogs, err := c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+	contLogs, err := c.Docker.ContainerLogs(ctx, c.id, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Timestamps: true,
@@ -93,7 +102,7 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 		return c.restart(ctx, contLogs, logQueue, restart)
 	}
 	defer contLogs.Close()
-	return c.Docker.ContainerWait(ctx, c.ID)
+	return c.Docker.ContainerWait(ctx, c.id)
 }
 
 func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan<- io.Reader, restart <-chan time.Time) (status int64, err error) {
@@ -103,10 +112,10 @@ func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueu
 		select {
 		case <-restart:
 			wait := time.Second
-			if err := c.Docker.ContainerRestart(ctx, c.ID, &wait); err != nil {
+			if err := c.Docker.ContainerRestart(ctx, c.id, &wait); err != nil {
 				continue
 			}
-			contJSON, err := c.Docker.ContainerInspect(ctx, c.ID)
+			contJSON, err := c.Docker.ContainerInspect(ctx, c.id)
 			if err != nil {
 				continue
 			}
@@ -115,7 +124,7 @@ func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueu
 				startedAt = time.Unix(0, 0)
 			}
 			contLogs.Close()
-			contLogs, err = c.Docker.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+			contLogs, err = c.Docker.ContainerLogs(ctx, c.id, types.ContainerLogsOptions{
 				Timestamps: true,
 				ShowStdout: true,
 				ShowStderr: true,
@@ -159,30 +168,31 @@ func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
 	return srcs
 }
 
-func (c *Container) HealthCheck() (health <-chan string, done chan<- struct{}) {
-	healthC, doneC := make(chan string), make(chan struct{})
+func (c *Container) HealthCheck() <-chan string {
+	status := make(chan string)
 	go func() {
+		check := time.NewTicker(time.Second).C
 		ctx := context.Background()
 		for {
 			select {
-			case <-doneC:
-				break
-			default:
-				contJSON, err := c.Docker.ContainerInspect(ctx, c.ID)
+			case <-c.Exit:
+				return
+			case <-check:
+				contJSON, err := c.Docker.ContainerInspect(ctx, c.id)
 				if err != nil || contJSON.State == nil || contJSON.State.Health == nil {
-					health <- types.NoHealthcheck
+					status <- types.NoHealthcheck
 					continue
 				}
-				healthC <- contJSON.State.Health.Status
+				status <- contJSON.State.Health.Status
 			}
 		}
 	}()
-	return healthC, doneC
+	return status
 }
 
 func (c *Container) Commit(ref string) (imageID string, err error) {
 	ctx := context.Background()
-	response, err := c.Docker.ContainerCommit(ctx, c.ID, types.ContainerCommitOptions{
+	response, err := c.Docker.ContainerCommit(ctx, c.id, types.ContainerCommitOptions{
 		Reference: ref,
 		Author:    "CF Local",
 		Pause:     true,
@@ -193,7 +203,7 @@ func (c *Container) Commit(ref string) (imageID string, err error) {
 
 func (c *Container) ExtractTo(tar io.Reader, path string) error {
 	ctx := context.Background()
-	return c.Docker.CopyToContainer(ctx, c.ID, path, onlyReader(tar), types.CopyToContainerOptions{})
+	return c.Docker.CopyToContainer(ctx, c.id, path, onlyReader(tar), types.CopyToContainerOptions{})
 }
 
 func onlyReader(r io.Reader) io.Reader {
@@ -216,7 +226,7 @@ func (c *Container) CopyTo(stream Stream, path string) error {
 
 func (c *Container) CopyFrom(path string) (Stream, error) {
 	ctx := context.Background()
-	tar, stat, err := c.Docker.CopyFromContainer(ctx, c.ID, path)
+	tar, stat, err := c.Docker.CopyFromContainer(ctx, c.id, path)
 	if err != nil {
 		return Stream{}, err
 	}

@@ -24,9 +24,11 @@ type Image interface {
 //go:generate mockgen -package mocks -destination mocks/container.go github.com/sclevine/cflocal/local Container
 type Container interface {
 	io.Closer
+	ID() string
 	CloseAfterStream(stream *engine.Stream) error
+	Background() error
 	Start(logPrefix string, logs io.Writer, restart <-chan time.Time) (status int64, err error)
-	HealthCheck() (health <-chan string, done chan<- struct{})
+	HealthCheck() <-chan string
 	Commit(ref string) (imageID string, err error)
 	ExtractTo(tar io.Reader, path string) error
 	CopyTo(stream engine.Stream, path string) error

@@ -140,7 +140,6 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				Help:   help,
 				Config: config,
 			},
-
 			&cmd.Push{
 				UI:     p.UI,
 				App:    app,

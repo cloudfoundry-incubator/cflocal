@@ -52,18 +52,18 @@ var _ = Describe("Container", func() {
 	})
 
 	AfterEach(func() {
-		if containerFound(contr.ID) {
+		if containerFound(contr.ID()) {
 			Expect(contr.Close()).To(Succeed())
-			Expect(containerFound(contr.ID)).To(BeFalse())
+			Expect(containerFound(contr.ID())).To(BeFalse())
 		}
 		Expect(client.Close()).To(Succeed())
 	})
 
 	Describe("#Close", func() {
 		It("should remove the container", func() {
-			Expect(containerFound(contr.ID)).To(BeTrue())
+			Expect(containerFound(contr.ID())).To(BeTrue())
 			Expect(contr.Close()).To(Succeed())
-			Expect(containerFound(contr.ID)).To(BeFalse())
+			Expect(containerFound(contr.ID())).To(BeFalse())
 		})
 
 		It("should return an error if already closed", func() {
@@ -79,12 +79,12 @@ var _ = Describe("Container", func() {
 			Expect(contr.CloseAfterStream(&stream)).To(Succeed())
 
 			Expect(closer.closed).To(BeFalse())
-			Expect(containerFound(contr.ID)).To(BeTrue())
+			Expect(containerFound(contr.ID())).To(BeTrue())
 
 			Expect(stream.Close()).To(Succeed())
 
 			Expect(closer.closed).To(BeTrue())
-			Expect(containerFound(contr.ID)).To(BeFalse())
+			Expect(containerFound(contr.ID())).To(BeFalse())
 		})
 
 		It("should return a container removal error if no other close error occurs", func() {
@@ -102,7 +102,7 @@ var _ = Describe("Container", func() {
 		It("should close the container immediately if the stream is empty", func() {
 			stream := NewStream(nil, 100)
 			Expect(contr.CloseAfterStream(&stream)).To(Succeed())
-			Expect(containerFound(contr.ID)).To(BeFalse())
+			Expect(containerFound(contr.ID())).To(BeFalse())
 		})
 	})
 
@@ -127,13 +127,13 @@ var _ = Describe("Container", func() {
 					defer GinkgoRecover()
 					Expect(contr.Start("some-prefix", logs, nil)).To(Equal(int64(128)))
 				}()
-				Eventually(try(containerRunning, contr.ID)).Should(BeTrue())
+				Eventually(try(containerRunning, contr.ID())).Should(BeTrue())
 				Eventually(logs.Contents).Should(ContainSubstring("Z some-logs-stdout"))
 				Eventually(logs.Contents).Should(ContainSubstring("Z some-logs-stderr"))
 
 				close(exit)
 
-				Eventually(try(containerRunning, contr.ID)).Should(BeFalse())
+				Eventually(try(containerRunning, contr.ID())).Should(BeFalse())
 			}, 5)
 		})
 
@@ -158,7 +158,7 @@ var _ = Describe("Container", func() {
 					defer GinkgoRecover()
 					Expect(contr.Start("some-prefix", logs, restart)).To(Equal(int64(128)))
 				}()
-				Eventually(try(containerRunning, contr.ID)).Should(BeTrue())
+				Eventually(try(containerRunning, contr.ID())).Should(BeTrue())
 				Eventually(logs).Should(gbytes.Say("Z some-logs-stdout"))
 				restart <- time.Time{}
 				Eventually(logs, "5s").Should(gbytes.Say("Z some-logs-stdout"))
@@ -168,7 +168,7 @@ var _ = Describe("Container", func() {
 				Consistently(logs, "2s").ShouldNot(gbytes.Say("Z some-logs-stdout"))
 				close(exit)
 
-				Eventually(try(containerRunning, contr.ID)).Should(BeFalse())
+				Eventually(try(containerRunning, contr.ID())).Should(BeFalse())
 			}, 15)
 		})
 
@@ -185,7 +185,7 @@ var _ = Describe("Container", func() {
 			It("should start the container, stream logs, and return status 0", func() {
 				logs := gbytes.NewBuffer()
 				Expect(contr.Start("some-prefix", logs, nil)).To(Equal(int64(0)))
-				Expect(containerRunning(contr.ID)).To(BeFalse())
+				Expect(containerRunning(contr.ID())).To(BeFalse())
 				Expect(logs.Contents()).To(ContainSubstring("Z some-logs-stdout"))
 				Expect(logs.Contents()).To(ContainSubstring("Z some-logs-stderr"))
 			})

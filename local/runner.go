@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 	"text/template"
 	"time"
 
@@ -49,15 +48,15 @@ type Runner struct {
 }
 
 type RunConfig struct {
-	Droplet   engine.Stream
-	Launcher  engine.Stream
-	IP        string
-	Port      uint
-	AppDir    string
-	RSync     bool
-	Restart   <-chan time.Time
-	Color     Colorizer
-	AppConfig *AppConfig
+	Droplet     engine.Stream
+	Launcher    engine.Stream
+	NetworkMode string
+	AppDir      string
+	RSync       bool
+	Restart     <-chan time.Time
+	Color       Colorizer
+	AppConfig   *AppConfig
+	PortBindngs nat.PortMap
 }
 
 func (r *Runner) Run(config *RunConfig) (status int64, err error) {
@@ -66,7 +65,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync, config.NetworkMode != "")
 	if err != nil {
 		return 0, err
 	}
@@ -78,7 +77,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := r.buildHostConfig(config.IP, config.Port, memory, config.AppDir, remoteDir)
+	hostConfig := r.buildHostConfig(config.NetworkMode, config.PortBindngs, memory, config.AppDir, remoteDir)
 	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return 0, err
@@ -107,7 +106,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, false)
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, false, false)
 	if err != nil {
 		return "", err
 	}
@@ -140,7 +139,7 @@ func (r *Runner) setDefaults(config *AppConfig) {
 	}
 }
 
-func (r *Runner) buildContainerConfig(config *AppConfig, rsync bool) (*container.Config, error) {
+func (r *Runner) buildContainerConfig(config *AppConfig, rsync, networked bool) (*container.Config, error) {
 	name := config.Name
 	memory, err := formatters.ToMegabytes(config.Memory)
 	if err != nil {
@@ -205,10 +204,18 @@ func (r *Runner) buildContainerConfig(config *AppConfig, rsync bool) (*container
 		return nil, err
 	}
 
+	hostname := "cflocal"
+	ports := nat.PortSet{"8080/tcp": {}}
+
+	if networked {
+		hostname = ""
+		ports = nil
+	}
+
 	return &container.Config{
-		Hostname:     "cflocal",
+		Hostname:     hostname,
 		User:         "vcap",
-		ExposedPorts: nat.PortSet{"8080/tcp": {}},
+		ExposedPorts: ports,
 		Env:          mapToEnv(mergeMaps(env, config.RunningEnv, config.Env)),
 		Image:        "cloudfoundry/cflinuxfs2:" + r.StackVersion,
 		WorkingDir:   "/home/vcap/app",
@@ -218,11 +225,10 @@ func (r *Runner) buildContainerConfig(config *AppConfig, rsync bool) (*container
 	}, nil
 }
 
-func (*Runner) buildHostConfig(ip string, port uint, memory int64, appDir, remoteDir string) *container.HostConfig {
+func (*Runner) buildHostConfig(networkMode string, portBindings nat.PortMap, memory int64, appDir, remoteDir string) *container.HostConfig {
 	config := &container.HostConfig{
-		PortBindings: nat.PortMap{
-			"8080/tcp": {{HostIP: ip, HostPort: strconv.FormatUint(uint64(port), 10)}},
-		},
+		NetworkMode:  container.NetworkMode(networkMode),
+		PortBindings: portBindings,
 		Resources: container.Resources{
 			Memory: memory * 1024 * 1024,
 		},
