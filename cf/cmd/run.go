@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
-	"github.com/docker/go-connections/nat"
 )
 
 type Run struct {
@@ -96,10 +95,9 @@ func (r *Run) Run(args []string) error {
 		appConfig.Services = remoteServices
 	}
 
-	// TODO: create network config, don't leak Docker nat package
-	var network string
-	portBindings := nat.PortMap{
-		"8080/tcp": {{HostIP: options.ip, HostPort: strconv.FormatUint(uint64(options.port), 10)}},
+	netConfig := &local.NetworkConfig{
+		HostIP:   options.ip,
+		HostPort: strconv.FormatUint(uint64(options.port), 10),
 	}
 	if forwardConfig != nil {
 		sshpass, err := r.Stager.Download("/usr/bin/sshpass")
@@ -112,7 +110,8 @@ func (r *Run) Run(args []string) error {
 			SSHPass:       sshpass,
 			Color:         color.GreenString,
 			ForwardConfig: forwardConfig,
-			PortBindings:  portBindings,
+			HostIP:        netConfig.HostIP,
+			HostPort:      netConfig.HostPort,
 		})
 		if err != nil {
 			return err
@@ -121,21 +120,21 @@ func (r *Run) Run(args []string) error {
 		if err := waitForHealthy(health); err != nil {
 			return fmt.Errorf("error forwarding services: %s", err)
 		}
-		network = networkMode
-		portBindings = nil
+		netConfig = &local.NetworkConfig{
+			NetworkMode: networkMode,
+		}
 	}
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&local.RunConfig{
-		Droplet:     engine.NewStream(droplet, dropletSize),
-		Launcher:    launcher,
-		NetworkMode: network,
-		AppDir:      appDir,
-		RSync:       options.rsync,
-		Restart:     restart,
-		Color:       color.GreenString,
-		AppConfig:   appConfig,
-		PortBindngs: portBindings,
+		Droplet:       engine.NewStream(droplet, dropletSize),
+		Launcher:      launcher,
+		AppDir:        appDir,
+		RSync:         options.rsync,
+		Restart:       restart,
+		Color:         color.GreenString,
+		AppConfig:     appConfig,
+		NetworkConfig: netConfig,
 	})
 	return err
 }

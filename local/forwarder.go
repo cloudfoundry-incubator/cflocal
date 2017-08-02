@@ -42,27 +42,29 @@ type Forwarder struct {
 }
 
 type ForwardConfig struct {
-	AppName       string
-	SSHPass       engine.Stream
-	Color         Colorizer
-	ForwardConfig *service.ForwardConfig
-	PortBindings  nat.PortMap
+	AppName          string
+	SSHPass          engine.Stream
+	Color            Colorizer
+	ForwardConfig    *service.ForwardConfig
+	HostIP, HostPort string
 }
 
 func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done func(), networkMode string, err error) {
 	output := outlock.New(f.Logs)
 
-	netHostConfig := &container.HostConfig{PortBindings: config.PortBindings}
-	networkContr, err := f.Engine.NewContainer(f.buildNetContainerConfig(), netHostConfig)
+	netHostConfig := &container.HostConfig{PortBindings: nat.PortMap{
+		"8080/tcp": {{HostIP: config.HostIP, HostPort: config.HostPort}},
+	}}
+	netContr, err := f.Engine.NewContainer(f.buildNetContainerConfig(), netHostConfig)
 	if err != nil {
 		return nil, nil, "", err
 	}
 	// TODO: wait for network container to fully start in Background
-	if err := networkContr.Background(); err != nil {
+	if err := netContr.Background(); err != nil {
 		return nil, nil, "", err
 	}
 
-	networkMode = "container:" + networkContr.ID()
+	networkMode = "container:" + netContr.ID()
 	containerConfig, err := f.buildContainerConfig(config.ForwardConfig)
 	if err != nil {
 		return nil, nil, "", err
@@ -85,7 +87,7 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 			case <-f.Exit:
 				return
 			case <-timer.C:
-				timer.Reset(5*time.Second)
+				timer.Reset(5 * time.Second)
 				code, err := config.ForwardConfig.Code()
 				if err != nil {
 					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
@@ -106,9 +108,8 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 		}
 	}()
 	done = func() {
-		defer networkContr.Close()
+		defer netContr.Close()
 		defer contr.Close()
-		fmt.Fprintf(output, "%sClosing.\n", prefix)
 		output.Disable()
 	}
 	return contr.HealthCheck(), done, networkMode, nil

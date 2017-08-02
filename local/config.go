@@ -50,3 +50,9 @@ type AppConfig struct {
 	Env        map[string]string `yaml:"env,omitempty"`
 	Services   service.Services  `yaml:"services,omitempty"`
 }
+
+type NetworkConfig struct {
+	NetworkMode string
+	HostIP      string
+	HostPort    string
+}

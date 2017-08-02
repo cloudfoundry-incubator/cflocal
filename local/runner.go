@@ -48,15 +48,14 @@ type Runner struct {
 }
 
 type RunConfig struct {
-	Droplet     engine.Stream
-	Launcher    engine.Stream
-	NetworkMode string
-	AppDir      string
-	RSync       bool
-	Restart     <-chan time.Time
-	Color       Colorizer
-	AppConfig   *AppConfig
-	PortBindngs nat.PortMap
+	Droplet       engine.Stream
+	Launcher      engine.Stream
+	AppDir        string
+	RSync         bool
+	Restart       <-chan time.Time
+	Color         Colorizer
+	AppConfig     *AppConfig
+	NetworkConfig *NetworkConfig
 }
 
 func (r *Runner) Run(config *RunConfig) (status int64, err error) {
@@ -65,7 +64,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync, config.NetworkMode != "")
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync, config.NetworkConfig.NetworkMode != "")
 	if err != nil {
 		return 0, err
 	}
@@ -77,7 +76,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	hostConfig := r.buildHostConfig(config.NetworkMode, config.PortBindngs, memory, config.AppDir, remoteDir)
+	hostConfig := r.buildHostConfig(config.NetworkConfig, memory, config.AppDir, remoteDir)
 	contr, err := r.Engine.NewContainer(containerConfig, hostConfig)
 	if err != nil {
 		return 0, err
@@ -225,13 +224,17 @@ func (r *Runner) buildContainerConfig(config *AppConfig, rsync, networked bool) 
 	}, nil
 }
 
-func (*Runner) buildHostConfig(networkMode string, portBindings nat.PortMap, memory int64, appDir, remoteDir string) *container.HostConfig {
+func (*Runner) buildHostConfig(netConfig *NetworkConfig, memory int64, appDir, remoteDir string) *container.HostConfig {
 	config := &container.HostConfig{
-		NetworkMode:  container.NetworkMode(networkMode),
-		PortBindings: portBindings,
+		NetworkMode: container.NetworkMode(netConfig.NetworkMode),
 		Resources: container.Resources{
 			Memory: memory * 1024 * 1024,
 		},
+	}
+	if netConfig.HostIP != "" && netConfig.HostPort != "" {
+		config.PortBindings = nat.PortMap{
+			"8080/tcp": {{HostIP: netConfig.HostIP, HostPort: netConfig.HostPort}},
+		}
 	}
 	if appDir != "" && remoteDir != "" {
 		config.Binds = []string{appDir + ":" + remoteDir}
