@@ -24,22 +24,25 @@ import (
 
 var _ = Describe("Container", func() {
 	var (
-		contr      *Container
-		config     *container.Config
-		entrypoint strslice.StrSlice
+		contr       *Container
+		config      *container.Config
+		entrypoint  strslice.StrSlice
+		healthcheck *container.HealthConfig
 	)
 
 	BeforeEach(func() {
 		entrypoint = strslice.StrSlice{"bash"}
+		healthcheck = nil
 	})
 
 	JustBeforeEach(func() {
 		config = &container.Config{
-			Hostname:   "test-container",
-			Image:      "sclevine/test",
-			Env:        []string{"SOME-KEY=some-value"},
-			Labels:     map[string]string{"some-label-key": "some-label-value"},
-			Entrypoint: entrypoint,
+			Healthcheck: healthcheck,
+			Hostname:    "test-container",
+			Image:       "sclevine/test",
+			Env:         []string{"SOME-KEY=some-value"},
+			Labels:      map[string]string{"some-label-key": "some-label-value"},
+			Entrypoint:  entrypoint,
 		}
 		hostConfig := &container.HostConfig{
 			PortBindings: nat.PortMap{
@@ -58,6 +61,8 @@ var _ = Describe("Container", func() {
 		}
 		Expect(client.Close()).To(Succeed())
 	})
+
+	// TODO: test constructor w/ container name
 
 	Describe("#Close", func() {
 		It("should remove the container", func() {
@@ -103,6 +108,26 @@ var _ = Describe("Container", func() {
 			stream := NewStream(nil, 100)
 			Expect(contr.CloseAfterStream(&stream)).To(Succeed())
 			Expect(containerFound(contr.ID())).To(BeFalse())
+		})
+	})
+
+	Describe("#Background", func() {
+		BeforeEach(func() {
+			entrypoint = strslice.StrSlice{
+				"tail", "-f", "/dev/null",
+			}
+		})
+
+		It("should start the container in the background", func() {
+			Expect(containerRunning(contr.ID())).To(BeFalse())
+			Expect(contr.Background()).To(Succeed())
+			Eventually(try(containerRunning, contr.ID())).Should(BeTrue())
+		})
+
+		It("should return an error when the container cannot be started", func() {
+			Expect(contr.Close()).To(Succeed())
+			err := contr.Background()
+			Expect(err).To(MatchError(ContainSubstring("No such container")))
 		})
 	})
 
@@ -195,6 +220,40 @@ var _ = Describe("Container", func() {
 			Expect(contr.Close()).To(Succeed())
 			_, err := contr.Start("some-prefix", gbytes.NewBuffer(), nil)
 			Expect(err).To(MatchError(ContainSubstring("No such container")))
+		})
+	})
+
+	Describe("#HealthCheck", func() {
+		Context("when the container reaches a healthy state", func() {
+			BeforeEach(func() {
+				entrypoint = strslice.StrSlice{
+					"tail", "-f", "/dev/null",
+				}
+				healthcheck = &container.HealthConfig{
+					Test:     []string{"CMD", "test", "-f", "/tmp/healthy"},
+					Interval: 100 * time.Millisecond,
+					Retries:  100,
+				}
+			})
+
+			It("should report the container health", func() {
+				exit, interval := make(chan struct{}), make(chan time.Time, 1)
+				contr.Exit, contr.CheckInterval = exit, interval
+
+				check := contr.HealthCheck()
+				Expect(changesStatus(interval, check, "none")).To(BeTrue())
+
+				Expect(contr.Background()).To(Succeed())
+				Expect(changesStatus(interval, check, "starting")).To(BeTrue())
+
+				empty := NewStream(ioutil.NopCloser(bytes.NewBufferString("\n")), 1)
+				Expect(contr.CopyTo(empty, "/tmp/healthy")).To(Succeed())
+				Expect(changesStatus(interval, check, "healthy")).To(BeTrue())
+
+				exit <- struct{}{}
+				interval <- time.Time{}
+				Consistently(check).ShouldNot(Receive())
+			})
 		})
 	})
 

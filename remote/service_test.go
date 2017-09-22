@@ -77,10 +77,10 @@ var _ = Describe("App - Service", func() {
 	Describe("#Forward", func() {
 		It("should translate the provided services to forwarded services", func() {
 			req, _ := server.Handle(false, http.StatusOK, `{"app_ssh_endpoint": "some-ssh-host:1000"}`)
-			testutil.Calls{
+			gomock.InOrder(
+				mockCLI.EXPECT().IsLoggedIn().Return(true, nil),
 				mockCLI.EXPECT().GetApp("some-name").Return(plugin_models.GetAppModel{Guid: "some-guid"}, nil),
-				mockCLI.EXPECT().CliCommandWithoutTerminalOutput("ssh-code").Return([]string{"some-code", "something-else"}, nil),
-			}.AfterCall(mockCLI.EXPECT().IsLoggedIn().Return(true, nil))
+			)
 
 			services, config, err := app.Forward("some-name", service.Services{
 				"common": {
@@ -294,52 +294,49 @@ var _ = Describe("App - Service", func() {
 					},
 				},
 			}))
-			Expect(config).To(Equal(&service.ForwardConfig{
-				Host: "some-ssh-host",
-				Port: "1000",
-				User: "cf:some-guid/0",
-				Code: "some-code",
-				Forwards: []service.Forward{
-					{
-						Name: "common[0]",
-						From: "localhost:40000",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "full-url[0]",
-						From: "localhost:40001",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "full-url[1]",
-						From: "localhost:40002",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "full-url[2]",
-						From: "localhost:40003",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "full-url[3]",
-						From: "localhost:40004",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "host-url[0]",
-						From: "localhost:40005",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "host-url[2]",
-						From: "localhost:40007",
-						To:   "some-host:3306",
-					},
-					{
-						Name: "no-url[0]",
-						From: "localhost:40009",
-						To:   "some-host:3306",
-					},
+			Expect(config.Host).To(Equal("some-ssh-host"))
+			Expect(config.Port).To(Equal("1000"))
+			Expect(config.User).To(Equal("cf:some-guid/0"))
+			Expect(config.Forwards).To(Equal([]service.Forward{
+				{
+					Name: "common[0]",
+					From: "40000",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "full-url[0]",
+					From: "40001",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "full-url[1]",
+					From: "40002",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "full-url[2]",
+					From: "40003",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "full-url[3]",
+					From: "40004",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "host-url[0]",
+					From: "40005",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "host-url[2]",
+					From: "40007",
+					To:   "some-host:3306",
+				},
+				{
+					Name: "no-url[0]",
+					From: "40009",
+					To:   "some-host:3306",
 				},
 			}))
 
@@ -350,6 +347,11 @@ var _ = Describe("App - Service", func() {
 			Expect(req.Method).To(Equal("GET"))
 			Expect(req.Path).To(Equal("/v2/info"))
 			Expect(req.Authenticated).To(BeFalse())
+
+			mockCLI.EXPECT().CliCommandWithoutTerminalOutput("ssh-code").Return([]string{"some-code-1", "something-else"}, nil)
+			mockCLI.EXPECT().CliCommandWithoutTerminalOutput("ssh-code").Return([]string{"some-code-2", "something-else"}, nil)
+			Expect(config.Code()).To(Equal("some-code-1"))
+			Expect(config.Code()).To(Equal("some-code-2"))
 		})
 	})
 })

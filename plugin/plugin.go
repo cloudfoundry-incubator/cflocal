@@ -29,7 +29,7 @@ type Plugin struct {
 	UI      UI
 	Version string
 	RunErr  error
-	Exit    chan struct{}
+	Exit    <-chan struct{}
 }
 
 type UI interface {

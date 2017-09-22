@@ -17,10 +17,11 @@ import (
 )
 
 type Container struct {
-	Docker *docker.Client
-	Exit   <-chan struct{}
-	id     string
-	config *container.Config
+	Docker        *docker.Client
+	Exit          <-chan struct{}
+	CheckInterval <-chan time.Time
+	id            string
+	config        *container.Config
 }
 
 func NewContainer(docker *docker.Client, config *container.Config, hostConfig *container.HostConfig) (*Container, error) {
@@ -33,7 +34,8 @@ func NewContainer(docker *docker.Client, config *container.Config, hostConfig *c
 	if err != nil {
 		return nil, err
 	}
-	return &Container{docker, nil, response.ID, config}, nil
+	check := time.NewTicker(time.Second).C
+	return &Container{docker, nil, check, response.ID, config}, nil
 }
 
 func (c *Container) ID() string {
@@ -143,7 +145,7 @@ func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueu
 }
 
 func isErrCanceled(err error) bool {
-	return err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "context canceled"))
+	return err == context.Canceled || (err != nil && strings.HasSuffix(err.Error(), "canceled"))
 }
 
 func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
@@ -171,13 +173,12 @@ func copyStreams(dst io.Writer, prefix string) chan<- io.Reader {
 func (c *Container) HealthCheck() <-chan string {
 	status := make(chan string)
 	go func() {
-		check := time.NewTicker(time.Second).C
 		ctx := context.Background()
 		for {
 			select {
 			case <-c.Exit:
 				return
-			case <-check:
+			case <-c.CheckInterval:
 				contJSON, err := c.Docker.ContainerInspect(ctx, c.id)
 				if err != nil || contJSON.State == nil || contJSON.State.Health == nil {
 					status <- types.NoHealthcheck

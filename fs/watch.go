@@ -10,6 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// TODO: replace done chan with done func
 func (f *FS) Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

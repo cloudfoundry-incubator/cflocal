@@ -31,6 +31,16 @@ func (_m *MockContainer) EXPECT() *_MockContainerRecorder {
 	return _m.recorder
 }
 
+func (_m *MockContainer) Background() error {
+	ret := _m.ctrl.Call(_m, "Background")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockContainerRecorder) Background() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Background")
+}
+
 func (_m *MockContainer) Close() error {
 	ret := _m.ctrl.Call(_m, "Close")
 	ret0, _ := ret[0].(error)
@@ -91,6 +101,26 @@ func (_m *MockContainer) ExtractTo(_param0 io.Reader, _param1 string) error {
 
 func (_mr *_MockContainerRecorder) ExtractTo(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ExtractTo", arg0, arg1)
+}
+
+func (_m *MockContainer) HealthCheck() <-chan string {
+	ret := _m.ctrl.Call(_m, "HealthCheck")
+	ret0, _ := ret[0].(<-chan string)
+	return ret0
+}
+
+func (_mr *_MockContainerRecorder) HealthCheck() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "HealthCheck")
+}
+
+func (_m *MockContainer) ID() string {
+	ret := _m.ctrl.Call(_m, "ID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockContainerRecorder) ID() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ID")
 }
 
 func (_m *MockContainer) Start(_param0 string, _param1 io.Writer, _param2 <-chan time.Time) (int64, error) {

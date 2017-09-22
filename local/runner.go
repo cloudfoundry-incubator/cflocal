@@ -64,7 +64,7 @@ func (r *Runner) Run(config *RunConfig) (status int64, err error) {
 	}
 
 	r.setDefaults(config.AppConfig)
-	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync, config.NetworkConfig.NetworkMode != "")
+	containerConfig, err := r.buildContainerConfig(config.AppConfig, config.RSync, config.NetworkConfig.ContainerID != "")
 	if err != nil {
 		return 0, err
 	}
@@ -226,15 +226,16 @@ func (r *Runner) buildContainerConfig(config *AppConfig, rsync, networked bool) 
 
 func (*Runner) buildHostConfig(netConfig *NetworkConfig, memory int64, appDir, remoteDir string) *container.HostConfig {
 	config := &container.HostConfig{
-		NetworkMode: container.NetworkMode(netConfig.NetworkMode),
 		Resources: container.Resources{
 			Memory: memory * 1024 * 1024,
 		},
 	}
-	if netConfig.HostIP != "" && netConfig.HostPort != "" {
+	if netConfig.ContainerID == "" {
 		config.PortBindings = nat.PortMap{
 			"8080/tcp": {{HostIP: netConfig.HostIP, HostPort: netConfig.HostPort}},
 		}
+	} else {
+		config.NetworkMode = container.NetworkMode("container:" + netConfig.ContainerID)
 	}
 	if appDir != "" && remoteDir != "" {
 		config.Binds = []string{appDir + ":" + remoteDir}

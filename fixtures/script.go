@@ -3,7 +3,7 @@ package fixtures
 import "fmt"
 
 func RunRSyncScript() string {
-	return fmt.Sprintf(runnerScript, forward, "\n\trsync -a /tmp/local/ /home/vcap/app/", rsyncRunningToLocal)
+	return fmt.Sprintf(runnerScript, "", "\n\trsync -a /tmp/local/ /home/vcap/app/", rsyncRunningToLocal)
 }
 
 func CommitScript() string {
@@ -14,15 +14,22 @@ func StageRSyncScript() string {
 	return fmt.Sprintf(stageScript, "", "\n\trsync -a /tmp/app/ /tmp/local/")
 }
 
-const forward = `
+func ForwardScript() string {
+	return forwardScript
+}
+
+const forwardScript = `
 	echo 'Forwarding: some-name some-other-name'
-	sshpass -p 'some-code' ssh -f -N \
+	sshpass -f /tmp/ssh-code ssh -4 -N \
+	    -o PermitLocalCommand=yes -o LocalCommand="touch /tmp/healthy" \
 		-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
 		-o LogLevel=ERROR -o ExitOnForwardFailure=yes \
 		-o ServerAliveInterval=10 -o ServerAliveCountMax=60 \
 		-p 'some-port' 'some-user@some-ssh-host' \
 		-L 'some-from:some-to' \
-		-L 'some-other-from:some-other-to'`
+		-L 'some-other-from:some-other-to'
+	rm -f /tmp/healthy
+`
 
 const rsyncRunningToLocal = `
 	if [[ -z $(ls -A /tmp/local) ]]; then

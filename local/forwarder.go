@@ -31,7 +31,7 @@ const ForwardScript = `
 		-L '{{.From}}:{{.To}}'
 		{{- end}}
 	rm -f /tmp/healthy
-	{{end -}}
+	{{- end}}
 `
 
 type Forwarder struct {
@@ -47,9 +47,10 @@ type ForwardConfig struct {
 	Color            Colorizer
 	ForwardConfig    *service.ForwardConfig
 	HostIP, HostPort string
+	Wait             <-chan time.Time
 }
 
-func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done func(), networkMode string, err error) {
+func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done func(), id string, err error) {
 	output := outlock.New(f.Logs)
 
 	netHostConfig := &container.HostConfig{PortBindings: nat.PortMap{
@@ -64,7 +65,7 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 		return nil, nil, "", err
 	}
 
-	networkMode = "container:" + netContr.ID()
+	networkMode := "container:" + netContr.ID()
 	containerConfig, err := f.buildContainerConfig(config.ForwardConfig)
 	if err != nil {
 		return nil, nil, "", err
@@ -80,14 +81,12 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 	}
 
 	prefix := config.Color("[%s tunnel] ", config.AppName)
-	timer := time.NewTimer(0) // TODO: inject channel and reset method
 	go func() {
 		for {
 			select {
-			case <-f.Exit:
+			case <-f.Exit: // TODO: review whether necessary
 				return
-			case <-timer.C:
-				timer.Reset(5 * time.Second)
+			case <-config.Wait:
 				code, err := config.ForwardConfig.Code()
 				if err != nil {
 					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
@@ -112,7 +111,7 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 		defer contr.Close()
 		output.Disable()
 	}
-	return contr.HealthCheck(), done, networkMode, nil
+	return contr.HealthCheck(), done, netContr.ID(), nil
 }
 
 func (f *Forwarder) buildContainerConfig(forwardConfig *service.ForwardConfig) (*container.Config, error) {

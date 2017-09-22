@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/cflocal/local/wait"
 )
 
 type Run struct {
@@ -105,13 +106,16 @@ func (r *Run) Run(args []string) error {
 			return err
 		}
 		defer sshpass.Close()
-		health, done, networkMode, err := r.Forwarder.Forward(&local.ForwardConfig{
+		waiter, waiterDone := wait.New(5*time.Second)
+		defer waiterDone()
+		health, done, id, err := r.Forwarder.Forward(&local.ForwardConfig{
 			AppName:       appConfig.Name,
 			SSHPass:       sshpass,
 			Color:         color.GreenString,
 			ForwardConfig: forwardConfig,
 			HostIP:        netConfig.HostIP,
 			HostPort:      netConfig.HostPort,
+			Wait:          waiter,
 		})
 		if err != nil {
 			return err
@@ -120,9 +124,7 @@ func (r *Run) Run(args []string) error {
 		if err := waitForHealthy(health); err != nil {
 			return fmt.Errorf("error forwarding services: %s", err)
 		}
-		netConfig = &local.NetworkConfig{
-			NetworkMode: networkMode,
-		}
+		netConfig.ContainerID = id
 	}
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
@@ -174,6 +176,7 @@ func freePort() (uint, error) {
 	return uint(port), nil
 }
 
+// TODO: replace with contr.WaitFor("healthy")
 func waitForHealthy(health <-chan string) error {
 	timeout := time.NewTimer(30 * time.Second).C
 	for {

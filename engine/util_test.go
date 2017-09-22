@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
@@ -58,6 +59,19 @@ func scrubEnv(old []string) (new []string) {
 		}
 	}
 	return new
+}
+
+func changesStatus(interval chan<- time.Time, check <-chan string, status string) bool {
+	for total, last := 0, false; total < 5; total++ {
+		interval <- time.Time{}
+		match := <-check == status
+		if last && match {
+			return true
+		}
+		last = match
+		time.Sleep(100*time.Millisecond)
+	}
+	return false
 }
 
 type closeTester struct {

@@ -105,7 +105,7 @@ var _ = Describe("Image", func() {
 					err = pErr
 				}
 			}
-			Expect(err).To(MatchError(HaveSuffix("Unknown instruction: SOME")))
+			Expect(err).To(MatchError(HaveSuffix("SOME")))
 
 			ctx := context.Background()
 			_, _, err = client.ImageInspectWithRaw(ctx, tag)

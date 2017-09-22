@@ -47,7 +47,7 @@ type Runner interface {
 
 //go:generate mockgen -package mocks -destination mocks/forwarder.go github.com/sclevine/cflocal/cf/cmd Forwarder
 type Forwarder interface {
-	Forward(config *local.ForwardConfig) (health <-chan string, done func(), networkMode string, err error)
+	Forward(config *local.ForwardConfig) (health <-chan string, done func(), id string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS

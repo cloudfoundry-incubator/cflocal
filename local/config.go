@@ -52,7 +52,7 @@ type AppConfig struct {
 }
 
 type NetworkConfig struct {
-	NetworkMode string
+	ContainerID string
 	HostIP      string
 	HostPort    string
 }

@@ -59,9 +59,6 @@ var _ = Describe("Runner", func() {
 			config := &RunConfig{
 				Droplet:  engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100),
 				Launcher: engine.NewStream(mockReadCloser{Value: "some-launcher"}, 200),
-				SSHPass:  engine.NewStream(mockReadCloser{Value: "some-sshpass"}, 300),
-				IP:       "some-ip",
-				Port:     400,
 				AppDir:   "some-app-dir",
 				RSync:    true,
 				Restart:  make(<-chan time.Time),
@@ -88,23 +85,9 @@ var _ = Describe("Runner", func() {
 						}},
 					},
 				},
-				ForwardConfig: &service.ForwardConfig{
-					Host: "some-ssh-host",
-					Port: "some-port",
-					User: "some-user",
-					Code: "some-code",
-					Forwards: []service.Forward{
-						{
-							Name: "some-name",
-							From: "some-from",
-							To:   "some-to",
-						},
-						{
-							Name: "some-other-name",
-							From: "some-other-from",
-							To:   "some-other-to",
-						},
-					},
+				NetworkConfig: &NetworkConfig{
+					HostIP:   "some-ip",
+					HostPort: "400",
 				},
 			}
 			gomock.InOrder(
@@ -122,21 +105,24 @@ var _ = Describe("Runner", func() {
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
 						"/bin/bash", "-c", fixtures.RunRSyncScript(), "some-command",
 					}))
+					Expect(hostConfig.Memory).To(Equal(int64(512 * 1024 * 1024)))
 					Expect(hostConfig.PortBindings).To(HaveLen(1))
 					Expect(hostConfig.PortBindings["8080/tcp"]).To(Equal([]nat.PortBinding{{HostIP: "some-ip", HostPort: "400"}}))
-					Expect(hostConfig.Memory).To(Equal(int64(512 * 1024 * 1024)))
+					Expect(hostConfig.NetworkMode).To(BeEmpty())
 					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
 				}).Return(mockContainer, nil),
 			)
 
 			launcherCopy := mockContainer.EXPECT().CopyTo(config.Launcher, "/tmp/lifecycle/launcher")
 			dropletCopy := mockContainer.EXPECT().CopyTo(config.Droplet, "/tmp/droplet")
-			sshpassCopy := mockContainer.EXPECT().CopyTo(config.SSHPass, "/usr/bin/sshpass")
 
 			gomock.InOrder(
-				mockContainer.EXPECT().Start("[some-app] % ", runner.Logs, config.Restart).Return(int64(100), nil).
-					After(launcherCopy).After(dropletCopy).After(sshpassCopy),
-				mockContainer.EXPECT().Close(),
+				mockContainer.EXPECT().
+					Start("[some-app] % ", runner.Logs, config.Restart).Return(int64(100), nil).
+					After(launcherCopy).
+					After(dropletCopy),
+				mockContainer.EXPECT().
+					Close(),
 			)
 
 			Expect(runner.Run(config)).To(Equal(int64(100)))
@@ -144,7 +130,7 @@ var _ = Describe("Runner", func() {
 		})
 
 		// TODO: test when app dir is empty
-		// TODO: test without sshpass
+		// TODO: test with container networking
 	})
 
 	Describe("#Export", func() {
