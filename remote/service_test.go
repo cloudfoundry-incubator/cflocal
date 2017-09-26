@@ -340,9 +340,9 @@ var _ = Describe("App - Service", func() {
 				},
 			}))
 
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-6:host-url[1]"))
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-8:host-url[3]"))
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-10:no-url[1]"))
+			Expect(mockUI.Out).To(gbytes.Say(`Warning: unable to forward service: some-name-6:host-url\[1\]`))
+			Expect(mockUI.Out).To(gbytes.Say(`Warning: unable to forward service: some-name-8:host-url\[3\]`))
+			Expect(mockUI.Out).To(gbytes.Say(`Warning: unable to forward service: some-name-10:no-url\[1\]`))
 
 			Expect(req.Method).To(Equal("GET"))
 			Expect(req.Path).To(Equal("/v2/info"))
