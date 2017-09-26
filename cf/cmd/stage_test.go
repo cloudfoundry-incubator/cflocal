@@ -78,9 +78,10 @@ var _ = Describe("Stage", func() {
 				Applications: []*local.AppConfig{
 					{Name: "some-other-app"},
 					{
-						Name:     "some-app",
-						Env:      map[string]string{"a": "b"},
-						Services: service.Services{"some": {{Name: "overwritten-services"}}},
+						Name:      "some-app",
+						Buildpack: "some-other-buildpack",
+						Env:       map[string]string{"a": "b"},
+						Services:  service.Services{"some": {{Name: "overwritten-services"}}},
 					},
 				},
 			}
@@ -99,14 +100,14 @@ var _ = Describe("Stage", func() {
 						Expect(ioutil.ReadAll(config.Cache)).To(Equal([]byte("some-old-cache")))
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
 						Expect(config.CacheEmpty).To(BeFalse())
-						Expect(config.Buildpack).To(Equal("some-buildpack"))
 						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
-							Name:     "some-app",
-							Env:      map[string]string{"a": "b"},
-							Services: forwardedServices,
+							Name:      "some-app",
+							Buildpack: "some-buildpack",
+							Env:       map[string]string{"a": "b"},
+							Services:  forwardedServices,
 						}))
 					},
 				).Return(engine.NewStream(droplet, int64(droplet.Len())), nil),
@@ -123,6 +124,7 @@ var _ = Describe("Stage", func() {
 		})
 
 		// TODO: test not providing a buildpack
+		// TODO: test buildpack from local.yml
 		// TODO: test not providing an app dir
 		// TODO: test not mounting the app dir
 		// TODO: test error when attempting to mount a file

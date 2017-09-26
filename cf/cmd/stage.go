@@ -62,6 +62,9 @@ func (s *Stage) Run(args []string) error {
 	}
 
 	appConfig := getAppConfig(options.name, localYML)
+	if options.buildpack != "" {
+		appConfig.Buildpack = options.buildpack
+	}
 	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
 	if err != nil {
 		return err
@@ -83,7 +86,6 @@ func (s *Stage) Run(args []string) error {
 		AppTar:     appTar,
 		Cache:      cache,
 		CacheEmpty: cacheSize == 0,
-		Buildpack:  options.buildpack,
 		AppDir:     appDir,
 		RSync:      options.rsync,
 		Color:      color.GreenString,

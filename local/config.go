@@ -42,6 +42,7 @@ type LocalYML struct {
 
 type AppConfig struct {
 	Name       string            `yaml:"name"`
+	Buildpack  string            `yaml:"buildpack,omitempty"`
 	Command    string            `yaml:"command,omitempty"`
 	DiskQuota  string            `yaml:"disk_quota,omitempty"`
 	Memory     string            `yaml:"memory,omitempty"`

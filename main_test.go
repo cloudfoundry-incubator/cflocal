@@ -109,7 +109,7 @@ var _ = Describe("CF Local", func() {
 
 		It("should setup the staging and running environments to mimic CF", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
+				stageCmd := exec.Command("cf", "local", "stage", "some-app")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -124,7 +124,7 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("restaging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-b", "https://github.com/sclevine/cflocal-buildpack#v0.0.6")
+				stageCmd := exec.Command("cf", "local", "stage", "some-app")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -277,7 +277,7 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
-		FIt("should forward service connections via ssh tunnels", func() {
+		It("should forward service connections via ssh tunnels", func() {
 			By("pushing", func() {
 				cfPushCmd := exec.Command("cf", "push", "remote-app", "--no-start", "--random-route")
 				cfPushCmd.Dir = filepath.Join(tempDir, "go-app")

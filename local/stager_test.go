@@ -71,12 +71,12 @@ var _ = Describe("Stager", func() {
 				AppTar:     bytes.NewBufferString("some-app-tar"),
 				Cache:      localCache,
 				CacheEmpty: false,
-				Buildpack:  "some-buildpack",
 				AppDir:     "some-app-dir",
 				RSync:      true,
 				Color:      percentColor,
 				AppConfig: &AppConfig{
-					Name: "some-app",
+					Name:      "some-app",
+					Buildpack: "some-buildpack",
 					StagingEnv: map[string]string{
 						"TEST_STAGING_ENV_KEY": "test-staging-env-value",
 						"MEMORY_LIMIT":         "256m",

@@ -43,7 +43,6 @@ type StageConfig struct {
 	AppTar     io.Reader
 	Cache      ReadResetWriter
 	CacheEmpty bool
-	Buildpack  string
 	AppDir     string
 	RSync      bool
 	Color      Colorizer
@@ -60,16 +59,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		return engine.Stream{}, err
 	}
 
-	var buildpacks []string
-	if config.Buildpack == "" {
-		s.UI.Output("Buildpack: will detect")
-		buildpacks = Buildpacks.names()
-	} else {
-		s.UI.Output("Buildpack: %s", config.Buildpack)
-		buildpacks = []string{config.Buildpack}
-	}
-
-	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpacks, config.RSync)
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, config.RSync)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -111,7 +101,16 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	return contr.CopyFrom("/tmp/droplet")
 }
 
-func (s *Stager) buildContainerConfig(config *AppConfig, buildpacks []string, rsync bool) (*container.Config, error) {
+func (s *Stager) buildContainerConfig(config *AppConfig, rsync bool) (*container.Config, error) {
+	var buildpacks []string
+	if config.Buildpack == "" {
+		s.UI.Output("Buildpack: will detect")
+		buildpacks = Buildpacks.names()
+	} else {
+		s.UI.Output("Buildpack: %s", config.Buildpack)
+		buildpacks = []string{config.Buildpack}
+	}
+
 	// TODO: fill with real information -- get/set container limits
 	vcapApp, err := json.Marshal(&vcapApplication{
 		ApplicationID:      "01d31c12-d066-495e-aca2-8d3403165360",

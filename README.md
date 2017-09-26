@@ -134,6 +134,7 @@ SAMPLE: local.yml
 
 applications:
 - name: first-app
+  buildpack: some_buildpack
   command: "some start command"
   memory: 2G
   disk_quota: 4G
