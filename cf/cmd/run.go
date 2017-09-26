@@ -106,7 +106,7 @@ func (r *Run) Run(args []string) error {
 			return err
 		}
 		defer sshpass.Close()
-		waiter, waiterDone := wait.New(5*time.Second)
+		waiter, waiterDone := wait.New(5 * time.Second)
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&local.ForwardConfig{
 			AppName:       appConfig.Name,

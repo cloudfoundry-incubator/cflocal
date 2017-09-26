@@ -69,7 +69,7 @@ func changesStatus(interval chan<- time.Time, check <-chan string, status string
 			return true
 		}
 		last = match
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 	return false
 }
