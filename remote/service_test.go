@@ -299,50 +299,50 @@ var _ = Describe("App - Service", func() {
 			Expect(config.User).To(Equal("cf:some-guid/0"))
 			Expect(config.Forwards).To(Equal([]service.Forward{
 				{
-					Name: "common[0]",
+					Name: "some-name-0:common[0]",
 					From: "40000",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "full-url[0]",
+					Name: "some-name-1:full-url[0]",
 					From: "40001",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "full-url[1]",
+					Name: "some-name-2:full-url[1]",
 					From: "40002",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "full-url[2]",
+					Name: "some-name-3:full-url[2]",
 					From: "40003",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "full-url[3]",
+					Name: "some-name-4:full-url[3]",
 					From: "40004",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "host-url[0]",
+					Name: "some-name-5:host-url[0]",
 					From: "40005",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "host-url[2]",
+					Name: "some-name-7:host-url[2]",
 					From: "40007",
 					To:   "some-host:3306",
 				},
 				{
-					Name: "no-url[0]",
+					Name: "some-name-9:no-url[0]",
 					From: "40009",
 					To:   "some-host:3306",
 				},
 			}))
 
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service index 1 of type host-url"))
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service index 3 of type host-url"))
-			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service index 1 of type no-url"))
+			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-6:host-url[1]"))
+			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-8:host-url[3]"))
+			Expect(mockUI.Out).To(gbytes.Say("Warning: unable to forward service: some-name-10:no-url[1]"))
 
 			Expect(req.Method).To(Equal("GET"))
 			Expect(req.Path).To(Equal("/v2/info"))
@@ -353,6 +353,8 @@ var _ = Describe("App - Service", func() {
 			Expect(config.Code()).To(Equal("some-code-1"))
 			Expect(config.Code()).To(Equal("some-code-2"))
 		})
+
+		// TODO: test no valid forwards
 	})
 })
 

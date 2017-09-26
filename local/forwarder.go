@@ -84,7 +84,7 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 	go func() {
 		for {
 			select {
-			case <-f.Exit: // TODO: review whether necessary
+			case <-f.Exit: // TODO: refactor shutdown to remove
 				return
 			case <-config.Wait:
 				code, err := config.ForwardConfig.Code()

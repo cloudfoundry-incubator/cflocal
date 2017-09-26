@@ -60,17 +60,21 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 	forwardedPort := firstForwardedServicePort
 	for _, svcType := range serviceTypes(svcs) {
 		for i, svc := range svcs[svcType] {
+			name := fmt.Sprintf("%s:%s[%d]", svc.Name, svcType, i)
 			if address := forward(svc.Credentials, "localhost", forwardedPort); address != "" {
 				config.Forwards = append(config.Forwards, service.Forward{
-					Name: fmt.Sprintf("%s[%d]", svcType, i),
+					Name: name,
 					From: strconv.FormatUint(uint64(forwardedPort), 10),
 					To:   address,
 				})
 			} else {
-				a.UI.Warn("unable to forward service index %d of type %s", i, svcType)
+				a.UI.Warn("unable to forward service: %s", name)
 			}
 			forwardedPort++
 		}
+	}
+	if len(config.Forwards) == 0 {
+		return svcs, nil, nil
 	}
 	return svcs, config, nil
 }

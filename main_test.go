@@ -277,6 +277,72 @@ var _ = Describe("CF Local", func() {
 			})
 		})
 
+		FIt("should forward service connections via ssh tunnels", func() {
+			By("pushing", func() {
+				cfPushCmd := exec.Command("cf", "push", "remote-app", "--no-start", "--random-route")
+				cfPushCmd.Dir = filepath.Join(tempDir, "go-app")
+				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+			})
+
+			By("creating", func() {
+				creds := `{"uri": "http://example.com:80", "host_header": "example.com"}`
+				cfCUPSCmd := exec.Command("cf", "create-user-provided-service", "some-service", "-p", creds)
+				cfSession, err := gexec.Start(cfCUPSCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(cfSession, "10s").Should(gexec.Exit(0))
+			})
+
+			By("binding", func() {
+				cfBSCmd := exec.Command("cf", "bind-service", "remote-app", "some-service")
+				cfSession, err := gexec.Start(cfBSCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(cfSession, "10s").Should(gexec.Exit(0))
+			})
+
+			By("starting", func() {
+				cfStart := exec.Command("cf", "start", "remote-app")
+				cfSession, err := gexec.Start(cfStart, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+			})
+
+			By("staging", func() {
+				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-f", "remote-app")
+				stageCmd.Dir = filepath.Join(tempDir, "go-app")
+				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10m").Should(gexec.Exit(0))
+				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+			})
+
+			By("running", func() {
+				runCmd := exec.Command("cf", "local", "run", "some-app", "-f", "remote-app")
+				runCmd.Dir = filepath.Join(tempDir, "go-app")
+				setpgid(runCmd)
+				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10s").Should(gbytes.Say(`Forwarding: some-service:user-provided\[0\]`))
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				url := fmt.Sprintf("http://localhost:%s/services", port)
+
+				response := get(url, "10s")
+				Expect(response).To(ContainSubstring("Name: some-service"))
+				Expect(response).To(ContainSubstring("URI: http://localhost:40000"))
+				Expect(response).To(ContainSubstring("Example Domain"))
+
+				kill(runCmd)
+				Eventually(session, "5s").Should(gexec.Exit(130))
+			})
+		})
+
+		// TODO: test modified VCAP_SERVICES (without tunnels) during staging
+
 		if os.Getenv("SKIP_VOLUME_SPECS") == "true" {
 			return
 		}
@@ -378,8 +444,6 @@ var _ = Describe("CF Local", func() {
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
 		})
-
-		// TODO: service forwarding tests
 	})
 })
 
