@@ -29,11 +29,14 @@ type Run struct {
 }
 
 type runOptions struct {
-	name, appDir           string
-	serviceApp, forwardApp string
-	ip                     string
-	port                   uint
-	rsync, watch           bool
+	name       string
+	appDir     string
+	serviceApp string
+	forwardApp string
+	ip         string
+	port       uint
+	rsync      bool
+	watch      bool
 }
 
 func (r *Run) Match(args []string) bool {

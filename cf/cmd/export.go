@@ -18,7 +18,8 @@ type Export struct {
 }
 
 type exportOptions struct {
-	name, reference string
+	name      string
+	reference string
 }
 
 func (e *Export) Match(args []string) bool {

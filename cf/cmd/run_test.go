@@ -139,7 +139,14 @@ var _ = Describe("Run", func() {
 			health <- types.Starting
 			health <- types.Starting
 			health <- types.Healthy
-			Expect(cmd.Run([]string{"run", "some-app", "-i", "0.0.0.0", "-p", "3000", "-d", "some-dir", "-r", "-w", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{
+				"run", "some-app",
+				"-i", "0.0.0.0",
+				"-p", "3000",
+				"-d", "some-dir", "-r", "-w",
+				"-s", "some-service-app",
+				"-f", "some-forward-app",
+			})).To(Succeed())
 			Expect(forwardDoneCalls()).To(Equal(1))
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(launcher.Result()).To(BeEmpty())

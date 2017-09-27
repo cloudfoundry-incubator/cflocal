@@ -20,10 +20,13 @@ type Stage struct {
 }
 
 type stageOptions struct {
-	name, buildpack, app   string
-	appDir                 string
-	serviceApp, forwardApp string
-	rsync                  bool
+	name       string
+	buildpacks buildpacks
+	app        string
+	appDir     string
+	serviceApp string
+	forwardApp string
+	rsync      bool
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -62,9 +65,12 @@ func (s *Stage) Run(args []string) error {
 	}
 
 	appConfig := getAppConfig(options.name, localYML)
-	if options.buildpack != "" {
-		appConfig.Buildpack = options.buildpack
+
+	if len(options.buildpacks) > 0 {
+		appConfig.Buildpacks = options.buildpacks
+		appConfig.Buildpack = options.buildpacks[len(options.buildpacks)-1]
 	}
+
 	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
 	if err != nil {
 		return err
@@ -103,20 +109,6 @@ func (s *Stage) Run(args []string) error {
 	return nil
 }
 
-func (*Stage) options(args []string) (*stageOptions, error) {
-	options := &stageOptions{}
-
-	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
-		options.name = name
-		set.StringVar(&options.app, "p", ".", "")
-		set.StringVar(&options.buildpack, "b", "", "")
-		set.StringVar(&options.appDir, "d", "", "")
-		set.StringVar(&options.serviceApp, "s", "", "")
-		set.StringVar(&options.forwardApp, "f", "", "")
-		set.BoolVar(&options.rsync, "r", false, "")
-	})
-}
-
 func (s *Stage) streamOut(stream engine.Stream, path string) error {
 	file, err := s.FS.WriteFile(path)
 	if err != nil {
@@ -124,4 +116,29 @@ func (s *Stage) streamOut(stream engine.Stream, path string) error {
 	}
 	defer file.Close()
 	return stream.Out(file)
+}
+
+func (*Stage) options(args []string) (*stageOptions, error) {
+	options := &stageOptions{}
+
+	return options, parseOptions(args, func(name string, set *flag.FlagSet) {
+		options.name = name
+		set.StringVar(&options.app, "p", ".", "")
+		set.Var(&options.buildpacks, "b", "")
+		set.StringVar(&options.appDir, "d", "", "")
+		set.StringVar(&options.serviceApp, "s", "", "")
+		set.StringVar(&options.forwardApp, "f", "", "")
+		set.BoolVar(&options.rsync, "r", false, "")
+	})
+}
+
+type buildpacks []string
+
+func (*buildpacks) String() string {
+	return ""
+}
+
+func (b *buildpacks) Set(value string) error {
+	*b = append(*b, value)
+	return nil
 }

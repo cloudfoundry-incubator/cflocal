@@ -77,6 +77,10 @@ var _ = Describe("Stager", func() {
 				AppConfig: &AppConfig{
 					Name:      "some-app",
 					Buildpack: "some-buildpack",
+					Buildpacks: []string{
+						"some-buildpack-one",
+						"some-buildpack-two",
+					},
 					StagingEnv: map[string]string{
 						"TEST_STAGING_ENV_KEY": "test-staging-env-value",
 						"MEMORY_LIMIT":         "256m",
@@ -124,7 +128,7 @@ var _ = Describe("Stager", func() {
 					Expect(config.WorkingDir).To(Equal("/home/vcap"))
 					Expect(config.Entrypoint).To(Equal(strslice.StrSlice{
 						"/bin/bash", "-c", fixtures.StageRSyncScript(),
-						"some-buildpack", "true",
+						"some-buildpack-one,some-buildpack-two", "true",
 					}))
 					Expect(hostConfig.Binds).To(Equal([]string{"some-app-dir:/tmp/local"}))
 				}).Return(mockContainer, nil),
@@ -143,7 +147,7 @@ var _ = Describe("Stager", func() {
 			Expect(localCache.Close()).To(Succeed())
 			Expect(localCache.Result()).To(Equal("some-new-cache"))
 			Expect(remoteCache.Result()).To(BeEmpty())
-			Expect(mockUI.Out).To(gbytes.Say("Buildpack: some-buildpack"))
+			Expect(mockUI.Out).To(gbytes.Say("Buildpacks: some-buildpack-one, some-buildpack-two"))
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 

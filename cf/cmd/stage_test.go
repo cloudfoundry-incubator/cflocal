@@ -76,12 +76,18 @@ var _ = Describe("Stage", func() {
 
 			localYML := &local.LocalYML{
 				Applications: []*local.AppConfig{
-					{Name: "some-other-app"},
+					{
+						Name: "some-other-app",
+					},
 					{
 						Name:      "some-app",
 						Buildpack: "some-other-buildpack",
-						Env:       map[string]string{"a": "b"},
-						Services:  service.Services{"some": {{Name: "overwritten-services"}}},
+						Buildpacks: []string{
+							"some-other-buildpack-one",
+							"some-other-buildpack-two",
+						},
+						Env:      map[string]string{"a": "b"},
+						Services: service.Services{"some": {{Name: "overwritten-services"}}},
 					},
 				},
 			}
@@ -105,16 +111,28 @@ var _ = Describe("Stage", func() {
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{
 							Name:      "some-app",
-							Buildpack: "some-buildpack",
-							Env:       map[string]string{"a": "b"},
-							Services:  forwardedServices,
+							Buildpack: "some-buildpack-two",
+							Buildpacks: []string{
+								"some-buildpack-one",
+								"some-buildpack-two",
+							},
+							Env:      map[string]string{"a": "b"},
+							Services: forwardedServices,
 						}))
 					},
 				).Return(engine.NewStream(droplet, int64(droplet.Len())), nil),
 				mockFS.EXPECT().WriteFile("./some-app.droplet").Return(dropletFile, nil),
 			)
 
-			Expect(cmd.Run([]string{"stage", "some-app", "-b", "some-buildpack", "-p", "some-app-dir", "-d", ".", "-r", "-s", "some-service-app", "-f", "some-forward-app"})).To(Succeed())
+			Expect(cmd.Run([]string{
+				"stage", "some-app",
+				"-b", "some-buildpack-one",
+				"-b", "some-buildpack-two",
+				"-p", "some-app-dir",
+				"-d", ".", "-r",
+				"-s", "some-service-app",
+				"-f", "some-forward-app",
+			})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
@@ -123,8 +141,7 @@ var _ = Describe("Stage", func() {
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
-		// TODO: test not providing a buildpack
-		// TODO: test buildpack from local.yml
+		// TODO: test buildpack combinations
 		// TODO: test not providing an app dir
 		// TODO: test not mounting the app dir
 		// TODO: test error when attempting to mount a file

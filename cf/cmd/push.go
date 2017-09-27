@@ -14,8 +14,9 @@ type Push struct {
 }
 
 type pushOptions struct {
-	name               string
-	keepState, pushEnv bool
+	name      string
+	keepState bool
+	pushEnv   bool
 }
 
 func (p *Push) Match(args []string) bool {

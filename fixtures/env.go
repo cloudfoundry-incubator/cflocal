@@ -9,6 +9,7 @@ func RunningEnv(overrides ...string) []string {
 	env := map[string]string{}
 	merge(env, runningEnv)
 	merge(env, shellEnv)
+	env["DEPS_DIR"] = "/home/vcap/deps"
 	env["HOME"] = "/home/vcap/app"
 	env["PWD"] = "/home/vcap/app"
 	mergeEnv(env, overrides)

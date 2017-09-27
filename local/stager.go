@@ -102,10 +102,17 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 }
 
 func (s *Stager) buildContainerConfig(config *AppConfig, rsync bool) (*container.Config, error) {
-	var buildpacks []string
-	if config.Buildpack == "" {
+	var (
+		buildpacks []string
+		detect     bool
+	)
+	if config.Buildpack == "" && len(config.Buildpacks) == 0 {
 		s.UI.Output("Buildpack: will detect")
 		buildpacks = Buildpacks.names()
+		detect = true
+	} else if len(config.Buildpacks) > 0 {
+		s.UI.Output("Buildpacks: %s", strings.Join(config.Buildpacks, ", "))
+		buildpacks = config.Buildpacks
 	} else {
 		s.UI.Output("Buildpack: %s", config.Buildpack)
 		buildpacks = []string{config.Buildpack}
@@ -167,7 +174,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, rsync bool) (*container
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", scriptBuf.String(),
 			strings.Join(buildpacks, ","),
-			strconv.FormatBool(len(buildpacks) == 1),
+			strconv.FormatBool(!detect),
 		},
 	}, nil
 }
