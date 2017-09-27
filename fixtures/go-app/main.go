@@ -9,9 +9,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/sclevine/cflocal/service"
 )
+
+type vcapService struct {
+	Name        string                 `json:"name"`
+	Credentials map[string]interface{} `json:"credentials"`
+}
 
 func main() {
 	contents, err := ioutil.ReadFile("file")
@@ -32,7 +35,7 @@ func main() {
 	})
 
 	http.HandleFunc("/services", func(w http.ResponseWriter, r *http.Request) {
-		vcapServices := map[string][]service.Service{}
+		vcapServices := map[string][]vcapService{}
 		if err := json.Unmarshal([]byte(os.Getenv("VCAP_SERVICES")), &vcapServices); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "%s\n", err)
