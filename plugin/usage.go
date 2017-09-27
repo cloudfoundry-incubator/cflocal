@@ -3,7 +3,7 @@ package plugin
 const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
-   cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL>)... (-p <dir> | -p <zip>) ]
                            [ -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
@@ -20,9 +20,10 @@ STAGE OPTIONS:
                      in local.yml.
                      Droplet filename: <name>.droplet
 
-   -b <name>      Use an official CF buildpack, specified by name.
+   -b <name>      Use one or more official CF buildpacks (specified by name).
                      Default: (uses detection)
-   -b <url>       Use a buildpack specified by URL (git or zip-over-HTTP).
+   -b <url>       Use one or more buildpacks specified by git repository URL
+                     or zip file URL (HTTP or HTTPS).
                      Default: (uses detection)
    -p <dir>       Use the specified directory as the app directory.
                      Default: current working directory

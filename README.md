@@ -23,10 +23,11 @@ Notably, CF Local:
 * Can run against a remote Docker daemon
 * Uses the latest official Cloud Foundry buildpack releases by default
 * Always uses the latest Cloud Foundry rootfs (cflinuxfs2) release
+* Provides multi-buildpack support
 
 ```
 USAGE:
-   cf local stage   <name> [ (-b <name> | -b <URL>) (-p <dir> | -p <zip>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL>)... (-p <dir> | -p <zip>) ]
                            [ -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
@@ -42,9 +43,10 @@ STAGE OPTIONS:
                      in local.yml.
                      Droplet filename: <name>.droplet
 
-   -b <name>      Use an official CF buildpack, specified by name.
+   -b <name>      Use one or more official CF buildpacks (specified by name).
                      Default: (uses detection)
-   -b <url>       Use a buildpack specified by URL (git or zip-over-HTTP).
+   -b <url>       Use one or more buildpacks specified by git repository URL
+                     or zip file URL (HTTP or HTTPS).
                      Default: (uses detection)
    -p <dir>       Use the specified directory as the app directory.
                      Default: current working directory
@@ -151,20 +153,20 @@ applications:
 ## Install
 
 ```bash
-$ ./cflocal-v0.13.0-macos
-Plugin successfully installed. Current version: 0.13.0
+$ ./cflocal-v0.15.0-macos
+Plugin successfully installed. Current version: 0.15.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.13.0-macos
+$ cf install-plugin cflocal-0.15.0-macos
 
 **Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
 
-Do you want to install the plugin cflocal-0.13.0-macos?> y
+Do you want to install the plugin cflocal-0.15.0-macos?> y
 
-Installing plugin cflocal-0.13.0-macos...
+Installing plugin cflocal-0.15.0-macos...
 OK
-Plugin cflocal v0.13.0 successfully installed.
+Plugin cflocal v0.15.0 successfully installed.
 ```
 ***Or***
 ```bash
@@ -175,9 +177,9 @@ $ cf install-plugin -r CF-Community cflocal
 Do you want to install the plugin cflocal?> y
 Looking up 'cflocal' from repository 'CF-Community'
 11354404 bytes downloaded...
-Installing plugin cflocal-0.13.0-macos...
+Installing plugin cflocal-0.15.0-macos...
 OK
-Plugin cflocal v0.13.0 successfully installed.
+Plugin cflocal v0.15.0 successfully installed.
 ```
 Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
 
