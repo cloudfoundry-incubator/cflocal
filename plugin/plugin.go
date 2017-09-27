@@ -88,8 +88,8 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Client: &http.Client{},
 	}
 	stager := &local.Stager{
-		DiegoVersion: "0.1482.0",
-		GoVersion:    "1.7",
+		DiegoVersion: "1.26.1",
+		GoVersion:    "1.8.3",
 		StackVersion: "latest",
 		Logs:         color.Output,
 		UI:           p.UI,

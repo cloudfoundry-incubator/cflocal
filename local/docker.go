@@ -26,8 +26,9 @@ RUN \
     src/code.cloudfoundry.org/buildpackapplifecycle \
     src/code.cloudfoundry.org/bytefmt \
     src/code.cloudfoundry.org/cacheddownloader \
-    src/github.com/cloudfoundry-incubator/candiedyaml \
-    src/github.com/cloudfoundry/systemcerts && \
+    src/code.cloudfoundry.org/lager \
+    src/code.cloudfoundry.org/systemcerts \
+    src/gopkg.in/yaml.v2 && \
   export PATH=/usr/local/go/bin:$PATH && \
   export GOPATH=/tmp/diego-release && \
   go build -o /tmp/lifecycle/launcher code.cloudfoundry.org/buildpackapplifecycle/launcher && \
