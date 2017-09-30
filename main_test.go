@@ -99,8 +99,8 @@ var _ = Describe("CF Local", func() {
 			var err error
 			tempDir, err = ioutil.TempDir("", "cflocal")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(archive.CopyResource(filepath.Join("fixtures", "go-app"), tempDir, false)).To(Succeed())
-			Expect(archive.CopyResource(filepath.Join("fixtures", "test-app"), tempDir, false)).To(Succeed())
+			Expect(archive.CopyResource("fixtures/go-app", tempDir, false)).To(Succeed())
+			Expect(archive.CopyResource("fixtures/test-app", tempDir, false)).To(Succeed())
 		})
 
 		AfterEach(func() {
@@ -156,6 +156,63 @@ var _ = Describe("CF Local", func() {
 
 				Eventually(session).Should(gbytes.Say("Log message from stdout."))
 				Eventually(session.Out.Contents).Should(ContainSubstring("Log message from stderr."))
+
+				kill(runCmd)
+				Eventually(session, "5s").Should(gexec.Exit(130))
+			})
+		})
+
+		It("should successfully stage and run apps with a variety of buildpacks", func() {
+			staticfileResp, err := http.Get("https://github.com/cloudfoundry/staticfile-buildpack/releases/download/v1.4.16/staticfile-buildpack-v1.4.16.zip")
+			Expect(err).NotTo(HaveOccurred())
+			defer staticfileResp.Body.Close()
+			staticfile, err := ioutil.TempFile("", "cflocal-test")
+			Expect(err).NotTo(HaveOccurred())
+			defer os.Remove(staticfile.Name())
+			defer staticfile.Close()
+			_, err = io.Copy(staticfile, staticfileResp.Body)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(staticfile.Sync()).To(Succeed())
+
+			Expect(archive.CopyResource("fixtures/multi-shims/.", filepath.Join(tempDir, "go-app"), false)).To(Succeed())
+
+			By("staging", func() {
+				stageCmd := exec.Command(
+					"cf", "local", "stage", "some-app",
+					"-b", "https://github.com/cloudfoundry/ruby-buildpack/releases/download/v1.7.3/ruby-buildpack-v1.7.3.zip",
+					"-b", "https://github.com/cloudfoundry/python-buildpack#v1.5.26",
+					"-b", staticfile.Name(), "-b", staticfile.Name(),
+					"-b", "go_buildpack",
+				)
+				stageCmd.Dir = filepath.Join(tempDir, "go-app")
+				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10m").Should(gexec.Exit(0))
+				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+			})
+
+			By("running", func() {
+				runCmd := exec.Command("cf", "local", "run", "some-app")
+				runCmd.Dir = filepath.Join(tempDir, "go-app")
+				setpgid(runCmd)
+				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				message := `Running some-app on port ([\d]+)\.\.\.`
+				Eventually(session, "10s").Should(gbytes.Say(message))
+				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
+				versions := strings.Join([]string{
+					"ruby=--version",
+					"python=--version",
+					"nginx=-v",
+				}, "&")
+				url := fmt.Sprintf("http://localhost:%s/run?%s", port, versions)
+
+				response := get(url, "10s")
+				Expect(response).To(ContainSubstring("ruby 2.4.2p198 (2017-09-14 revision 59899) [x86_64-linux]"))
+				Expect(response).To(ContainSubstring("Python 2.7.14"))
+				Expect(response).To(ContainSubstring("nginx version: nginx/1.13.5"))
 
 				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))

@@ -3,8 +3,8 @@ package plugin
 const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
-   cf local stage   <name> [ (-b <name> | -b <URL>)... (-p <dir> | -p <zip>) ]
-                           [ -m (-s <app> | -f <app>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
+                           [ (-p <dir> | -p <zip>) -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -24,6 +24,8 @@ STAGE OPTIONS:
                      Default: (uses detection)
    -b <url>       Use one or more buildpacks specified by git repository URL
                      or zip file URL (HTTP or HTTPS).
+                     Default: (uses detection)
+   -b <zip>       Use one or more buildpacks specified by local zip file path.
                      Default: (uses detection)
    -p <dir>       Use the specified directory as the app directory.
                      Default: current working directory
@@ -114,7 +116,9 @@ SAMPLE: local.yml
 
 applications:
 - name: first-app
-  buildpack: some_buildpack
+  buildpacks:
+  - some_buildpack
+  - some_other_buildpack
   command: "some start command"
   memory: 2G
   disk_quota: 4G

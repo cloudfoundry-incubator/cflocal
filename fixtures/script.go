@@ -3,11 +3,11 @@ package fixtures
 import "fmt"
 
 func RunRSyncScript() string {
-	return fmt.Sprintf(runnerScript, "", "\n\trsync -a /tmp/local/ /home/vcap/app/", rsyncRunningToLocal)
+	return fmt.Sprintf(runnerScript, "\n\trsync -a /tmp/local/ /home/vcap/app/", rsyncRunningToLocal)
 }
 
 func CommitScript() string {
-	return fmt.Sprintf(runnerScript, "", "", "")
+	return fmt.Sprintf(runnerScript, "", "")
 }
 
 func StageRSyncScript() string {
@@ -37,7 +37,7 @@ const rsyncRunningToLocal = `
 	fi`
 
 const runnerScript = `
-	set -e%s%s
+	set -e%s
 	if [[ ! -z $(ls -A /home/vcap/app) ]]; then
 		exclude='--exclude=./app'
 	fi
@@ -52,6 +52,9 @@ const runnerScript = `
 
 const stageScript = `
 	set -e
+	su vcap -c "unzip -qq /tmp/some-checksum-one.zip -d /tmp/buildpacks/some-checksum-one" && rm /tmp/some-checksum-one.zip
+	su vcap -c "unzip -qq /tmp/some-checksum-two.zip -d /tmp/buildpacks/some-checksum-two" && rm /tmp/some-checksum-two.zip
+
 	chown -R vcap:vcap /tmp/app /tmp/cache
 	%ssu vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"%s
 `

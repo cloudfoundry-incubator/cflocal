@@ -9,13 +9,14 @@
 
 CF Local is a Cloud Foundry CLI plugin that enables you to:
 
-* Stage and run Cloud Foundry apps in Docker
-* Download pre-staged apps from Cloud Foundry and run them in Docker
-* Stage apps in Docker and push them to Cloud Foundry
-* Make Cloud Foundry service instances instantly available to Docker apps
-* Share a local directory with an app running in Docker, and monitor it for changes
-* Rapidly iterate on Cloud Foundry app development with only Docker installed
-* Convert Cloud Foundry apps to Docker images that do not require Cloud Foundry or CF Local to run
+* Stage and run Cloud Foundry apps using Docker.
+* Pull running apps from a remote Cloud Foundry and run them with Docker.
+* Stage apps with Docker and push them to a remote Cloud Foundry.
+* Seamlessly inherit the service bindings of remotely running Cloud Foundry apps.
+* Seamlessly re-write service bindings to use persistent SSH tunnels through remote apps.
+* Develop Cloud Foundry apps in Docker using live-reload functionality back by Docker volumes.
+* Rapidly iterate on Cloud Foundry apps without Cloud Foundry.
+* Convert Cloud Foundry apps into Docker images that only require Docker to run.
 
 Notably, CF Local:
 
@@ -23,12 +24,13 @@ Notably, CF Local:
 * Can run against a remote Docker daemon
 * Uses the latest official Cloud Foundry buildpack releases by default
 * Always uses the latest Cloud Foundry rootfs (cflinuxfs2) release
-* Provides multi-buildpack support
+* Includes multi-buildpack support
+* Supports specifying buildpacks by name, zip URL, git URL, and local zip path
 
 ```
 USAGE:
-   cf local stage   <name> [ (-b <name> | -b <URL>)... (-p <dir> | -p <zip>) ]
-                           [ -m (-s <app> | -f <app>) ]
+   cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
+                           [ (-p <dir> | -p <zip>) -m (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
@@ -47,6 +49,8 @@ STAGE OPTIONS:
                      Default: (uses detection)
    -b <url>       Use one or more buildpacks specified by git repository URL
                      or zip file URL (HTTP or HTTPS).
+                     Default: (uses detection)
+   -b <zip>       Use one or more buildpacks specified by local zip file path.
                      Default: (uses detection)
    -p <dir>       Use the specified directory as the app directory.
                      Default: current working directory
@@ -136,7 +140,9 @@ SAMPLE: local.yml
 
 applications:
 - name: first-app
-  buildpack: some_buildpack
+  buildpacks:
+  - some_buildpack
+  - some_other_buildpack
   command: "some start command"
   memory: 2G
   disk_quota: 4G
@@ -152,6 +158,7 @@ applications:
 
 ## Install
 
+### From a Downloaded Release
 ```bash
 $ ./cflocal-v0.15.0-macos
 Plugin successfully installed. Current version: 0.15.0
@@ -159,29 +166,29 @@ Plugin successfully installed. Current version: 0.15.0
 ***Or***
 ```bash
 $ cf install-plugin cflocal-0.15.0-macos
-
-**Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
-
-Do you want to install the plugin cflocal-0.15.0-macos?> y
-
-Installing plugin cflocal-0.15.0-macos...
+Attention: Plugins are binaries written by potentially untrusted authors.
+Install and use plugins at your own risk.
+Do you want to install the plugin cflocal-0.15.0-macos? [yN]: y
+Installing plugin cflocal...
 OK
-Plugin cflocal v0.15.0 successfully installed.
+Plugin cflocal 0.15.0 successfully installed.
 ```
-***Or***
+
+### From the Community Plugin Repository
 ```bash
-$ cf install-plugin -r CF-Community cflocal
-
-**Attention: Plugins are binaries written by potentially untrusted authors. Install and use plugins at your own risk.**
-
-Do you want to install the plugin cflocal?> y
-Looking up 'cflocal' from repository 'CF-Community'
-11354404 bytes downloaded...
-Installing plugin cflocal-0.15.0-macos...
+$ cf install-plugin cflocal
+Searching CF-Community for plugin cflocal...
+Plugin cflocal 0.15.0 found in: CF-Community
+Attention: Plugins are binaries written by potentially untrusted authors.
+Install and use plugins at your own risk.
+Do you want to install the plugin cflocal? [yN]: y
+Starting download of plugin binary from repository CF-Community...
+ 14.35 MiB / 14.35 MiB [=====================================] 100.00% 2s
+Installing plugin cflocal...
 OK
-Plugin cflocal v0.15.0 successfully installed.
+Plugin cflocal 0.15.0 successfully installed.
 ```
-Note: The version available in the 'CF-Community' plugin repo may not always be the latest available.
+Note: This version is occasionally out of date.
 
 ## Uninstall
 
@@ -194,16 +201,14 @@ Plugin cflocal successfully uninstalled.
 
 ## Security Notes
 
-* Forwarded services (`-f`) are not reachable during staging
-* Images are never exported with remote service credentials
-* Service credentials from remote apps are never stored in local.yml
-* CF Local should not be used to download untrusted Cloud Foundry applications
-* CF Local is not intended for production use and is offered without warranty
+* Forwarded services (`-f`) are not reachable during staging.
+* Images are never exported with remote service credentials.
+* Service credentials from remote apps are never stored in local.yml.
+* CF Local should not be used to download untrusted Cloud Foundry applications.
+* CF Local is not intended for production use and is offered without warranty.
+* CF Local distribution archives are [signed by me](https://keybase.io/sclevine).
 
 ## TODO
 
-* Allow specification of resource limits
-* Re-establish SSH tunnel if it closes
-* Allow local buildpacks to be specified
 * Permit specification of cflinuxfs2 version
 * Add warnings about mismatched Docker client / server versions

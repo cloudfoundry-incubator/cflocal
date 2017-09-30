@@ -58,10 +58,12 @@ var _ = Describe("Stager", func() {
 
 	Describe("#Stage", func() {
 		It("should return a droplet of a staged app", func() {
+			buildpackZipStream1 := engine.NewStream(mockReadCloser{Value: "some-buildpack-zip-1"}, 100)
+			buildpackZipStream2 := engine.NewStream(mockReadCloser{Value: "some-buildpack-zip-2"}, 200)
 			localCache := sharedmocks.NewMockBuffer("some-old-cache")
 			remoteCache := sharedmocks.NewMockBuffer("some-new-cache")
 			remoteCacheStream := engine.NewStream(remoteCache, int64(remoteCache.Len()))
-			dropletStream := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 100)
+			dropletStream := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 300)
 
 			progress := make(chan ui.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
@@ -71,9 +73,13 @@ var _ = Describe("Stager", func() {
 				AppTar:     bytes.NewBufferString("some-app-tar"),
 				Cache:      localCache,
 				CacheEmpty: false,
-				AppDir:     "some-app-dir",
-				RSync:      true,
-				Color:      percentColor,
+				BuildpackZips: map[string]engine.Stream{
+					"some-checksum-one": buildpackZipStream1,
+					"some-checksum-two": buildpackZipStream2,
+				},
+				AppDir: "some-app-dir",
+				RSync:  true,
+				Color:  percentColor,
 				AppConfig: &AppConfig{
 					Name:      "some-app",
 					Buildpack: "some-buildpack",
@@ -134,10 +140,17 @@ var _ = Describe("Stager", func() {
 				}).Return(mockContainer, nil),
 			)
 
+			buildpackCopy1 := mockContainer.EXPECT().CopyTo(buildpackZipStream1, "/tmp/some-checksum-one.zip")
+			buildpackCopy2 := mockContainer.EXPECT().CopyTo(buildpackZipStream2, "/tmp/some-checksum-two.zip")
+			appExtract := mockContainer.EXPECT().ExtractTo(config.AppTar, "/tmp/app")
+			cacheExtract := mockContainer.EXPECT().ExtractTo(localCache, "/tmp/cache")
+
 			gomock.InOrder(
-				mockContainer.EXPECT().ExtractTo(config.AppTar, "/tmp/app"),
-				mockContainer.EXPECT().ExtractTo(localCache, "/tmp/cache"),
-				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs, nil).Return(int64(0), nil),
+				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs, nil).Return(int64(0), nil).
+					After(buildpackCopy1).
+					After(buildpackCopy2).
+					After(appExtract).
+					After(cacheExtract),
 				mockContainer.EXPECT().CopyFrom("/tmp/output-cache").Return(remoteCacheStream, nil),
 				mockContainer.EXPECT().CopyFrom("/tmp/droplet").Return(dropletStream, nil),
 				mockContainer.EXPECT().CloseAfterStream(&dropletStream),

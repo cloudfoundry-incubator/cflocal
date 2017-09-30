@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/md5"
 	"flag"
 	"fmt"
 
@@ -70,6 +71,19 @@ func (s *Stage) Run(args []string) error {
 		appConfig.Buildpacks = options.buildpacks
 		appConfig.Buildpack = options.buildpacks[len(options.buildpacks)-1]
 	}
+	buildpackZips := map[string]engine.Stream{}
+	for _, buildpack := range append([]string{appConfig.Buildpack}, appConfig.Buildpacks...) {
+		checksum := fmt.Sprintf("%x", md5.Sum([]byte(buildpack)))
+		if _, ok := buildpackZips[checksum]; ok {
+			continue
+		}
+		// TODO: enforce starting with . or /
+		zip, size, err := s.FS.ReadFile(buildpack)
+		if err != nil {
+			continue
+		}
+		buildpackZips[checksum] = engine.NewStream(zip, size)
+	}
 
 	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
 	if err != nil {
@@ -89,13 +103,14 @@ func (s *Stage) Run(args []string) error {
 	defer cache.Close()
 
 	droplet, err := s.Stager.Stage(&local.StageConfig{
-		AppTar:     appTar,
-		Cache:      cache,
-		CacheEmpty: cacheSize == 0,
-		AppDir:     appDir,
-		RSync:      options.rsync,
-		Color:      color.GreenString,
-		AppConfig:  appConfig,
+		AppTar:        appTar,
+		Cache:         cache,
+		CacheEmpty:    cacheSize == 0,
+		BuildpackZips: buildpackZips,
+		AppDir:        appDir,
+		RSync:         options.rsync,
+		Color:         color.GreenString,
+		AppConfig:     appConfig,
 	})
 	if err != nil {
 		return err

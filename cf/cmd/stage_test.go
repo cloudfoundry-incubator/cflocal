@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 
@@ -64,9 +65,11 @@ var _ = Describe("Stage", func() {
 	Describe("#Run", func() {
 		It("should build a droplet", func() {
 			appTar := sharedmocks.NewMockBuffer("some-app-tar")
+			buildpackZip1 := sharedmocks.NewMockBuffer("some-buildpack-zip-one")
+			buildpackZip2 := sharedmocks.NewMockBuffer("some-buildpack-zip-two")
+			cache := sharedmocks.NewMockBuffer("some-old-cache")
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			dropletFile := sharedmocks.NewMockBuffer("")
-			cache := sharedmocks.NewMockBuffer("some-old-cache")
 
 			services := service.Services{"some": {{Name: "services"}}}
 			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
@@ -95,7 +98,9 @@ var _ = Describe("Stage", func() {
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().TarApp("some-app-dir").Return(appTar, nil)
 			mockFS.EXPECT().Abs(".").Return("some-abs-app-dir", nil)
-			mockFS.EXPECT().MakeDirAll("some-abs-app-dir").Return(nil)
+			mockFS.EXPECT().MakeDirAll("some-abs-app-dir")
+			mockFS.EXPECT().ReadFile("some-buildpack-one").Return(buildpackZip1, int64(20), nil)
+			mockFS.EXPECT().ReadFile("some-buildpack-two").Return(buildpackZip2, int64(21), nil)
 			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
@@ -106,6 +111,13 @@ var _ = Describe("Stage", func() {
 						Expect(ioutil.ReadAll(config.Cache)).To(Equal([]byte("some-old-cache")))
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
 						Expect(config.CacheEmpty).To(BeFalse())
+						Expect(config.BuildpackZips).To(HaveLen(2))
+						buildpackZipOut1 := &bytes.Buffer{}
+						Expect(config.BuildpackZips["0135919f1de324456b9f2dbdf1983954"].Out(buildpackZipOut1)).To(Succeed())
+						Expect(buildpackZipOut1.String()).To(Equal("some-buildpack-zip-o"))
+						buildpackZipOut2 := &bytes.Buffer{}
+						Expect(config.BuildpackZips["ab534bf201740a2fa7300aa175acd98c"].Out(buildpackZipOut2)).To(Succeed())
+						Expect(buildpackZipOut2.String()).To(Equal("some-buildpack-zip-tw"))
 						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
@@ -134,14 +146,16 @@ var _ = Describe("Stage", func() {
 				"-f", "some-forward-app",
 			})).To(Succeed())
 			Expect(appTar.Result()).To(BeEmpty())
+			Expect(buildpackZip1.Result()).To(Equal("ne"))
+			Expect(buildpackZip2.Result()).To(Equal("o"))
+			Expect(cache.Result()).To(Equal("some-new-cache"))
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
-			Expect(cache.Result()).To(Equal("some-new-cache"))
 			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
-		// TODO: test buildpack combinations
+		// TODO: test buildpack & buildpack zip combinations
 		// TODO: test not providing an app dir
 		// TODO: test not mounting the app dir
 		// TODO: test error when attempting to mount a file
