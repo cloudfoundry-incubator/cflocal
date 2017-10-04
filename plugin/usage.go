@@ -4,8 +4,9 @@ const Usage = ShortUsage + "\n" + LongUsage
 
 const ShortUsage = `
    cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
-                           [ (-p <dir> | -p <zip>) -m (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
+                           [ (-p <dir> | -p <zip>) (-d <dir> [-r]) -e ]
+                           [ (-s <app> | -f <app>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-r -w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
@@ -42,6 +43,10 @@ STAGE OPTIONS:
                      modified, or moved during staging into the specified
                      directory. The directory is mounted elsewhere in the
                      container. No files are deleted.
+                     Default: false
+   -e             If buildpacks are explicitly specified then select one of
+                     them using the buildpack detection process instead of
+                     applying all of them using the multi-buildpack process.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.

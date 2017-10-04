@@ -49,6 +49,7 @@ type StageConfig struct {
 	CacheEmpty    bool
 	BuildpackZips map[string]engine.Stream
 	AppDir        string
+	ForceDetect   bool
 	RSync         bool
 	Color         Colorizer
 	AppConfig     *AppConfig
@@ -68,7 +69,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	for checksum := range config.BuildpackZips {
 		buildpackMD5s = append(buildpackMD5s, checksum)
 	}
-	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpackMD5s, config.RSync)
+	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpackMD5s, config.ForceDetect, config.RSync)
 	if err != nil {
 		return engine.Stream{}, err
 	}
@@ -115,7 +116,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	return contr.CopyFrom("/tmp/droplet")
 }
 
-func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string, rsync bool) (*container.Config, error) {
+func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string, forceDetect, rsync bool) (*container.Config, error) {
 	var (
 		buildpacks []string
 		detect     bool
@@ -194,7 +195,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string,
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", scriptBuf.String(),
 			strings.Join(buildpacks, ","),
-			strconv.FormatBool(!detect),
+			strconv.FormatBool(!(detect || forceDetect)),
 		},
 	}, nil
 }

@@ -141,7 +141,7 @@ var _ = Describe("Stage", func() {
 				"-b", "some-buildpack-one",
 				"-b", "some-buildpack-two",
 				"-p", "some-app-dir",
-				"-d", ".", "-r",
+				"-d", ".", "-r", "-e",
 				"-s", "some-service-app",
 				"-f", "some-forward-app",
 			})).To(Succeed())
@@ -155,7 +155,7 @@ var _ = Describe("Stage", func() {
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
 		})
 
-		// TODO: test buildpack & buildpack zip combinations
+		// TODO: test buildpack, buildpack zip combinations, and force-detect
 		// TODO: test not providing an app dir
 		// TODO: test not mounting the app dir
 		// TODO: test error when attempting to mount a file

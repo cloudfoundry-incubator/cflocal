@@ -21,13 +21,14 @@ type Stage struct {
 }
 
 type stageOptions struct {
-	name       string
-	buildpacks buildpacks
-	app        string
-	appDir     string
-	serviceApp string
-	forwardApp string
-	rsync      bool
+	name        string
+	buildpacks  buildpacks
+	app         string
+	appDir      string
+	serviceApp  string
+	forwardApp  string
+	forceDetect bool
+	rsync       bool
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -108,6 +109,7 @@ func (s *Stage) Run(args []string) error {
 		CacheEmpty:    cacheSize == 0,
 		BuildpackZips: buildpackZips,
 		AppDir:        appDir,
+		ForceDetect:   options.forceDetect,
 		RSync:         options.rsync,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
@@ -143,6 +145,7 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
+		set.BoolVar(&options.forceDetect, "e", false, "")
 		set.BoolVar(&options.rsync, "r", false, "")
 	})
 }

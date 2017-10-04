@@ -14,7 +14,7 @@ CF Local is a Cloud Foundry CLI plugin that enables you to:
 * Stage apps with Docker and push them to a remote Cloud Foundry.
 * Seamlessly inherit the service bindings of remotely running Cloud Foundry apps.
 * Seamlessly re-write service bindings to use persistent SSH tunnels through remote apps.
-* Develop Cloud Foundry apps in Docker using live-reload functionality back by Docker volumes.
+* Develop Cloud Foundry apps in Docker using live-reload functionality backed by Docker volumes.
 * Rapidly iterate on Cloud Foundry apps without Cloud Foundry.
 * Convert Cloud Foundry apps into Docker images that only require Docker to run.
 
@@ -30,8 +30,9 @@ Notably, CF Local:
 ```
 USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
-                           [ (-p <dir> | -p <zip>) -m (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-w]) ]
+                           [ (-p <dir> | -p <zip>) (-d <dir> [-r]) -e ]
+                           [ (-s <app> | -f <app>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-r -w]) ]
                            [ (-s <app>) (-f <app>) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
@@ -66,6 +67,10 @@ STAGE OPTIONS:
                      modified, or moved during staging into the specified
                      directory. The directory is mounted elsewhere in the
                      container. No files are deleted.
+                     Default: false
+   -e             If buildpacks are explicitly specified then select one of
+                     them using the buildpack detection process instead of
+                     applying all of them using the multi-buildpack process.
                      Default: false
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
