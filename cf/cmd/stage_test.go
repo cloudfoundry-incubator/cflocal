@@ -119,6 +119,7 @@ var _ = Describe("Stage", func() {
 						Expect(config.BuildpackZips["ab534bf201740a2fa7300aa175acd98c"].Out(buildpackZipOut2)).To(Succeed())
 						Expect(buildpackZipOut2.String()).To(Equal("some-buildpack-zip-tw"))
 						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
+						Expect(config.ForceDetect).To(BeTrue())
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&local.AppConfig{

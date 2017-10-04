@@ -122,15 +122,22 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string,
 		detect     bool
 	)
 	if config.Buildpack == "" && len(config.Buildpacks) == 0 {
-		s.UI.Output("Buildpack: will detect")
 		buildpacks = Buildpacks.names()
 		detect = true
 	} else if len(config.Buildpacks) > 0 {
-		s.UI.Output("Buildpacks: %s", strings.Join(config.Buildpacks, ", "))
 		buildpacks = config.Buildpacks
 	} else {
-		s.UI.Output("Buildpack: %s", config.Buildpack)
 		buildpacks = []string{config.Buildpack}
+	}
+	detect = detect || forceDetect
+	if detect {
+		s.UI.Output("Buildpack: will detect")
+	} else {
+		var plurality string
+		if len(buildpacks) > 1 {
+			plurality = "s"
+		}
+		s.UI.Output("Buildpack%s: %s", plurality, strings.Join(buildpacks, ", "))
 	}
 
 	// TODO: fill with real information -- get/set container limits
@@ -195,7 +202,7 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string,
 		Entrypoint: strslice.StrSlice{
 			"/bin/bash", "-c", scriptBuf.String(),
 			strings.Join(buildpacks, ","),
-			strconv.FormatBool(!(detect || forceDetect)),
+			strconv.FormatBool(!detect),
 		},
 	}, nil
 }

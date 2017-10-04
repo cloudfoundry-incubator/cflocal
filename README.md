@@ -165,25 +165,25 @@ applications:
 
 ### From a Downloaded Release
 ```bash
-$ ./cflocal-v0.16.0-macos
-Plugin successfully installed. Current version: 0.16.0
+$ ./cflocal-v0.17.0-macos
+Plugin successfully installed. Current version: 0.17.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.16.0-macos
+$ cf install-plugin cflocal-0.17.0-macos
 Attention: Plugins are binaries written by potentially untrusted authors.
 Install and use plugins at your own risk.
-Do you want to install the plugin cflocal-0.16.0-macos? [yN]: y
+Do you want to install the plugin cflocal-0.17.0-macos? [yN]: y
 Installing plugin cflocal...
 OK
-Plugin cflocal 0.16.0 successfully installed.
+Plugin cflocal 0.17.0 successfully installed.
 ```
 
 ### From the Community Plugin Repository
 ```bash
 $ cf install-plugin cflocal
 Searching CF-Community for plugin cflocal...
-Plugin cflocal 0.16.0 found in: CF-Community
+Plugin cflocal 0.17.0 found in: CF-Community
 Attention: Plugins are binaries written by potentially untrusted authors.
 Install and use plugins at your own risk.
 Do you want to install the plugin cflocal? [yN]: y
@@ -191,7 +191,7 @@ Starting download of plugin binary from repository CF-Community...
  14.35 MiB / 14.35 MiB [=====================================] 100.00% 2s
 Installing plugin cflocal...
 OK
-Plugin cflocal 0.16.0 successfully installed.
+Plugin cflocal 0.17.0 successfully installed.
 ```
 Note: This version is occasionally out of date.
 
