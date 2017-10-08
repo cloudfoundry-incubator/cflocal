@@ -101,13 +101,13 @@ func (c *Container) Start(logPrefix string, logs io.Writer, restart <-chan time.
 	logQueue <- contLogs
 
 	if restart != nil {
-		return c.restart(ctx, contLogs, logQueue, restart)
+		return c.restart(ctx, contLogs, logQueue, restart), nil
 	}
 	defer contLogs.Close()
 	return c.Docker.ContainerWait(ctx, c.id)
 }
 
-func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan<- io.Reader, restart <-chan time.Time) (status int64, err error) {
+func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueue chan<- io.Reader, restart <-chan time.Time) (status int64) {
 	// TODO: log on each continue
 
 	for {
@@ -139,7 +139,7 @@ func (c *Container) restart(ctx context.Context, contLogs io.ReadCloser, logQueu
 			logQueue <- contLogs
 		case <-c.Exit:
 			defer contLogs.Close()
-			return 128, nil
+			return 128
 		}
 	}
 }

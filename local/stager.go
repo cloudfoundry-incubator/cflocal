@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -69,6 +70,7 @@ func (s *Stager) Stage(config *StageConfig) (droplet engine.Stream, err error) {
 	for checksum := range config.BuildpackZips {
 		buildpackMD5s = append(buildpackMD5s, checksum)
 	}
+	sort.Strings(buildpackMD5s)
 	containerConfig, err := s.buildContainerConfig(config.AppConfig, buildpackMD5s, config.ForceDetect, config.RSync)
 	if err != nil {
 		return engine.Stream{}, err
