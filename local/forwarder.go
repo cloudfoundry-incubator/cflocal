@@ -108,10 +108,10 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 		}
 	}()
 	done = func() {
-		wait = nil
-		close(exit)
 		defer netContr.Close()
 		defer contr.Close()
+		wait = nil
+		close(exit)
 		output.Disable()
 	}
 	return contr.HealthCheck(), done, netContr.ID(), nil

@@ -54,7 +54,6 @@ var _ = Describe("Forwarder", func() {
 
 	Describe("#Forward", func() {
 		It("should configure service tunnels and general app networking", func() {
-			var lockedOut io.Writer
 			mockHealth := make(<-chan string)
 			waiter := make(chan time.Time)
 			codeIdx := 0
@@ -121,9 +120,15 @@ var _ = Describe("Forwarder", func() {
 				Expect(hostConfig.NetworkMode).To(Equal(container.NetworkMode("container:some-id")))
 			}).Return(mockContainer, nil).After(background)
 
+			mockContainer.EXPECT().CopyTo(config.SSHPass, "/usr/bin/sshpass")
+			mockContainer.EXPECT().HealthCheck().Return(mockHealth)
+
+			health, done, id, err := forwarder.Forward(config)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(health).To(Equal(mockHealth))
+			Expect(id).To(Equal("some-id"))
+
 			gomock.InOrder(
-				mockContainer.EXPECT().CopyTo(config.SSHPass, "/usr/bin/sshpass"),
-				mockContainer.EXPECT().HealthCheck().Return(mockHealth),
 				mockContainer.EXPECT().CopyTo(gomock.Any(), "/tmp/ssh-code").Do(func(stream engine.Stream, _ string) {
 					defer GinkgoRecover()
 					defer stream.Close()
@@ -131,7 +136,6 @@ var _ = Describe("Forwarder", func() {
 				}),
 				mockContainer.EXPECT().Start("[some-app tunnel] % ", gomock.Any(), nil).Do(func(_ string, output io.Writer, _ <-chan time.Time) {
 					fmt.Fprint(output, "start-1")
-					lockedOut = output
 				}).Return(int64(100), nil),
 				mockContainer.EXPECT().CopyTo(gomock.Any(), "/tmp/ssh-code").Do(func(stream engine.Stream, _ string) {
 					defer GinkgoRecover()
@@ -140,27 +144,18 @@ var _ = Describe("Forwarder", func() {
 				}),
 				mockContainer.EXPECT().Start("[some-app tunnel] % ", gomock.Any(), nil).Do(func(_ string, output io.Writer, _ <-chan time.Time) {
 					fmt.Fprint(output, "start-2")
+					done()
 				}).Return(int64(200), nil),
-				mockContainer.EXPECT().Close().Do(func() {
-					fmt.Fprint(lockedOut, "some-hidden-message-1\n")
-				}),
-				mockNetContainer.EXPECT().Close().Do(func() {
-					fmt.Fprint(lockedOut, "some-hidden-message-2\n")
-				}),
+				mockContainer.EXPECT().Close(),
+				mockNetContainer.EXPECT().Close(),
 			)
 
-			health, done, id, err := forwarder.Forward(config)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(health).To(Equal(mockHealth))
-			Expect(id).To(Equal("some-id"))
-
 			waiter <- time.Time{}
 			waiter <- time.Time{}
-			done()
 
 			Expect(logs).To(gbytes.Say(`start-1\[some-app tunnel\] % Exited with status: 100`))
-			Expect(logs).To(gbytes.Say(`start-2\[some-app tunnel\] % Exited with status: 200`))
-			Expect(logs).NotTo(gbytes.Say("some-hidden-message"))
+			Expect(logs).To(gbytes.Say("start-2"))
+			Expect(logs).NotTo(gbytes.Say(`\[some-app tunnel\] % Exited with status: 200`))
 		})
 	})
 })
