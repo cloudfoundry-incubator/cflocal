@@ -18,7 +18,6 @@ import (
 	"github.com/sclevine/cflocal/local/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("Runner", func() {
@@ -41,7 +40,7 @@ var _ = Describe("Runner", func() {
 		runner = &Runner{
 			StackVersion: "some-stack-version",
 			Logs:         bytes.NewBufferString("some-logs"),
-			UI:           mockUI,
+			Loader:       mockUI,
 			Engine:       mockEngine,
 			Image:        mockImage,
 		}
@@ -53,7 +52,7 @@ var _ = Describe("Runner", func() {
 
 	Describe("#Run", func() {
 		It("should run the droplet in a container using the launcher", func() {
-			progress := make(chan ui.Progress, 1)
+			progress := make(chan engine.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 			config := &RunConfig{
@@ -135,7 +134,7 @@ var _ = Describe("Runner", func() {
 
 	Describe("#Export", func() {
 		It("should load the provided droplet into a Docker image with the launcher", func() {
-			progress := make(chan ui.Progress, 1)
+			progress := make(chan engine.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 			config := &ExportConfig{

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/sclevine/cflocal/ui"
+	"github.com/sclevine/cflocal/engine"
 )
 
 func TestLocal(t *testing.T) {
@@ -22,7 +22,7 @@ func percentColor(format string, a ...interface{}) string {
 
 type mockProgress struct {
 	Value string
-	ui.Progress
+	engine.Progress
 }
 
 type mockReadCloser struct {

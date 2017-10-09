@@ -33,8 +33,9 @@ type Plugin struct {
 }
 
 type UI interface {
-	local.UI
+	local.Loader
 	Prompt(prompt string) string
+	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
 }
@@ -95,7 +96,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		GoVersion:    "1.8.3",
 		StackVersion: "latest",
 		Logs:         color.Output,
-		UI:           p.UI,
+		Loader:       p.UI,
 		Engine:       dockerEngineWithExit,
 		Image:        imageWithExit,
 		Versioner:    versioner,
@@ -103,7 +104,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	runner := &local.Runner{
 		StackVersion: "latest",
 		Logs:         color.Output,
-		UI:           p.UI,
+		Loader:       p.UI,
 		Engine:       dockerEngineWithExit,
 		Image:        imageWithExit,
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/sclevine/cflocal/engine"
-	"github.com/sclevine/cflocal/ui"
 )
 
 //go:generate mockgen -package mocks -destination mocks/versioner.go github.com/sclevine/cflocal/local Versioner
@@ -17,8 +16,8 @@ type Versioner interface {
 
 //go:generate mockgen -package mocks -destination mocks/image.go github.com/sclevine/cflocal/local Image
 type Image interface {
-	Pull(image string) <-chan ui.Progress
-	Build(tag string, dockerfile engine.Stream) <-chan ui.Progress
+	Pull(image string) <-chan engine.Progress
+	Build(tag string, dockerfile engine.Stream) <-chan engine.Progress
 }
 
 //go:generate mockgen -package mocks -destination mocks/container.go github.com/sclevine/cflocal/local Container
@@ -40,9 +39,8 @@ type Engine interface {
 	NewContainer(config *container.Config, hostConfig *container.HostConfig) (Container, error)
 }
 
-type UI interface {
-	Loading(message string, progress <-chan ui.Progress) error
-	Output(format string, a ...interface{})
+type Loader interface {
+	Loading(message string, progress <-chan engine.Progress) error
 }
 
 type Colorizer func(string, ...interface{}) string

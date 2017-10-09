@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"github.com/sclevine/cflocal/engine"
 	. "github.com/sclevine/cflocal/ui"
 )
 
@@ -86,7 +87,7 @@ var _ = Describe("UI", func() {
 
 	Describe("#Loading", func() {
 		It("should drain the provided channel", func() {
-			progress := make(chan Progress, 2)
+			progress := make(chan engine.Progress, 2)
 			progress <- mockProgress{}
 			progress <- mockProgress{}
 			close(progress)
@@ -96,7 +97,7 @@ var _ = Describe("UI", func() {
 		})
 
 		It("should return the last error sent", func() {
-			progress := make(chan Progress, 3)
+			progress := make(chan engine.Progress, 3)
 			progress <- mockProgress{err: errors.New("first error")}
 			progress <- mockProgress{err: errors.New("second error")}
 			progress <- mockProgress{}

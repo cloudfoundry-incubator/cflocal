@@ -6,7 +6,6 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	engine "github.com/sclevine/cflocal/engine"
-	ui "github.com/sclevine/cflocal/ui"
 )
 
 // Mock of Image interface
@@ -30,9 +29,9 @@ func (_m *MockImage) EXPECT() *_MockImageRecorder {
 	return _m.recorder
 }
 
-func (_m *MockImage) Build(_param0 string, _param1 engine.Stream) <-chan ui.Progress {
+func (_m *MockImage) Build(_param0 string, _param1 engine.Stream) <-chan engine.Progress {
 	ret := _m.ctrl.Call(_m, "Build", _param0, _param1)
-	ret0, _ := ret[0].(<-chan ui.Progress)
+	ret0, _ := ret[0].(<-chan engine.Progress)
 	return ret0
 }
 
@@ -40,9 +39,9 @@ func (_mr *_MockImageRecorder) Build(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Build", arg0, arg1)
 }
 
-func (_m *MockImage) Pull(_param0 string) <-chan ui.Progress {
+func (_m *MockImage) Pull(_param0 string) <-chan engine.Progress {
 	ret := _m.ctrl.Call(_m, "Pull", _param0)
-	ret0, _ := ret[0].(<-chan ui.Progress)
+	ret0, _ := ret[0].(<-chan engine.Progress)
 	return ret0
 }
 

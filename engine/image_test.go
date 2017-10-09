@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/sclevine/cflocal/engine"
-	"github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("Image", func() {
@@ -120,7 +119,7 @@ var _ = Describe("Image", func() {
 			dockerfileStream := NewStream(ioutil.NopCloser(dockerfile), int64(dockerfile.Len()))
 
 			progress := image.Build(tag, dockerfileStream)
-			var progressErr ui.Progress
+			var progressErr Progress
 			for progressErr = range progress {
 				if progressErr.Err() != nil {
 					break
@@ -170,7 +169,7 @@ var _ = Describe("Image", func() {
 		It("should send an error when the image pull request is invalid", func() {
 			progress := image.Pull("-----")
 
-			var progressErr ui.Progress
+			var progressErr Progress
 			Expect(progress).To(Receive(&progressErr))
 			Expect(progressErr.Err()).To(MatchError(HaveSuffix("invalid reference format")))
 			Expect(progress).To(BeClosed())
@@ -178,7 +177,7 @@ var _ = Describe("Image", func() {
 
 		It("should send an error when an error occurs during the image build", func() {
 			progress := image.Pull("sclevine/bad-test")
-			var progressErr ui.Progress
+			var progressErr Progress
 			for progressErr = range progress {
 				if progressErr.Err() != nil {
 					break

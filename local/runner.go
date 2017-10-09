@@ -42,7 +42,7 @@ const RunnerScript = `
 type Runner struct {
 	StackVersion string
 	Logs         io.Writer
-	UI           UI
+	Loader       Loader
 	Engine       Engine
 	Image        Image
 }
@@ -126,7 +126,7 @@ func (r *Runner) Export(config *ExportConfig) (imageID string, err error) {
 }
 
 func (r *Runner) pull() error {
-	return r.UI.Loading("Image", r.Image.Pull(fmt.Sprintf("cloudfoundry/cflinuxfs2:%s", r.StackVersion)))
+	return r.Loader.Loading("Image", r.Image.Pull(fmt.Sprintf("cloudfoundry/cflinuxfs2:%s", r.StackVersion)))
 }
 
 func (r *Runner) setDefaults(config *AppConfig) {

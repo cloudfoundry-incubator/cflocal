@@ -7,8 +7,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
-
-	"github.com/sclevine/cflocal/ui"
 )
 
 type Image struct {
@@ -16,9 +14,14 @@ type Image struct {
 	Exit   <-chan struct{}
 }
 
-func (i *Image) Build(tag string, dockerfile Stream) <-chan ui.Progress {
+type Progress interface {
+	Status() string
+	Err() error
+}
+
+func (i *Image) Build(tag string, dockerfile Stream) <-chan Progress {
 	ctx := context.Background()
-	progress := make(chan ui.Progress, 1)
+	progress := make(chan Progress, 1)
 
 	dockerfileTar, err := tarFile("Dockerfile", dockerfile, dockerfile.Size, 0644)
 	if err != nil {
@@ -41,9 +44,9 @@ func (i *Image) Build(tag string, dockerfile Stream) <-chan ui.Progress {
 	return progress
 }
 
-func (i *Image) Pull(image string) <-chan ui.Progress {
+func (i *Image) Pull(image string) <-chan Progress {
 	ctx := context.Background()
-	progress := make(chan ui.Progress, 1)
+	progress := make(chan Progress, 1)
 
 	body, err := i.Docker.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
@@ -55,7 +58,7 @@ func (i *Image) Pull(image string) <-chan ui.Progress {
 	return progress
 }
 
-func (i *Image) checkBody(body io.ReadCloser, progress chan<- ui.Progress) {
+func (i *Image) checkBody(body io.ReadCloser, progress chan<- Progress) {
 	defer body.Close()
 	defer close(progress)
 

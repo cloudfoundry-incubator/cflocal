@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
 	"github.com/sclevine/cflocal/engine"
 	"github.com/sclevine/cflocal/fixtures"
@@ -18,7 +17,6 @@ import (
 	"github.com/sclevine/cflocal/local/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
-	"github.com/sclevine/cflocal/ui"
 )
 
 var _ = Describe("Stager", func() {
@@ -30,6 +28,7 @@ var _ = Describe("Stager", func() {
 		mockImage     *mocks.MockImage
 		mockVersioner *mocks.MockVersioner
 		mockContainer *mocks.MockContainer
+		logs          *bytes.Buffer
 	)
 
 	BeforeEach(func() {
@@ -39,13 +38,14 @@ var _ = Describe("Stager", func() {
 		mockImage = mocks.NewMockImage(mockCtrl)
 		mockVersioner = mocks.NewMockVersioner(mockCtrl)
 		mockContainer = mocks.NewMockContainer(mockCtrl)
+		logs = bytes.NewBufferString("some logs\n")
 
 		stager = &Stager{
 			DiegoVersion: "some-diego-version",
 			GoVersion:    "some-go-version",
 			StackVersion: "some-stack-version",
-			Logs:         bytes.NewBufferString("some-logs"),
-			UI:           mockUI,
+			Logs:         logs,
+			Loader:       mockUI,
 			Engine:       mockEngine,
 			Image:        mockImage,
 			Versioner:    mockVersioner,
@@ -65,7 +65,7 @@ var _ = Describe("Stager", func() {
 			remoteCacheStream := engine.NewStream(remoteCache, int64(remoteCache.Len()))
 			dropletStream := engine.NewStream(mockReadCloser{Value: "some-droplet"}, 300)
 
-			progress := make(chan ui.Progress, 1)
+			progress := make(chan engine.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 
@@ -146,7 +146,7 @@ var _ = Describe("Stager", func() {
 			cacheExtract := mockContainer.EXPECT().ExtractTo(localCache, "/tmp/cache")
 
 			gomock.InOrder(
-				mockContainer.EXPECT().Start("[some-app] % ", stager.Logs, nil).Return(int64(0), nil).
+				mockContainer.EXPECT().Start("[some-app] % ", logs, nil).Return(int64(0), nil).
 					After(buildpackCopy1).
 					After(buildpackCopy2).
 					After(appExtract).
@@ -160,7 +160,7 @@ var _ = Describe("Stager", func() {
 			Expect(localCache.Close()).To(Succeed())
 			Expect(localCache.Result()).To(Equal("some-new-cache"))
 			Expect(remoteCache.Result()).To(BeEmpty())
-			Expect(mockUI.Out).To(gbytes.Say("Buildpacks: some-buildpack-one, some-buildpack-two"))
+			Expect(logs.String()).To(Equal("some logs\nBuildpacks: some-buildpack-one, some-buildpack-two\n"))
 			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
@@ -173,7 +173,7 @@ var _ = Describe("Stager", func() {
 
 	Describe("#Download", func() {
 		It("should return the specified file", func() {
-			progress := make(chan ui.Progress, 1)
+			progress := make(chan engine.Progress, 1)
 			progress <- mockProgress{Value: "some-progress"}
 			close(progress)
 

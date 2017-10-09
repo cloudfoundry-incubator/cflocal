@@ -38,7 +38,7 @@ type Stager struct {
 	GoVersion    string
 	StackVersion string
 	Logs         io.Writer
-	UI           UI
+	Loader       Loader
 	Engine       Engine
 	Image        Image
 	Versioner    Versioner
@@ -133,13 +133,13 @@ func (s *Stager) buildContainerConfig(config *AppConfig, buildpackMD5s []string,
 	}
 	detect = detect || forceDetect
 	if detect {
-		s.UI.Output("Buildpack: will detect")
+		fmt.Fprintln(s.Logs, "Buildpack: will detect")
 	} else {
 		var plurality string
 		if len(buildpacks) > 1 {
 			plurality = "s"
 		}
-		s.UI.Output("Buildpack%s: %s", plurality, strings.Join(buildpacks, ", "))
+		fmt.Fprintf(s.Logs, "Buildpack%s: %s\n", plurality, strings.Join(buildpacks, ", "))
 	}
 
 	// TODO: fill with real information -- get/set container limits
@@ -245,7 +245,7 @@ func (s *Stager) Download(path string) (stream engine.Stream, err error) {
 func (s *Stager) buildDockerfile() error {
 	buildpacks, err := s.buildpacks()
 	if err == version.ErrNetwork || err == version.ErrUnavailable {
-		s.UI.Output("Warning: cannot build image: %s", err)
+		fmt.Fprintln(s.Logs, "Warning: cannot build image: ", err)
 		return nil
 	}
 	if err != nil {
@@ -268,7 +268,7 @@ func (s *Stager) buildDockerfile() error {
 		return err
 	}
 	dockerfileStream := engine.NewStream(ioutil.NopCloser(dockerfileBuf), int64(dockerfileBuf.Len()))
-	return s.UI.Loading("Image", s.Image.Build("cflocal", dockerfileStream))
+	return s.Loader.Loading("Image", s.Image.Build("cflocal", dockerfileStream))
 }
 
 func (s *Stager) buildpacks() ([]buildpackInfo, error) {

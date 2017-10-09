@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/sclevine/cflocal/engine"
 )
 
 var spinner = []string{". ", "o ", "O ", "8 ", "oo", "OO", "88"}
@@ -63,12 +64,7 @@ func (u *UI) Error(err error) {
 	fmt.Fprintln(u.Out, color.RedString("FAILED"))
 }
 
-type Progress interface {
-	Status() string
-	Err() error
-}
-
-func (u *UI) Loading(message string, progress <-chan Progress) (err error) {
+func (u *UI) Loading(message string, progress <-chan engine.Progress) (err error) {
 	loadLen := len(message+loaderPrefix) + loaderWidth
 	spinLen := len(message+spinnerPrefix) + spinnerWidth*len(spinner[0])
 
