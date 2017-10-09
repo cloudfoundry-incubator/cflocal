@@ -32,7 +32,6 @@ var _ = Describe("Forwarder", func() {
 		mockNetContainer *mocks.MockContainer
 		mockContainer    *mocks.MockContainer
 		logs             *gbytes.Buffer
-		exit             chan struct{}
 	)
 
 	BeforeEach(func() {
@@ -41,12 +40,10 @@ var _ = Describe("Forwarder", func() {
 		mockNetContainer = mocks.NewMockContainer(mockCtrl)
 		mockContainer = mocks.NewMockContainer(mockCtrl)
 		logs = gbytes.NewBuffer()
-		exit = make(chan struct{})
 
 		forwarder = &Forwarder{
 			StackVersion: "some-stack-version",
 			Logs:         logs,
-			Exit:         exit,
 			Engine:       mockEngine,
 		}
 	})
@@ -159,7 +156,6 @@ var _ = Describe("Forwarder", func() {
 
 			waiter <- time.Time{}
 			waiter <- time.Time{}
-			exit <- struct{}{}
 			done()
 
 			Expect(logs).To(gbytes.Say(`start-1\[some-app tunnel\] % Exited with status: 100`))

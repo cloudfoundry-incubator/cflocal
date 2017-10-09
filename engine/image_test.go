@@ -184,7 +184,7 @@ var _ = Describe("Image", func() {
 					break
 				}
 			}
-			Expect(progressErr.Err()).To(MatchError(ContainSubstring("not found")))
+			Expect(progressErr.Err()).To(MatchError(ContainSubstring("sclevine/bad-test")))
 			Expect(progress).To(BeClosed())
 		})
 	})

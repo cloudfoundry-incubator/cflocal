@@ -318,7 +318,7 @@ var _ = Describe("Container", func() {
 
 		It("should return an error if extracting fails", func() {
 			err := contr.ExtractTo(nil, "/some-bad-path")
-			Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
+			Expect(err).To(MatchError(ContainSubstring("some-bad-path")))
 		})
 	})
 
@@ -373,7 +373,7 @@ var _ = Describe("Container", func() {
 
 		It("should return an error if copying fails", func() {
 			_, err := contr.CopyFrom("/some-bad-path")
-			Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
+			Expect(err).To(MatchError(ContainSubstring("some-bad-path")))
 		})
 
 		It("should return an error if untarring fails", func() {
