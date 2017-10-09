@@ -78,9 +78,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 
 	dockerEngine := &local.DockerEngine{
 		Docker: client,
+	}
+	dockerEngineWithExit := &local.DockerEngine{
+		Docker: client,
 		Exit:   p.Exit,
 	}
-	image := &engine.Image{
+	imageWithExit := &engine.Image{
 		Docker: client,
 		Exit:   p.Exit,
 	}
@@ -93,21 +96,20 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		StackVersion: "latest",
 		Logs:         color.Output,
 		UI:           p.UI,
-		Engine:       dockerEngine,
-		Image:        image,
+		Engine:       dockerEngineWithExit,
+		Image:        imageWithExit,
 		Versioner:    versioner,
 	}
 	runner := &local.Runner{
 		StackVersion: "latest",
 		Logs:         color.Output,
 		UI:           p.UI,
-		Engine:       dockerEngine,
-		Image:        image,
+		Engine:       dockerEngineWithExit,
+		Image:        imageWithExit,
 	}
 	forwarder := &local.Forwarder{
 		StackVersion: "latest",
 		Logs:         color.Output,
-		Exit:         p.Exit,
 		Engine:       dockerEngine,
 	}
 	app := &remote.App{
@@ -116,7 +118,9 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		HTTP: ccHTTPClient,
 	}
 	sysFS := &fs.FS{}
-	config := &local.Config{Path: "./local.yml"}
+	config := &local.Config{
+		Path: "./local.yml",
+	}
 	help := &Help{
 		CLI: cliConnection,
 		UI:  p.UI,

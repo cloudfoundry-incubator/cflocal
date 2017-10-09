@@ -37,7 +37,6 @@ const ForwardScript = `
 type Forwarder struct {
 	StackVersion string
 	Logs         io.Writer
-	Exit         <-chan struct{}
 	Engine       Engine
 }
 
@@ -81,12 +80,14 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 	}
 
 	prefix := config.Color("[%s tunnel] ", config.AppName)
+	wait := config.Wait
+	exit := make(chan struct{})
 	go func() {
 		for {
 			select {
-			case <-f.Exit: // TODO: refactor shutdown to remove
+			case <-exit:
 				return
-			case <-config.Wait:
+			case <-wait:
 				code, err := config.ForwardConfig.Code()
 				if err != nil {
 					fmt.Fprintf(output, "%sError: %s\n", prefix, err)
@@ -107,6 +108,8 @@ func (f *Forwarder) Forward(config *ForwardConfig) (health <-chan string, done f
 		}
 	}()
 	done = func() {
+		wait = nil
+		close(exit)
 		defer netContr.Close()
 		defer contr.Close()
 		output.Disable()
