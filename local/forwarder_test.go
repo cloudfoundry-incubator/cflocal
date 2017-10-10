@@ -153,9 +153,9 @@ var _ = Describe("Forwarder", func() {
 			waiter <- time.Time{}
 			waiter <- time.Time{}
 
-			Expect(logs).To(gbytes.Say(`start-1\[some-app tunnel\] % Exited with status: 100`))
-			Expect(logs).To(gbytes.Say("start-2"))
-			Expect(logs).NotTo(gbytes.Say(`\[some-app tunnel\] % Exited with status: 200`))
+			Eventually(logs).Should(gbytes.Say(`start-1\[some-app tunnel\] % Exited with status: 100`))
+			Eventually(logs).Should(gbytes.Say("start-2"))
+			Consistently(logs).ShouldNot(gbytes.Say(`\[some-app tunnel\] % Exited with status: 200`))
 		})
 	})
 })
