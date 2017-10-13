@@ -170,7 +170,7 @@ Plugin successfully installed. Current version: 0.17.0
 ```
 ***Or***
 ```bash
-$ cf install-plugin cflocal-0.17.0-macos
+$ cf install-plugin -r CF-Community cflocal-0.17.0-macos
 Attention: Plugins are binaries written by potentially untrusted authors.
 Install and use plugins at your own risk.
 Do you want to install the plugin cflocal-0.17.0-macos? [yN]: y
