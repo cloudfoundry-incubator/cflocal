@@ -193,7 +193,11 @@ Installing plugin cflocal...
 OK
 Plugin cflocal 0.17.0 successfully installed.
 ```
-Note: This version is occasionally out of date.
+Note: This version is occasionally out of date. If you are using a version of the CF CLI
+prior to `v6.27.0`, you will need to specify the repository where the plugin is located:
+```bash
+$ cf install-plugin -R CF-Community cflocal
+```
 
 ## Uninstall
 
