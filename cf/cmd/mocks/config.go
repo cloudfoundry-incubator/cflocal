@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	local "github.com/sclevine/cflocal/local"
+	local "github.com/sclevine/forge"
 )
 
 // Mock of Config interface

@@ -1,13 +1,9 @@
-package local
+package cmd
 
-type Buildpack struct {
-	Name       string
-	URL        string
-	VersionURL string
-}
+import "github.com/sclevine/forge"
 
 // TODO: merge the version URLs into a single JSON file with download URLs
-var Buildpacks BuildpackList = []Buildpack{
+var Buildpacks forge.SystemBuildpacks = []forge.Buildpack{
 	{
 		Name:       "staticfile_buildpack",
 		URL:        "https://github.com/cloudfoundry/staticfile-buildpack/releases/download/v{{.}}/staticfile-buildpack-v{{.}}.zip",

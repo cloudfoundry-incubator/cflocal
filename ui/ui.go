@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/forge/engine"
 )
 
 var spinner = []string{". ", "o ", "O ", "8 ", "oo", "OO", "88"}

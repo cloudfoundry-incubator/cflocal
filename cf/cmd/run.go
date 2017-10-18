@@ -12,9 +12,9 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/docker/docker/api/types"
-	"github.com/sclevine/cflocal/engine"
-	"github.com/sclevine/cflocal/local"
-	"github.com/sclevine/cflocal/local/wait"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/wait"
 )
 
 type Run struct {

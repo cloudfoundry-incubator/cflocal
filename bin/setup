@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -e
-
-cd $(dirname "${BASH_SOURCE[0]}")/..
-
-pushd vendor/code.cloudfoundry.org/cli
-  ./bin/generate-language-resources
-popd

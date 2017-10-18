@@ -10,8 +10,8 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/cflocal/engine"
-	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/service"
 )

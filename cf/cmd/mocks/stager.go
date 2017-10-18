@@ -5,8 +5,8 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	engine "github.com/sclevine/cflocal/engine"
-	local "github.com/sclevine/cflocal/local"
+	engine "github.com/sclevine/forge/engine"
+	local "github.com/sclevine/forge"
 )
 
 // Mock of Stager interface

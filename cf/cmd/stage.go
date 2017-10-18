@@ -7,8 +7,8 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/sclevine/cflocal/engine"
-	"github.com/sclevine/cflocal/local"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge"
 )
 
 type Stage struct {

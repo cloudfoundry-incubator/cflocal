@@ -18,10 +18,10 @@ import (
 
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
-	"github.com/sclevine/cflocal/engine"
+	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/cflocal/fs"
-	"github.com/sclevine/cflocal/local"
-	"github.com/sclevine/cflocal/local/version"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/version"
 	"github.com/sclevine/cflocal/remote"
 )
 
