@@ -7,7 +7,7 @@ go:
 install:
 - set -e
 - curl -fsSL "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar -C "$GOPATH/bin" -xz cf
-- bin/setup
+- bin/vendor
 script:
 - test -z "$(bin/format | tee >(cat >&2))"
 - bin/test -nodes=2 -compilers=2
