@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
 )
 
 type Export struct {
@@ -42,7 +42,7 @@ func (e *Export) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, err := e.Stager.Download("/tmp/lifecycle/launcher")
+	launcher, err := e.Stager.Download("/tmp/lifecycle/launcher", LatestStack)
 	if err != nil {
 		return err
 	}
@@ -51,6 +51,7 @@ func (e *Export) Run(args []string) error {
 	id, err := e.Runner.Export(&forge.ExportConfig{
 		Droplet:   engine.NewStream(droplet, dropletSize),
 		Launcher:  launcher,
+		Stack:     LatestStack,
 		Ref:       options.reference,
 		AppConfig: getAppConfig(options.name, localYML),
 	})

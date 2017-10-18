@@ -12,8 +12,8 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/docker/docker/api/types"
-	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/wait"
 )
 
@@ -22,7 +22,7 @@ type Run struct {
 	Stager    Stager
 	Runner    Runner
 	Forwarder Forwarder
-	App       App
+	RemoteApp RemoteApp
 	FS        FS
 	Help      Help
 	Config    Config
@@ -84,14 +84,14 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, err := r.Stager.Download("/tmp/lifecycle/launcher")
+	launcher, err := r.Stager.Download("/tmp/lifecycle/launcher", LatestStack)
 	if err != nil {
 		return err
 	}
 	defer launcher.Close()
 
 	appConfig := getAppConfig(options.name, localYML)
-	remoteServices, forwardConfig, err := getRemoteServices(r.App, options.serviceApp, options.forwardApp)
+	remoteServices, forwardConfig, err := getRemoteServices(r.RemoteApp, options.serviceApp, options.forwardApp)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (r *Run) Run(args []string) error {
 		HostPort: strconv.FormatUint(uint64(options.port), 10),
 	}
 	if forwardConfig != nil {
-		sshpass, err := r.Stager.Download("/usr/bin/sshpass")
+		sshpass, err := r.Stager.Download("/usr/bin/sshpass", LatestStack)
 		if err != nil {
 			return err
 		}
@@ -134,6 +134,7 @@ func (r *Run) Run(args []string) error {
 	_, err = r.Runner.Run(&forge.RunConfig{
 		Droplet:       engine.NewStream(droplet, dropletSize),
 		Launcher:      launcher,
+		Stack:         LatestStack,
 		AppDir:        appDir,
 		RSync:         options.rsync,
 		Restart:       restart,

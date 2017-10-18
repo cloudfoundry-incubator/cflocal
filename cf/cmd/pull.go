@@ -7,11 +7,11 @@ import (
 )
 
 type Pull struct {
-	UI     UI
-	App    App
-	FS     FS
-	Help   Help
-	Config Config
+	UI        UI
+	RemoteApp RemoteApp
+	FS        FS
+	Help      Help
+	Config    Config
 }
 
 func (p *Pull) Match(args []string) bool {
@@ -35,7 +35,7 @@ func (p *Pull) Run(args []string) error {
 }
 
 func (p *Pull) saveDroplet(name string) error {
-	droplet, size, err := p.App.Droplet(name)
+	droplet, size, err := p.RemoteApp.Droplet(name)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (p *Pull) updateLocalYML(name string) error {
 	}
 	app := getAppConfig(name, localYML)
 
-	env, err := p.App.Env(name)
+	env, err := p.RemoteApp.Env(name)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (p *Pull) updateLocalYML(name string) error {
 	app.RunningEnv = env.Running
 	app.Env = env.App
 
-	command, err := p.App.Command(name)
+	command, err := p.RemoteApp.Command(name)
 	if err != nil {
 		return err
 	}

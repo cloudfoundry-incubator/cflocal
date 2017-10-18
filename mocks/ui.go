@@ -5,20 +5,18 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gbytes"
-
-	"github.com/sclevine/forge/engine"
 )
 
 type MockUI struct {
-	Err      error
-	Out      *gbytes.Buffer
-	Reply    map[string]string
+	Err   error
+	Out   *gbytes.Buffer
+	Reply map[string]string
 }
 
 func NewMockUI() *MockUI {
 	return &MockUI{
-		Out:      gbytes.NewBuffer(),
-		Reply:    map[string]string{},
+		Out:   gbytes.NewBuffer(),
+		Reply: map[string]string{},
 	}
 }
 

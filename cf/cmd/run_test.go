@@ -13,10 +13,10 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
-	"github.com/sclevine/cflocal/service"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Run", func() {
@@ -26,7 +26,7 @@ var _ = Describe("Run", func() {
 		mockStager    *mocks.MockStager
 		mockRunner    *mocks.MockRunner
 		mockForwarder *mocks.MockForwarder
-		mockApp       *mocks.MockApp
+		mockRemoteApp *mocks.MockRemoteApp
 		mockFS        *mocks.MockFS
 		mockHelp      *mocks.MockHelp
 		mockConfig    *mocks.MockConfig
@@ -39,7 +39,7 @@ var _ = Describe("Run", func() {
 		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRunner = mocks.NewMockRunner(mockCtrl)
 		mockForwarder = mocks.NewMockForwarder(mockCtrl)
-		mockApp = mocks.NewMockApp(mockCtrl)
+		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
@@ -48,7 +48,7 @@ var _ = Describe("Run", func() {
 			Stager:    mockStager,
 			Runner:    mockRunner,
 			Forwarder: mockForwarder,
-			App:       mockApp,
+			RemoteApp: mockRemoteApp,
 			FS:        mockFS,
 			Help:      mockHelp,
 			Config:    mockConfig,
@@ -96,10 +96,10 @@ var _ = Describe("Run", func() {
 			mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil)
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil)
-			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
-			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
-			mockStager.EXPECT().Download("/usr/bin/sshpass").Return(engine.NewStream(sshpass, 300), nil)
+			mockStager.EXPECT().Download("/tmp/lifecycle/launcher", LatestStack).Return(engine.NewStream(launcher, 200), nil)
+			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
+			mockRemoteApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
+			mockStager.EXPECT().Download("/usr/bin/sshpass", LatestStack).Return(engine.NewStream(sshpass, 300), nil)
 
 			gomock.InOrder(
 				mockFS.EXPECT().MakeDirAll("some-abs-dir"),

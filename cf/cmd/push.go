@@ -6,11 +6,11 @@ import (
 )
 
 type Push struct {
-	UI     UI
-	App    App
-	FS     FS
-	Help   Help
-	Config Config
+	UI        UI
+	RemoteApp RemoteApp
+	FS        FS
+	Help      Help
+	Config    Config
 }
 
 type pushOptions struct {
@@ -39,7 +39,7 @@ func (p *Push) Run(args []string) error {
 		}
 	}
 	if !options.keepState {
-		if err := p.App.Restart(options.name); err != nil {
+		if err := p.RemoteApp.Restart(options.name); err != nil {
 			return err
 		}
 	}
@@ -53,7 +53,7 @@ func (p *Push) pushDroplet(name string) error {
 		return err
 	}
 	defer droplet.Close()
-	return p.App.SetDroplet(name, droplet, size)
+	return p.RemoteApp.SetDroplet(name, droplet, size)
 }
 
 func (p *Push) pushEnv(name string) error {
@@ -61,7 +61,7 @@ func (p *Push) pushEnv(name string) error {
 	if err != nil {
 		return err
 	}
-	return p.App.SetEnv(name, getAppConfig(name, localYML).Env)
+	return p.RemoteApp.SetEnv(name, getAppConfig(name, localYML).Env)
 }
 
 func (*Push) options(args []string) (*pushOptions, error) {

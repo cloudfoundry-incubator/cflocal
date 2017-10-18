@@ -7,17 +7,18 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
 )
 
 type Stage struct {
-	UI     UI
-	Stager Stager
-	App    App
-	FS     FS
-	Help   Help
-	Config Config
+	UI        UI
+	Stager    Stager
+	RemoteApp RemoteApp
+	LocalApp  LocalApp
+	FS        FS
+	Help      Help
+	Config    Config
 }
 
 type stageOptions struct {
@@ -50,7 +51,7 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 
-	appTar, err := s.FS.TarApp(options.app)
+	appTar, err := s.LocalApp.Tar(options.app)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (s *Stage) Run(args []string) error {
 		buildpackZips[checksum] = engine.NewStream(zip, size)
 	}
 
-	remoteServices, _, err := getRemoteServices(s.App, options.serviceApp, options.forwardApp)
+	remoteServices, _, err := getRemoteServices(s.RemoteApp, options.serviceApp, options.forwardApp)
 	if err != nil {
 		return err
 	}
@@ -108,6 +109,7 @@ func (s *Stage) Run(args []string) error {
 		Cache:         cache,
 		CacheEmpty:    cacheSize == 0,
 		BuildpackZips: buildpackZips,
+		Stack:         LatestStack,
 		AppDir:        appDir,
 		ForceDetect:   options.forceDetect,
 		RSync:         options.rsync,

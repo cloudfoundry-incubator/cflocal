@@ -11,8 +11,8 @@ import (
 
 	"github.com/sclevine/cflocal/mocks"
 	. "github.com/sclevine/cflocal/remote"
-	"github.com/sclevine/cflocal/service"
 	"github.com/sclevine/cflocal/testutil"
+	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("App - Service", func() {

@@ -18,11 +18,12 @@ import (
 
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
-	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/cflocal/fs"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/version"
 	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/version"
 )
 
 type Plugin struct {
@@ -94,30 +95,30 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	stager := &forge.Stager{
 		DiegoVersion: "1.26.1",
 		GoVersion:    "1.8.3",
-		StackVersion: "latest",
+		ImageTag:     "cflocal",
 		Logs:         color.Output,
 		Loader:       p.UI,
 		Engine:       dockerEngineWithExit,
 		Image:        imageWithExit,
 		Versioner:    versioner,
 	}
+
 	runner := &forge.Runner{
-		StackVersion: "latest",
-		Logs:         color.Output,
-		Loader:       p.UI,
-		Engine:       dockerEngineWithExit,
-		Image:        imageWithExit,
+		Logs:   color.Output,
+		Loader: p.UI,
+		Engine: dockerEngineWithExit,
+		Image:  imageWithExit,
 	}
 	forwarder := &forge.Forwarder{
-		StackVersion: "latest",
-		Logs:         color.Output,
-		Engine:       dockerEngine,
+		Logs:   color.Output,
+		Engine: dockerEngine,
 	}
-	app := &remote.App{
+	remoteApp := &remote.App{
 		CLI:  cliConnection,
 		UI:   p.UI,
 		HTTP: ccHTTPClient,
 	}
+	localApp := &app.App{}
 	sysFS := &fs.FS{}
 	config := &forge.Config{
 		Path: "./local.yml",
@@ -139,36 +140,37 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				Config: config,
 			},
 			&cmd.Pull{
-				UI:     p.UI,
-				App:    app,
-				FS:     sysFS,
-				Help:   help,
-				Config: config,
+				UI:        p.UI,
+				RemoteApp: remoteApp,
+				FS:        sysFS,
+				Help:      help,
+				Config:    config,
 			},
 			&cmd.Push{
-				UI:     p.UI,
-				App:    app,
-				FS:     sysFS,
-				Help:   help,
-				Config: config,
+				UI:        p.UI,
+				RemoteApp: remoteApp,
+				FS:        sysFS,
+				Help:      help,
+				Config:    config,
 			},
 			&cmd.Run{
 				UI:        p.UI,
 				Stager:    stager,
 				Runner:    runner,
 				Forwarder: forwarder,
-				App:       app,
+				RemoteApp: remoteApp,
 				FS:        sysFS,
 				Help:      help,
 				Config:    config,
 			},
 			&cmd.Stage{
-				UI:     p.UI,
-				Stager: stager,
-				App:    app,
-				FS:     sysFS,
-				Help:   help,
-				Config: config,
+				UI:        p.UI,
+				Stager:    stager,
+				RemoteApp: remoteApp,
+				LocalApp:  localApp,
+				FS:        sysFS,
+				Help:      help,
+				Config:    config,
 			},
 		},
 		Version: p.Version,

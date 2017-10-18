@@ -11,34 +11,34 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
+	"github.com/sclevine/forge"
 )
 
 var _ = Describe("Push", func() {
 	var (
-		mockCtrl   *gomock.Controller
-		mockUI     *sharedmocks.MockUI
-		mockApp    *mocks.MockApp
-		mockFS     *mocks.MockFS
-		mockHelp   *mocks.MockHelp
-		mockConfig *mocks.MockConfig
-		cmd        *Push
+		mockCtrl      *gomock.Controller
+		mockUI        *sharedmocks.MockUI
+		mockRemoteApp *mocks.MockRemoteApp
+		mockFS        *mocks.MockFS
+		mockHelp      *mocks.MockHelp
+		mockConfig    *mocks.MockConfig
+		cmd           *Push
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
-		mockApp = mocks.NewMockApp(mockCtrl)
+		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Push{
-			UI:     mockUI,
-			App:    mockApp,
-			FS:     mockFS,
-			Help:   mockHelp,
-			Config: mockConfig,
+			UI:        mockUI,
+			RemoteApp: mockRemoteApp,
+			FS:        mockFS,
+			Help:      mockHelp,
+			Config:    mockConfig,
 		}
 	})
 
@@ -70,11 +70,11 @@ var _ = Describe("Push", func() {
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
 			gomock.InOrder(
-				mockApp.EXPECT().SetDroplet("some-app", gomock.Any(), int64(100)).Do(func(_ string, r io.Reader, _ int64) {
+				mockRemoteApp.EXPECT().SetDroplet("some-app", gomock.Any(), int64(100)).Do(func(_ string, r io.Reader, _ int64) {
 					Expect(ioutil.ReadAll(r)).To(Equal([]byte("some-droplet")))
 				}),
-				mockApp.EXPECT().SetEnv("some-app", map[string]string{"some": "env"}),
-				mockApp.EXPECT().Restart("some-app"),
+				mockRemoteApp.EXPECT().SetEnv("some-app", map[string]string{"some": "env"}),
+				mockRemoteApp.EXPECT().Restart("some-app"),
 			)
 			Expect(cmd.Run([]string{"push", "some-app", "-e"})).To(Succeed())
 			Expect(droplet.Result()).To(BeEmpty())

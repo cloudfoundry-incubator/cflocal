@@ -8,35 +8,35 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/remote"
+	"github.com/sclevine/forge"
 )
 
 var _ = Describe("Pull", func() {
 	var (
-		mockCtrl   *gomock.Controller
-		mockUI     *sharedmocks.MockUI
-		mockApp    *mocks.MockApp
-		mockFS     *mocks.MockFS
-		mockHelp   *mocks.MockHelp
-		mockConfig *mocks.MockConfig
-		cmd        *Pull
+		mockCtrl      *gomock.Controller
+		mockUI        *sharedmocks.MockUI
+		mockRemoteApp *mocks.MockRemoteApp
+		mockFS        *mocks.MockFS
+		mockHelp      *mocks.MockHelp
+		mockConfig    *mocks.MockConfig
+		cmd           *Pull
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
-		mockApp = mocks.NewMockApp(mockCtrl)
+		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Pull{
-			UI:     mockUI,
-			App:    mockApp,
-			FS:     mockFS,
-			Help:   mockHelp,
-			Config: mockConfig,
+			UI:        mockUI,
+			RemoteApp: mockRemoteApp,
+			FS:        mockFS,
+			Help:      mockHelp,
+			Config:    mockConfig,
 		}
 	})
 
@@ -86,11 +86,11 @@ var _ = Describe("Pull", func() {
 					},
 				},
 			}
-			mockApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil)
+			mockRemoteApp.EXPECT().Droplet("some-app").Return(droplet, int64(100), nil)
 			mockFS.EXPECT().WriteFile("./some-app.droplet").Return(file, nil)
 			mockConfig.EXPECT().Load().Return(oldLocalYML, nil)
-			mockApp.EXPECT().Env("some-app").Return(env, nil)
-			mockApp.EXPECT().Command("some-app").Return("some-command", nil)
+			mockRemoteApp.EXPECT().Env("some-app").Return(env, nil)
+			mockRemoteApp.EXPECT().Command("some-app").Return("some-command", nil)
 			mockConfig.EXPECT().Save(newLocalYML)
 
 			Expect(cmd.Run([]string{"pull", "some-app"})).To(Succeed())

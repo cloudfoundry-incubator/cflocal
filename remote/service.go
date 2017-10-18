@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sclevine/cflocal/service"
+	"github.com/sclevine/forge/service"
 )
 
 const firstForwardedServicePort uint = 40000

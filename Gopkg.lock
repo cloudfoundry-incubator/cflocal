@@ -3,9 +3,14 @@
 
 [[projects]]
   name = "code.cloudfoundry.org/cli"
-  packages = ["plugin","plugin/models"]
+  packages = ["cf/appfiles","cf/errors","cf/formatters","cf/i18n","cf/models","command/translatableerror","plugin","plugin/models","types","util","util/configv3","util/glob","util/ui","version"]
   revision = "829c87ef317ad6be9d73039934b9f1d82560c403"
   version = "v6.32.0"
+
+[[projects]]
+  name = "code.cloudfoundry.org/gofileutils"
+  packages = ["fileutils"]
+  revision = "4d0c80011a0f37da1711c184028bc40137cd45af"
 
 [[projects]]
   name = "github.com/Microsoft/go-winio"
@@ -14,10 +19,25 @@
   version = "v0.3.8"
 
 [[projects]]
+  name = "github.com/SermoDigital/jose"
+  packages = [".","crypto","jws","jwt"]
+  revision = "2bd9b81ac51d6d6134fcd4fd846bd2e7347a15f9"
+
+[[projects]]
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
   revision = "d26492970760ca5d33129d2d799e34be5c4782eb"
   version = "v0.11.0"
+
+[[projects]]
+  name = "github.com/blang/semver"
+  packages = ["."]
+  revision = "4a1e882c79dcf4ec00d2e29fac74b9c8938d5052"
+
+[[projects]]
+  name = "github.com/cloudfoundry/bytefmt"
+  packages = ["."]
+  revision = "f4415fafc5619dd75599a54a7c91fb3948ad58bd"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -75,6 +95,11 @@
   revision = "ae77be60afb1dcacde03767a8c37337fad28ac14"
 
 [[projects]]
+  name = "github.com/lunixbochs/vtclean"
+  packages = ["."]
+  revision = "4428d67a89b36ecae7998e983e5814d0d9c45a04"
+
+[[projects]]
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   revision = "d228849504861217f796da67fae4f6e347643f15"
@@ -83,6 +108,11 @@
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   revision = "30a891c33c7cde7b02a981314b4228ec99380cca"
+
+[[projects]]
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  revision = "14207d285c6c197daabb5c9793d63e7af9ab2d50"
 
 [[projects]]
   branch = "master"
@@ -116,8 +146,13 @@
 [[projects]]
   branch = "master"
   name = "github.com/sclevine/forge"
-  packages = [".","engine","outlock","service","version","wait"]
+  packages = [".","app","engine","outlock","service","version","wait"]
   revision = "e4d1cd9d0ec475f366a1472470422e658c55c4e1"
+
+[[projects]]
+  name = "github.com/vito/go-interact"
+  packages = ["interact","interact/terminal"]
+  revision = "c5a3f51ad50e34ec101050f69383caa75082f233"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -149,6 +184,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e597a4bfa0ba5c47e5d0dad0b0b2efb9e3e807cdd15bdd2428ea579cafe2bc49"
+  inputs-digest = "d458d632393501ca4e05651113d33b2209073108f237f3f17b0ede3924faa908"
   solver-name = "gps-cdcl"
   solver-version = 1

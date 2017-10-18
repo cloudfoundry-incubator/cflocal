@@ -10,10 +10,10 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
-	"github.com/sclevine/cflocal/service"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Export", func() {
@@ -75,7 +75,7 @@ var _ = Describe("Export", func() {
 			}
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil)
+			mockStager.EXPECT().Download("/tmp/lifecycle/launcher", LatestStack).Return(engine.NewStream(launcher, 200), nil)
 			mockRunner.EXPECT().Export(gomock.Any()).Do(
 				func(config *forge.ExportConfig) {
 					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))

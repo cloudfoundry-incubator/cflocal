@@ -1,5 +1,6 @@
 /cflocal
 /out
+/vendor
 .DS_Store
 .idea
 *.droplet

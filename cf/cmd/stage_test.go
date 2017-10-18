@@ -13,39 +13,42 @@ import (
 
 	. "github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
-	"github.com/sclevine/cflocal/service"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Stage", func() {
 	var (
-		mockCtrl   *gomock.Controller
-		mockUI     *sharedmocks.MockUI
-		mockStager *mocks.MockStager
-		mockApp    *mocks.MockApp
-		mockFS     *mocks.MockFS
-		mockHelp   *mocks.MockHelp
-		mockConfig *mocks.MockConfig
-		cmd        *Stage
+		mockCtrl      *gomock.Controller
+		mockUI        *sharedmocks.MockUI
+		mockStager    *mocks.MockStager
+		mockRemoteApp *mocks.MockRemoteApp
+		mockLocalApp  *mocks.MockLocalApp
+		mockFS        *mocks.MockFS
+		mockHelp      *mocks.MockHelp
+		mockConfig    *mocks.MockConfig
+		cmd           *Stage
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
 		mockStager = mocks.NewMockStager(mockCtrl)
-		mockApp = mocks.NewMockApp(mockCtrl)
+		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
+		mockLocalApp = mocks.NewMockLocalApp(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Stage{
-			UI:     mockUI,
-			Stager: mockStager,
-			App:    mockApp,
-			FS:     mockFS,
-			Help:   mockHelp,
-			Config: mockConfig,
+			UI:        mockUI,
+			Stager:    mockStager,
+			RemoteApp: mockRemoteApp,
+			LocalApp:  mockLocalApp,
+			FS:        mockFS,
+			Help:      mockHelp,
+			Config:    mockConfig,
 		}
 	})
 
@@ -96,13 +99,13 @@ var _ = Describe("Stage", func() {
 			}
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
-			mockFS.EXPECT().TarApp("some-app-dir").Return(appTar, nil)
+			mockLocalApp.EXPECT().Tar("some-app-dir").Return(appTar, nil)
 			mockFS.EXPECT().Abs(".").Return("some-abs-app-dir", nil)
 			mockFS.EXPECT().MakeDirAll("some-abs-app-dir")
 			mockFS.EXPECT().ReadFile("some-buildpack-one").Return(buildpackZip1, int64(20), nil)
 			mockFS.EXPECT().ReadFile("some-buildpack-two").Return(buildpackZip2, int64(21), nil)
-			mockApp.EXPECT().Services("some-service-app").Return(services, nil)
-			mockApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
+			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
+			mockRemoteApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
 			gomock.InOrder(
 				mockStager.EXPECT().Stage(gomock.Any()).Do(

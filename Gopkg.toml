@@ -8,6 +8,10 @@ required = [
   "golang.org/x/net/context",
 ]
 
+ignored = [
+  "code.cloudfoundry.org/cli/cf/resources",
+]
+
 # App
 
 [[constraint]]

@@ -7,12 +7,14 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/cflocal/fs"
-	"github.com/sclevine/forge"
 	"github.com/sclevine/cflocal/remote"
-	"github.com/sclevine/cflocal/service"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/service"
 )
+
+const LatestStack = "cloudfoundry/cflinuxfs2:latest"
 
 type UI interface {
 	Prompt(prompt string) string
@@ -21,8 +23,8 @@ type UI interface {
 	Error(err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/app.go github.com/sclevine/cflocal/cf/cmd App
-type App interface {
+//go:generate mockgen -package mocks -destination mocks/remote_app.go github.com/sclevine/cflocal/cf/cmd RemoteApp
+type RemoteApp interface {
 	Command(name string) (string, error)
 	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
 	SetDroplet(name string, droplet io.Reader, size int64) error
@@ -33,10 +35,15 @@ type App interface {
 	Forward(name string, services service.Services) (service.Services, *service.ForwardConfig, error)
 }
 
+//go:generate mockgen -package mocks -destination mocks/local_app.go github.com/sclevine/cflocal/cf/cmd LocalApp
+type LocalApp interface {
+	Tar(path string) (io.ReadCloser, error)
+}
+
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
 type Stager interface {
 	Stage(config *forge.StageConfig) (droplet engine.Stream, err error)
-	Download(path string) (stream engine.Stream, err error)
+	Download(path, stack string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
@@ -52,7 +59,6 @@ type Forwarder interface {
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
 type FS interface {
-	TarApp(path string) (io.ReadCloser, error)
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
 	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
@@ -102,7 +108,7 @@ func getAppConfig(name string, localYML *forge.LocalYML) *forge.AppConfig {
 	return app
 }
 
-func getRemoteServices(app App, serviceApp, forwardApp string) (service.Services, *service.ForwardConfig, error) {
+func getRemoteServices(app RemoteApp, serviceApp, forwardApp string) (service.Services, *service.ForwardConfig, error) {
 	var services service.Services
 
 	if serviceApp == "" {
