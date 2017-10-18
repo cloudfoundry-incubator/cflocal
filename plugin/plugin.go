@@ -93,14 +93,15 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Client: &http.Client{},
 	}
 	stager := &forge.Stager{
-		DiegoVersion: "1.26.1",
-		GoVersion:    "1.8.3",
-		ImageTag:     "cflocal",
-		Logs:         color.Output,
-		Loader:       p.UI,
-		Engine:       dockerEngineWithExit,
-		Image:        imageWithExit,
-		Versioner:    versioner,
+		DiegoVersion:     "1.26.1",
+		GoVersion:        "1.8.3",
+		ImageTag:         "cflocal",
+		SystemBuildpacks: SystemBuildpacks,
+		Logs:             color.Output,
+		Loader:           p.UI,
+		Engine:           dockerEngineWithExit,
+		Image:            imageWithExit,
+		Versioner:        versioner,
 	}
 
 	runner := &forge.Runner{

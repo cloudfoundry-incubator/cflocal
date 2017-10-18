@@ -5,8 +5,8 @@
 package mocks
 
 import (
+	models "code.cloudfoundry.org/cli/plugin/models"
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/sclevine/cflocal/vendor/code.cloudfoundry.org/cli/plugin/models"
 	reflect "reflect"
 )
 

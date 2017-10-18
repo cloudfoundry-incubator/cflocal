@@ -5,6 +5,7 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/sclevine/forge/engine"
 )
 
 type MockUI struct {
@@ -38,4 +39,9 @@ func (m *MockUI) Error(err error) {
 		ginkgo.Fail("Error should not be called twice.")
 	}
 	m.Err = err
+}
+
+func (m *MockUI) Loading(message string, progress <-chan engine.Progress) error {
+	ginkgo.Fail("UI mock does not support Loading method.")
+	return nil
 }

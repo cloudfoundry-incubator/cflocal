@@ -108,6 +108,7 @@ var _ = Describe("Run", func() {
 					func(config *forge.ForwardConfig) {
 						Expect(ioutil.ReadAll(config.SSHPass)).To(Equal([]byte("some-sshpass")))
 						Expect(config.AppName).To(Equal("some-app"))
+						Expect(config.Stack).To(Equal(LatestStack))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.ForwardConfig).To(Equal(forwardConfig))
 						Expect(config.HostIP).To(Equal("0.0.0.0"))
@@ -119,6 +120,7 @@ var _ = Describe("Run", func() {
 					func(config *forge.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 						Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+						Expect(config.Stack).To(Equal(LatestStack))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Restart).To(Equal(restart))

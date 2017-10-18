@@ -1,5 +1,5 @@
 applications:
-- name: some-app
+- name: some-name
   buildpack: "https://github.com/sclevine/cflocal-buildpack#v0.0.6"
   memory: 512m
   disk_quota: 1G

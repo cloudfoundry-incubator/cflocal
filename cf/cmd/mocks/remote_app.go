@@ -7,7 +7,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	remote "github.com/sclevine/cflocal/remote"
-	service "github.com/sclevine/cflocal/vendor/github.com/sclevine/forge/service"
+	service "github.com/sclevine/forge/service"
 	io "io"
 	reflect "reflect"
 )

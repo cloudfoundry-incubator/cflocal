@@ -6,7 +6,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	forge "github.com/sclevine/cflocal/vendor/github.com/sclevine/forge"
+	forge "github.com/sclevine/forge"
 	reflect "reflect"
 )
 

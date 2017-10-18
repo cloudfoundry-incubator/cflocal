@@ -113,6 +113,7 @@ func (r *Run) Run(args []string) error {
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
 			AppName:       appConfig.Name,
+			Stack:         LatestStack,
 			SSHPass:       sshpass,
 			Color:         color.GreenString,
 			ForwardConfig: forwardConfig,

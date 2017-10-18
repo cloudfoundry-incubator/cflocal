@@ -6,8 +6,8 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	forge "github.com/sclevine/cflocal/vendor/github.com/sclevine/forge"
-	engine "github.com/sclevine/cflocal/vendor/github.com/sclevine/forge/engine"
+	forge "github.com/sclevine/forge"
+	engine "github.com/sclevine/forge/engine"
 	reflect "reflect"
 )
 

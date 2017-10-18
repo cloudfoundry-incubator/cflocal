@@ -80,6 +80,7 @@ var _ = Describe("Export", func() {
 				func(config *forge.ExportConfig) {
 					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 					Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+					Expect(config.Stack).To(Equal(LatestStack))
 					Expect(config.Ref).To(Equal("some-reference"))
 					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 						Name:     "some-app",

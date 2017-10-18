@@ -121,6 +121,7 @@ var _ = Describe("Stage", func() {
 						buildpackZipOut2 := &bytes.Buffer{}
 						Expect(config.BuildpackZips["ab534bf201740a2fa7300aa175acd98c"].Out(buildpackZipOut2)).To(Succeed())
 						Expect(buildpackZipOut2.String()).To(Equal("some-buildpack-zip-tw"))
+						Expect(config.Stack).To(Equal(LatestStack))
 						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
 						Expect(config.ForceDetect).To(BeTrue())
 						Expect(config.RSync).To(BeTrue())

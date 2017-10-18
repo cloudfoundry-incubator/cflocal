@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"github.com/sclevine/cflocal/fixtures"
+	"github.com/sclevine/forge/fixtures"
 )
 
 var (
@@ -109,7 +109,7 @@ var _ = Describe("CF Local", func() {
 
 		It("should setup the staging and running environments to mimic CF", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -119,12 +119,12 @@ var _ = Describe("CF Local", func() {
 				Expect(session).To(gbytes.Say("Cache not detected."))
 				Expect(session.Out.Contents()).To(ContainSubstring("Compile message from stderr."))
 
-				Expect(os.Stat(filepath.Join(tempDir, "test-app", "some-app.droplet"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
-				Expect(os.Stat(filepath.Join(tempDir, "test-app", ".some-app.cache"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
+				Expect(os.Stat(filepath.Join(tempDir, "test-app", "some-name.droplet"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
+				Expect(os.Stat(filepath.Join(tempDir, "test-app", ".some-name.cache"))).To(WithTransform(os.FileInfo.Size, BeNumerically(">", 0)))
 			})
 
 			By("restaging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name")
 				stageCmd.Dir = filepath.Join(tempDir, "test-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -136,13 +136,13 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app")
+				runCmd := exec.Command("cf", "local", "run", "some-name")
 				runCmd.Dir = filepath.Join(tempDir, "test-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s", port)
@@ -178,7 +178,7 @@ var _ = Describe("CF Local", func() {
 
 			By("staging", func() {
 				stageCmd := exec.Command(
-					"cf", "local", "stage", "some-app",
+					"cf", "local", "stage", "some-name",
 					"-b", "https://github.com/cloudfoundry/ruby-buildpack/releases/download/v1.7.3/ruby-buildpack-v1.7.3.zip",
 					"-b", "https://github.com/cloudfoundry/python-buildpack#v1.5.26",
 					"-b", staticfile.Name(), "-b", staticfile.Name(),
@@ -189,17 +189,17 @@ var _ = Describe("CF Local", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app")
+				runCmd := exec.Command("cf", "local", "run", "some-name")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				versions := strings.Join([]string{
@@ -221,23 +221,23 @@ var _ = Describe("CF Local", func() {
 
 		It("should successfully stage, run, and push a local app", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app")
+				runCmd := exec.Command("cf", "local", "run", "some-name")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/some-path", port)
@@ -249,14 +249,14 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("pushing", func() {
-				cfPushCmd := exec.Command("cf", "push", "some-app", "--no-start", "--random-route")
+				cfPushCmd := exec.Command("cf", "push", "some-name", "--no-start", "--random-route")
 				cfPushCmd.Dir = filepath.Join(tempDir, "test-app")
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(cfSession, "1m").Should(gexec.Exit(0))
 
-				pushCmd := exec.Command("cf", "local", "push", "some-app")
+				pushCmd := exec.Command("cf", "local", "push", "some-name")
 				pushCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(pushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -275,32 +275,32 @@ var _ = Describe("CF Local", func() {
 			Expect(os.Mkdir(filepath.Join(tempDir, "local-app"), 0777)).To(Succeed())
 
 			By("pulling", func() {
-				cfPushCmd := exec.Command("cf", "push", "some-app", "--random-route")
+				cfPushCmd := exec.Command("cf", "push", "some-name", "--random-route")
 				cfPushCmd.Dir = filepath.Join(tempDir, "go-app")
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(cfSession, "5m").Should(gexec.Exit(0))
 
-				pullCmd := exec.Command("cf", "local", "pull", "some-app")
+				pullCmd := exec.Command("cf", "local", "pull", "some-name")
 				pullCmd.Dir = filepath.Join(tempDir, "local-app")
 				session, err := gexec.Start(pullCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully downloaded: some-app"))
+				Expect(session).To(gbytes.Say("Successfully downloaded: some-name"))
 
-				cf("delete", "some-app", "-f")
+				cf("delete", "some-name", "-f")
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app")
+				runCmd := exec.Command("cf", "local", "run", "some-name")
 				runCmd.Dir = filepath.Join(tempDir, "local-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/some-path", port)
@@ -312,14 +312,14 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("pushing", func() {
-				cfPushCmd := exec.Command("cf", "push", "some-app", "--no-start", "--random-route")
+				cfPushCmd := exec.Command("cf", "push", "some-name", "--no-start", "--random-route")
 				cfPushCmd.Dir = filepath.Join(tempDir, "test-app")
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(cfSession, "1m").Should(gexec.Exit(0))
 
-				pushCmd := exec.Command("cf", "local", "push", "some-app")
+				pushCmd := exec.Command("cf", "local", "push", "some-name")
 				pushCmd.Dir = filepath.Join(tempDir, "local-app")
 				session, err := gexec.Start(pushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -366,24 +366,24 @@ var _ = Describe("CF Local", func() {
 			})
 
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-f", "remote-app")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name", "-f", "remote-app")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app", "-f", "remote-app")
+				runCmd := exec.Command("cf", "local", "run", "some-name", "-f", "remote-app")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10s").Should(gbytes.Say(`Forwarding: some-service:user-provided\[0\]`))
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/services", port)
@@ -408,23 +408,23 @@ var _ = Describe("CF Local", func() {
 			Expect(os.RemoveAll(filepath.Join(tempDir, "go-app", "broken.go"))).To(Succeed())
 
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", ".")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name", "-d", ".")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-w")
+				runCmd := exec.Command("cf", "local", "run", "some-name", "-d", ".", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/file", port)
@@ -440,23 +440,23 @@ var _ = Describe("CF Local", func() {
 
 		It("should use a volume and rsync to stage and run an app", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", ".", "-r")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name", "-d", ".", "-r")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", ".", "-r", "-w")
+				runCmd := exec.Command("cf", "local", "run", "some-name", "-d", ".", "-r", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/file", port)
@@ -472,23 +472,23 @@ var _ = Describe("CF Local", func() {
 
 		It("should use a volume and rsync to stage and run an app in an empty directory", func() {
 			By("staging", func() {
-				stageCmd := exec.Command("cf", "local", "stage", "some-app", "-d", "some-dir", "-r")
+				stageCmd := exec.Command("cf", "local", "stage", "some-name", "-d", "some-dir", "-r")
 				stageCmd.Dir = filepath.Join(tempDir, "go-app")
 				session, err := gexec.Start(stageCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session, "10m").Should(gexec.Exit(0))
-				Expect(session).To(gbytes.Say("Successfully staged: some-app"))
+				Expect(session).To(gbytes.Say("Successfully staged: some-name"))
 			})
 
 			By("running", func() {
-				runCmd := exec.Command("cf", "local", "run", "some-app", "-d", "some-dir", "-r", "-w")
+				runCmd := exec.Command("cf", "local", "run", "some-name", "-d", "some-dir", "-r", "-w")
 				runCmd.Dir = filepath.Join(tempDir, "go-app")
 				setpgid(runCmd)
 				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				message := `Running some-app on port ([\d]+)\.\.\.`
+				message := `Running some-name on port ([\d]+)\.\.\.`
 				Eventually(session, "10s").Should(gbytes.Say(message))
 				port := regexp.MustCompile(message).FindSubmatch(session.Out.Contents())[1]
 				url := fmt.Sprintf("http://localhost:%s/file", port)
