@@ -77,8 +77,8 @@ var _ = Describe("Stage", func() {
 				Host: "some-ssh-host",
 			}
 
-			localYML := &local.LocalYML{
-				Applications: []*local.AppConfig{
+			localYML := &forge.LocalYML{
+				Applications: []*forge.AppConfig{
 					{
 						Name: "some-other-app",
 					},
@@ -106,7 +106,7 @@ var _ = Describe("Stage", func() {
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
 			gomock.InOrder(
 				mockStager.EXPECT().Stage(gomock.Any()).Do(
-					func(config *local.StageConfig) {
+					func(config *forge.StageConfig) {
 						Expect(ioutil.ReadAll(config.AppTar)).To(Equal([]byte("some-app-tar")))
 						Expect(ioutil.ReadAll(config.Cache)).To(Equal([]byte("some-old-cache")))
 						Expect(io.WriteString(config.Cache, "some-new-cache")).To(BeNumerically(">", 0))
@@ -122,7 +122,7 @@ var _ = Describe("Stage", func() {
 						Expect(config.ForceDetect).To(BeTrue())
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
-						Expect(config.AppConfig).To(Equal(&local.AppConfig{
+						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 							Name:      "some-app",
 							Buildpack: "some-buildpack-two",
 							Buildpacks: []string{

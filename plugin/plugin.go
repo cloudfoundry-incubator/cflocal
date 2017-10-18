@@ -33,7 +33,7 @@ type Plugin struct {
 }
 
 type UI interface {
-	local.Loader
+	forge.Loader
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
@@ -77,10 +77,10 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		},
 	}
 
-	dockerEngine := &local.DockerEngine{
+	dockerEngine := &forge.DockerEngine{
 		Docker: client,
 	}
-	dockerEngineWithExit := &local.DockerEngine{
+	dockerEngineWithExit := &forge.DockerEngine{
 		Docker: client,
 		Exit:   p.Exit,
 	}
@@ -91,7 +91,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	versioner := &version.URL{
 		Client: &http.Client{},
 	}
-	stager := &local.Stager{
+	stager := &forge.Stager{
 		DiegoVersion: "1.26.1",
 		GoVersion:    "1.8.3",
 		StackVersion: "latest",
@@ -101,14 +101,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Image:        imageWithExit,
 		Versioner:    versioner,
 	}
-	runner := &local.Runner{
+	runner := &forge.Runner{
 		StackVersion: "latest",
 		Logs:         color.Output,
 		Loader:       p.UI,
 		Engine:       dockerEngineWithExit,
 		Image:        imageWithExit,
 	}
-	forwarder := &local.Forwarder{
+	forwarder := &forge.Forwarder{
 		StackVersion: "latest",
 		Logs:         color.Output,
 		Engine:       dockerEngine,
@@ -119,7 +119,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		HTTP: ccHTTPClient,
 	}
 	sysFS := &fs.FS{}
-	config := &local.Config{
+	config := &forge.Config{
 		Path: "./local.yml",
 	}
 	help := &Help{

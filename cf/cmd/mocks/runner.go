@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	local "github.com/sclevine/forge"
+	forge "github.com/sclevine/forge"
 )
 
 // Mock of Runner interface
@@ -29,7 +29,7 @@ func (_m *MockRunner) EXPECT() *_MockRunnerRecorder {
 	return _m.recorder
 }
 
-func (_m *MockRunner) Export(_param0 *local.ExportConfig) (string, error) {
+func (_m *MockRunner) Export(_param0 *forge.ExportConfig) (string, error) {
 	ret := _m.ctrl.Call(_m, "Export", _param0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -40,7 +40,7 @@ func (_mr *_MockRunnerRecorder) Export(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Export", arg0)
 }
 
-func (_m *MockRunner) Run(_param0 *local.RunConfig) (int64, error) {
+func (_m *MockRunner) Run(_param0 *forge.RunConfig) (int64, error) {
 	ret := _m.ctrl.Call(_m, "Run", _param0)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)

@@ -63,8 +63,8 @@ var _ = Describe("Export", func() {
 		It("should export a droplet as a Docker image", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			launcher := sharedmocks.NewMockBuffer("some-launcher")
-			localYML := &local.LocalYML{
-				Applications: []*local.AppConfig{
+			localYML := &forge.LocalYML{
+				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
 						Name:     "some-app",
@@ -77,11 +77,11 @@ var _ = Describe("Export", func() {
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
 			mockStager.EXPECT().Download("/tmp/lifecycle/launcher").Return(engine.NewStream(launcher, 200), nil)
 			mockRunner.EXPECT().Export(gomock.Any()).Do(
-				func(config *local.ExportConfig) {
+				func(config *forge.ExportConfig) {
 					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 					Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
 					Expect(config.Ref).To(Equal("some-reference"))
-					Expect(config.AppConfig).To(Equal(&local.AppConfig{
+					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},
 						Services: service.Services{"some": {{Name: "services"}}},

@@ -2,13 +2,8 @@ package fs
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
-
-	"code.cloudfoundry.org/cli/cf/appfiles"
-	"github.com/docker/docker/pkg/archive"
 )
 
 type FS struct{}

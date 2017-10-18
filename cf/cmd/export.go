@@ -48,7 +48,7 @@ func (e *Export) Run(args []string) error {
 	}
 	defer launcher.Close()
 
-	id, err := e.Runner.Export(&local.ExportConfig{
+	id, err := e.Runner.Export(&forge.ExportConfig{
 		Droplet:   engine.NewStream(droplet, dropletSize),
 		Launcher:  launcher,
 		Ref:       options.reference,

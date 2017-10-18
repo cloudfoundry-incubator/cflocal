@@ -83,8 +83,8 @@ var _ = Describe("Run", func() {
 			forwardConfig := &service.ForwardConfig{
 				Host: "some-ssh-host",
 			}
-			localYML := &local.LocalYML{
-				Applications: []*local.AppConfig{
+			localYML := &forge.LocalYML{
+				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
 						Name:     "some-app",
@@ -105,7 +105,7 @@ var _ = Describe("Run", func() {
 				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
 				mockFS.EXPECT().Watch("some-abs-dir", time.Second).Return(restart, watchDone, nil),
 				mockForwarder.EXPECT().Forward(gomock.Any()).Return(health, forwardDone, "some-container-id", nil).Do(
-					func(config *local.ForwardConfig) {
+					func(config *forge.ForwardConfig) {
 						Expect(ioutil.ReadAll(config.SSHPass)).To(Equal([]byte("some-sshpass")))
 						Expect(config.AppName).To(Equal("some-app"))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
@@ -116,19 +116,19 @@ var _ = Describe("Run", func() {
 					},
 				),
 				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
-					func(config *local.RunConfig) {
+					func(config *forge.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 						Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
 						Expect(config.RSync).To(BeTrue())
 						Expect(config.Restart).To(Equal(restart))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
-						Expect(config.AppConfig).To(Equal(&local.AppConfig{
+						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 							Name:     "some-app",
 							Env:      map[string]string{"a": "b"},
 							Services: forwardedServices,
 						}))
-						Expect(config.NetworkConfig).To(Equal(&local.NetworkConfig{
+						Expect(config.NetworkConfig).To(Equal(&forge.NetworkConfig{
 							ContainerID: "some-container-id",
 							HostIP:      "0.0.0.0",
 							HostPort:    "3000",

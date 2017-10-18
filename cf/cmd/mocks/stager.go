@@ -6,7 +6,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	engine "github.com/sclevine/forge/engine"
-	local "github.com/sclevine/forge"
+	forge "github.com/sclevine/forge"
 )
 
 // Mock of Stager interface
@@ -41,7 +41,7 @@ func (_mr *_MockStagerRecorder) Download(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Download", arg0)
 }
 
-func (_m *MockStager) Stage(_param0 *local.StageConfig) (engine.Stream, error) {
+func (_m *MockStager) Stage(_param0 *forge.StageConfig) (engine.Stream, error) {
 	ret := _m.ctrl.Call(_m, "Stage", _param0)
 	ret0, _ := ret[0].(engine.Stream)
 	ret1, _ := ret[1].(error)

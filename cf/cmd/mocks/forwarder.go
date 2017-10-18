@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	local "github.com/sclevine/forge"
+	forge "github.com/sclevine/forge"
 )
 
 // Mock of Forwarder interface
@@ -29,7 +29,7 @@ func (_m *MockForwarder) EXPECT() *_MockForwarderRecorder {
 	return _m.recorder
 }
 
-func (_m *MockForwarder) Forward(_param0 *local.ForwardConfig) (<-chan string, func(), string, error) {
+func (_m *MockForwarder) Forward(_param0 *forge.ForwardConfig) (<-chan string, func(), string, error) {
 	ret := _m.ctrl.Call(_m, "Forward", _param0)
 	ret0, _ := ret[0].(<-chan string)
 	ret1, _ := ret[1].(func())

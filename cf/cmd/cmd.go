@@ -35,19 +35,19 @@ type App interface {
 
 //go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
 type Stager interface {
-	Stage(config *local.StageConfig) (droplet engine.Stream, err error)
+	Stage(config *forge.StageConfig) (droplet engine.Stream, err error)
 	Download(path string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
 type Runner interface {
-	Run(config *local.RunConfig) (status int64, err error)
-	Export(config *local.ExportConfig) (imageID string, err error)
+	Run(config *forge.RunConfig) (status int64, err error)
+	Export(config *forge.ExportConfig) (imageID string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/forwarder.go github.com/sclevine/cflocal/cf/cmd Forwarder
 type Forwarder interface {
-	Forward(config *local.ForwardConfig) (health <-chan string, done func(), id string, err error)
+	Forward(config *forge.ForwardConfig) (health <-chan string, done func(), id string, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
@@ -68,8 +68,8 @@ type Help interface {
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/sclevine/cflocal/cf/cmd Config
 type Config interface {
-	Load() (*local.LocalYML, error)
-	Save(localYML *local.LocalYML) error
+	Load() (*forge.LocalYML, error)
+	Save(localYML *forge.LocalYML) error
 }
 
 func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
@@ -88,15 +88,15 @@ func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
 	return nil
 }
 
-func getAppConfig(name string, localYML *local.LocalYML) *local.AppConfig {
-	var app *local.AppConfig
+func getAppConfig(name string, localYML *forge.LocalYML) *forge.AppConfig {
+	var app *forge.AppConfig
 	for _, appConfig := range localYML.Applications {
 		if appConfig.Name == name {
 			app = appConfig
 		}
 	}
 	if app == nil {
-		app = &local.AppConfig{Name: name}
+		app = &forge.AppConfig{Name: name}
 		localYML.Applications = append(localYML.Applications, app)
 	}
 	return app

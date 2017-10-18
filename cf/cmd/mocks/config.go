@@ -5,7 +5,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	local "github.com/sclevine/forge"
+	forge "github.com/sclevine/forge"
 )
 
 // Mock of Config interface
@@ -29,9 +29,9 @@ func (_m *MockConfig) EXPECT() *_MockConfigRecorder {
 	return _m.recorder
 }
 
-func (_m *MockConfig) Load() (*local.LocalYML, error) {
+func (_m *MockConfig) Load() (*forge.LocalYML, error) {
 	ret := _m.ctrl.Call(_m, "Load")
-	ret0, _ := ret[0].(*local.LocalYML)
+	ret0, _ := ret[0].(*forge.LocalYML)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -40,7 +40,7 @@ func (_mr *_MockConfigRecorder) Load() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Load")
 }
 
-func (_m *MockConfig) Save(_param0 *local.LocalYML) error {
+func (_m *MockConfig) Save(_param0 *forge.LocalYML) error {
 	ret := _m.ctrl.Call(_m, "Save", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0

@@ -103,7 +103,7 @@ func (s *Stage) Run(args []string) error {
 	}
 	defer cache.Close()
 
-	droplet, err := s.Stager.Stage(&local.StageConfig{
+	droplet, err := s.Stager.Stage(&forge.StageConfig{
 		AppTar:        appTar,
 		Cache:         cache,
 		CacheEmpty:    cacheSize == 0,

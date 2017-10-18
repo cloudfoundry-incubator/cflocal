@@ -99,7 +99,7 @@ func (r *Run) Run(args []string) error {
 		appConfig.Services = remoteServices
 	}
 
-	netConfig := &local.NetworkConfig{
+	netConfig := &forge.NetworkConfig{
 		HostIP:   options.ip,
 		HostPort: strconv.FormatUint(uint64(options.port), 10),
 	}
@@ -111,7 +111,7 @@ func (r *Run) Run(args []string) error {
 		defer sshpass.Close()
 		waiter, waiterDone := wait.New(5 * time.Second)
 		defer waiterDone()
-		health, done, id, err := r.Forwarder.Forward(&local.ForwardConfig{
+		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
 			AppName:       appConfig.Name,
 			SSHPass:       sshpass,
 			Color:         color.GreenString,
@@ -131,7 +131,7 @@ func (r *Run) Run(args []string) error {
 	}
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
-	_, err = r.Runner.Run(&local.RunConfig{
+	_, err = r.Runner.Run(&forge.RunConfig{
 		Droplet:       engine.NewStream(droplet, dropletSize),
 		Launcher:      launcher,
 		AppDir:        appDir,

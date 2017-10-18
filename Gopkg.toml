@@ -1,0 +1,63 @@
+required = [
+  # Utilities
+  "github.com/onsi/ginkgo/ginkgo",
+  "github.com/golang/mock/mockgen",
+
+  # Transitive Forks
+  "github.com/opencontainers/runc/libcontainer/system",
+  "golang.org/x/net/context",
+]
+
+# App
+
+[[constraint]]
+  name = "code.cloudfoundry.org/cli"
+  version = "=6.32.0"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsevents"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsnotify"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/hashicorp/go-version"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/kardianos/osext"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/nu7hatch/gouuid"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/sclevine/forge"
+  branch = "master"
+
+# Test
+
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/onsi/gomega"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  branch = "master"
+
+# Transitive Forks
+
+[[constraint]]
+  name = "github.com/opencontainers/runc"
+  source = "https://github.com/docker/runc.git"
+
+[[constraint]]
+  name = "golang.org/x/net"
+  source = "https://github.com/tonistiigi/net.git"
