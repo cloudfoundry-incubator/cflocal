@@ -15,8 +15,8 @@ import (
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Stage", func() {
@@ -45,7 +45,7 @@ var _ = Describe("Stage", func() {
 			UI:        mockUI,
 			Stager:    mockStager,
 			RemoteApp: mockRemoteApp,
-			LocalApp:  mockLocalApp,
+			TarApp:    mockLocalApp.Tar,
 			FS:        mockFS,
 			Help:      mockHelp,
 			Config:    mockConfig,
@@ -74,13 +74,13 @@ var _ = Describe("Stage", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			dropletFile := sharedmocks.NewMockBuffer("")
 
-			services := service.Services{"some": {{Name: "services"}}}
-			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
-			forwardConfig := &service.ForwardConfig{
+			services := forge.Services{"some": {{Name: "services"}}}
+			forwardedServices := forge.Services{"some": {{Name: "forwarded-services"}}}
+			forwardConfig := &forge.ForwardDetails{
 				Host: "some-ssh-host",
 			}
 
-			localYML := &forge.LocalYML{
+			localYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{
 						Name: "some-other-app",
@@ -93,7 +93,7 @@ var _ = Describe("Stage", func() {
 							"some-other-buildpack-two",
 						},
 						Env:      map[string]string{"a": "b"},
-						Services: service.Services{"some": {{Name: "overwritten-services"}}},
+						Services: forge.Services{"some": {{Name: "overwritten-services"}}},
 					},
 				},
 			}

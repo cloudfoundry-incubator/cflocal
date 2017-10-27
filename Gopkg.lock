@@ -37,7 +37,7 @@
 [[projects]]
   name = "github.com/cloudfoundry/bytefmt"
   packages = ["."]
-  revision = "f4415fafc5619dd75599a54a7c91fb3948ad58bd"
+  revision = "df625de5ac824ed098ad814bd960b4c2dc481898"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -146,13 +146,13 @@
 [[projects]]
   branch = "master"
   name = "github.com/sclevine/forge"
-  packages = [".","app","engine","outlock","service","version","wait"]
-  revision = "e4d1cd9d0ec475f366a1472470422e658c55c4e1"
+  packages = [".","app","engine","fixtures","internal"]
+  revision = "11b46106a1c684f5b6e7643ed74b1fff75330d18"
 
 [[projects]]
   name = "github.com/vito/go-interact"
   packages = ["interact","interact/terminal"]
-  revision = "c5a3f51ad50e34ec101050f69383caa75082f233"
+  revision = "cbd56b28e8411a00fd4b7f92e8c870581558bf26"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -184,6 +184,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d458d632393501ca4e05651113d33b2209073108f237f3f17b0ede3924faa908"
+  inputs-digest = "1342b192f31bb1ff8636b788df0a7d559d4b2c717e8d6d7e8dbfd188a94fd9da"
   solver-name = "gps-cdcl"
   solver-version = 1

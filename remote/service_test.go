@@ -12,7 +12,7 @@ import (
 	"github.com/sclevine/cflocal/mocks"
 	. "github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/cflocal/testutil"
-	"github.com/sclevine/forge/service"
+	"github.com/sclevine/forge"
 )
 
 var _ = Describe("App - Service", func() {
@@ -54,7 +54,7 @@ var _ = Describe("App - Service", func() {
 					}
 				}
 			}`)
-			Expect(app.Services("some-name")).To(Equal(service.Services{
+			Expect(app.Services("some-name")).To(Equal(forge.Services{
 				"some-type": {
 					{
 						Name:           "some-name",
@@ -82,7 +82,7 @@ var _ = Describe("App - Service", func() {
 				mockCLI.EXPECT().GetApp("some-name").Return(plugin_models.GetAppModel{Guid: "some-guid"}, nil),
 			)
 
-			services, config, err := app.Forward("some-name", service.Services{
+			services, config, err := app.Forward("some-name", forge.Services{
 				"common": {
 					{
 						Name:  "some-name-0",
@@ -188,7 +188,7 @@ var _ = Describe("App - Service", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(services).To(Equal(service.Services{
+			Expect(services).To(Equal(forge.Services{
 				"common": {
 					{
 						Name:  "some-name-0",
@@ -297,7 +297,7 @@ var _ = Describe("App - Service", func() {
 			Expect(config.Host).To(Equal("some-ssh-host"))
 			Expect(config.Port).To(Equal("1000"))
 			Expect(config.User).To(Equal("cf:some-guid/0"))
-			Expect(config.Forwards).To(Equal([]service.Forward{
+			Expect(config.Forwards).To(Equal([]forge.Forward{
 				{
 					Name: "some-name-0:common[0]",
 					From: "40000",

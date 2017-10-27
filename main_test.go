@@ -254,7 +254,7 @@ var _ = Describe("CF Local", func() {
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+				Eventually(cfSession, "2m").Should(gexec.Exit(0))
 
 				pushCmd := exec.Command("cf", "local", "push", "some-name")
 				pushCmd.Dir = filepath.Join(tempDir, "go-app")
@@ -317,7 +317,7 @@ var _ = Describe("CF Local", func() {
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+				Eventually(cfSession, "2m").Should(gexec.Exit(0))
 
 				pushCmd := exec.Command("cf", "local", "push", "some-name")
 				pushCmd.Dir = filepath.Join(tempDir, "local-app")
@@ -340,7 +340,7 @@ var _ = Describe("CF Local", func() {
 				cfPushCmd.Dir = filepath.Join(tempDir, "go-app")
 				cfSession, err := gexec.Start(cfPushCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+				Eventually(cfSession, "2m").Should(gexec.Exit(0))
 			})
 
 			By("creating", func() {
@@ -362,7 +362,7 @@ var _ = Describe("CF Local", func() {
 				cfStart := exec.Command("cf", "start", "remote-app")
 				cfSession, err := gexec.Start(cfStart, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(cfSession, "1m").Should(gexec.Exit(0))
+				Eventually(cfSession, "2m").Should(gexec.Exit(0))
 			})
 
 			By("staging", func() {

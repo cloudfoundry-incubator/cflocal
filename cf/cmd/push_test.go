@@ -13,6 +13,7 @@ import (
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 )
 
 var _ = Describe("Push", func() {
@@ -58,7 +59,7 @@ var _ = Describe("Push", func() {
 	Describe("#Run", func() {
 		It("should replace an app's droplet and env vars, then restart it", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
-			localYML := &forge.LocalYML{
+			localYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{

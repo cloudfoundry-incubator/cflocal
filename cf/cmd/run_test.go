@@ -15,8 +15,8 @@ import (
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Run", func() {
@@ -73,23 +73,23 @@ var _ = Describe("Run", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			launcher := sharedmocks.NewMockBuffer("some-launcher")
 			sshpass := sharedmocks.NewMockBuffer("some-sshpass")
-			services := service.Services{"some": {{Name: "services"}}}
-			forwardedServices := service.Services{"some": {{Name: "forwarded-services"}}}
+			services := forge.Services{"some": {{Name: "services"}}}
+			forwardedServices := forge.Services{"some": {{Name: "forwarded-services"}}}
 			restart := make(<-chan time.Time)
 			watchDone := make(chan struct{})
 			health := make(chan string, 3)
 			forwardDone, forwardDoneCalls := sharedmocks.NewMockFunc()
 
-			forwardConfig := &service.ForwardConfig{
+			forwardConfig := &forge.ForwardDetails{
 				Host: "some-ssh-host",
 			}
-			localYML := &forge.LocalYML{
+			localYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},
-						Services: service.Services{"some": {{Name: "overwritten-services"}}},
+						Services: forge.Services{"some": {{Name: "overwritten-services"}}},
 					},
 				},
 			}
@@ -110,7 +110,7 @@ var _ = Describe("Run", func() {
 						Expect(config.AppName).To(Equal("some-app"))
 						Expect(config.Stack).To(Equal(LatestStack))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
-						Expect(config.ForwardConfig).To(Equal(forwardConfig))
+						Expect(config.Details).To(Equal(forwardConfig))
 						Expect(config.HostIP).To(Equal("0.0.0.0"))
 						Expect(config.HostPort).To(Equal("3000"))
 						Eventually(config.Wait).Should(Receive())

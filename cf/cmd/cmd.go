@@ -10,8 +10,8 @@ import (
 	"github.com/sclevine/cflocal/fs"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/service"
 )
 
 const LatestStack = "cloudfoundry/cflinuxfs2:latest"
@@ -31,8 +31,8 @@ type RemoteApp interface {
 	Env(name string) (*remote.AppEnv, error)
 	SetEnv(name string, env map[string]string) error
 	Restart(name string) error
-	Services(name string) (service.Services, error)
-	Forward(name string, services service.Services) (service.Services, *service.ForwardConfig, error)
+	Services(name string) (forge.Services, error)
+	Forward(name string, services forge.Services) (forge.Services, *forge.ForwardDetails, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/local_app.go github.com/sclevine/cflocal/cf/cmd LocalApp
@@ -74,8 +74,8 @@ type Help interface {
 
 //go:generate mockgen -package mocks -destination mocks/config.go github.com/sclevine/cflocal/cf/cmd Config
 type Config interface {
-	Load() (*forge.LocalYML, error)
-	Save(localYML *forge.LocalYML) error
+	Load() (*app.LocalYML, error)
+	Save(localYML *app.LocalYML) error
 }
 
 func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
@@ -94,7 +94,7 @@ func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
 	return nil
 }
 
-func getAppConfig(name string, localYML *forge.LocalYML) *forge.AppConfig {
+func getAppConfig(name string, localYML *app.LocalYML) *forge.AppConfig {
 	var app *forge.AppConfig
 	for _, appConfig := range localYML.Applications {
 		if appConfig.Name == name {
@@ -108,8 +108,8 @@ func getAppConfig(name string, localYML *forge.LocalYML) *forge.AppConfig {
 	return app
 }
 
-func getRemoteServices(app RemoteApp, serviceApp, forwardApp string) (service.Services, *service.ForwardConfig, error) {
-	var services service.Services
+func getRemoteServices(app RemoteApp, serviceApp, forwardApp string) (forge.Services, *forge.ForwardDetails, error) {
+	var services forge.Services
 
 	if serviceApp == "" {
 		serviceApp = forwardApp

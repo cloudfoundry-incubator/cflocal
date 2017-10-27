@@ -4,9 +4,9 @@ import (
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"io"
 
 	"github.com/fatih/color"
-
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
 )
@@ -15,7 +15,7 @@ type Stage struct {
 	UI        UI
 	Stager    Stager
 	RemoteApp RemoteApp
-	LocalApp  LocalApp
+	TarApp    func(string) (io.ReadCloser, error)
 	FS        FS
 	Help      Help
 	Config    Config
@@ -51,7 +51,7 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 
-	appTar, err := s.LocalApp.Tar(options.app)
+	appTar, err := s.TarApp(options.app)
 	if err != nil {
 		return err
 	}

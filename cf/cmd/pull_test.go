@@ -11,6 +11,7 @@ import (
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/cflocal/remote"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 )
 
 var _ = Describe("Pull", func() {
@@ -62,7 +63,7 @@ var _ = Describe("Pull", func() {
 				Running: map[string]string{"c": "d"},
 				App:     map[string]string{"e": "f"},
 			}
-			oldLocalYML := &forge.LocalYML{
+			oldLocalYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
@@ -74,7 +75,7 @@ var _ = Describe("Pull", func() {
 					},
 				},
 			}
-			newLocalYML := &forge.LocalYML{
+			newLocalYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{

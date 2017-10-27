@@ -15,15 +15,13 @@ import (
 	"github.com/fatih/color"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 
 	"github.com/sclevine/cflocal/cf"
 	"github.com/sclevine/cflocal/cf/cmd"
 	"github.com/sclevine/cflocal/fs"
 	"github.com/sclevine/cflocal/remote"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/version"
 )
 
 type Plugin struct {
@@ -77,51 +75,26 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
+	stager := forge.NewStager(client, &http.Client{}, p.Exit)
+	stager.ImageTag = "cflocal"
+	stager.SystemBuildpacks = SystemBuildpacks
+	stager.Logs = color.Output
+	stager.Loader = p.UI
 
-	dockerEngine := &forge.DockerEngine{
-		Docker: client,
-	}
-	dockerEngineWithExit := &forge.DockerEngine{
-		Docker: client,
-		Exit:   p.Exit,
-	}
-	imageWithExit := &engine.Image{
-		Docker: client,
-		Exit:   p.Exit,
-	}
-	versioner := &version.URL{
-		Client: &http.Client{},
-	}
-	stager := &forge.Stager{
-		DiegoVersion:     "1.26.1",
-		GoVersion:        "1.8.3",
-		ImageTag:         "cflocal",
-		SystemBuildpacks: SystemBuildpacks,
-		Logs:             color.Output,
-		Loader:           p.UI,
-		Engine:           dockerEngineWithExit,
-		Image:            imageWithExit,
-		Versioner:        versioner,
-	}
+	runner := forge.NewRunner(client, p.Exit)
+	runner.Logs = color.Output
+	runner.Loader = p.UI
 
-	runner := &forge.Runner{
-		Logs:   color.Output,
-		Loader: p.UI,
-		Engine: dockerEngineWithExit,
-		Image:  imageWithExit,
-	}
-	forwarder := &forge.Forwarder{
-		Logs:   color.Output,
-		Engine: dockerEngine,
-	}
+	forwarder := forge.NewForwarder(client)
+	forwarder.Logs = color.Output
+
 	remoteApp := &remote.App{
 		CLI:  cliConnection,
 		UI:   p.UI,
 		HTTP: ccHTTPClient,
 	}
-	localApp := &app.App{}
 	sysFS := &fs.FS{}
-	config := &forge.Config{
+	config := &app.Config{
 		Path: "./local.yml",
 	}
 	help := &Help{
@@ -168,7 +141,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				UI:        p.UI,
 				Stager:    stager,
 				RemoteApp: remoteApp,
-				LocalApp:  localApp,
+				TarApp:    app.Tar,
 				FS:        sysFS,
 				Help:      help,
 				Config:    config,

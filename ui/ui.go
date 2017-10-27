@@ -89,7 +89,7 @@ func (u *UI) Loading(message string, progress <-chan engine.Progress) (err error
 				fmt.Fprintf(u.Out, "\r%s\r", strings.Repeat(" ", max(loadLen, spinLen)))
 				return err
 			}
-			switch status, pErr := p.Status(), p.Err(); {
+			switch status, pErr := p.Status(); {
 			case pErr != nil:
 				err = pErr
 			case status == "N/A":

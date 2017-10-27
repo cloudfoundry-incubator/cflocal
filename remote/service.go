@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sclevine/forge/service"
+	"github.com/sclevine/forge"
 )
 
 const firstForwardedServicePort uint = 40000
 
-func (a *App) Services(name string) (service.Services, error) {
+func (a *App) Services(name string) (forge.Services, error) {
 	appEnvJSON, _, err := a.get(name, "/env")
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func (a *App) Services(name string) (service.Services, error) {
 	defer appEnvJSON.Close()
 	var env struct {
 		SystemEnvJSON struct {
-			VCAPServices service.Services `json:"VCAP_SERVICES"`
+			VCAPServices forge.Services `json:"VCAP_SERVICES"`
 		} `json:"system_env_json"`
 	}
 	if err := json.NewDecoder(appEnvJSON).Decode(&env); err != nil {
@@ -32,9 +32,9 @@ func (a *App) Services(name string) (service.Services, error) {
 	return env.SystemEnvJSON.VCAPServices, nil
 }
 
-func (a *App) Forward(name string, svcs service.Services) (service.Services, *service.ForwardConfig, error) {
+func (a *App) Forward(name string, svcs forge.Services) (forge.Services, *forge.ForwardDetails, error) {
 	var err error
-	config := &service.ForwardConfig{}
+	config := &forge.ForwardDetails{}
 
 	if config.Host, config.Port, err = a.sshEndpoint(); err != nil {
 		return nil, nil, err
@@ -62,7 +62,7 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 		for i, svc := range svcs[svcType] {
 			name := fmt.Sprintf("%s:%s[%d]", svc.Name, svcType, i)
 			if address := forward(svc.Credentials, "localhost", forwardedPort); address != "" {
-				config.Forwards = append(config.Forwards, service.Forward{
+				config.Forwards = append(config.Forwards, forge.Forward{
 					Name: name,
 					From: strconv.FormatUint(uint64(forwardedPort), 10),
 					To:   address,
@@ -79,7 +79,7 @@ func (a *App) Forward(name string, svcs service.Services) (service.Services, *se
 	return svcs, config, nil
 }
 
-func serviceTypes(s service.Services) (types []string) {
+func serviceTypes(s forge.Services) (types []string) {
 	for t := range s {
 		types = append(types, t)
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/wait"
 )
 
 type Run struct {
@@ -109,17 +108,17 @@ func (r *Run) Run(args []string) error {
 			return err
 		}
 		defer sshpass.Close()
-		waiter, waiterDone := wait.New(5 * time.Second)
+		waiter, waiterDone := newWaiter(5 * time.Second)
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
-			AppName:       appConfig.Name,
-			Stack:         LatestStack,
-			SSHPass:       sshpass,
-			Color:         color.GreenString,
-			ForwardConfig: forwardConfig,
-			HostIP:        netConfig.HostIP,
-			HostPort:      netConfig.HostPort,
-			Wait:          waiter,
+			AppName:  appConfig.Name,
+			Stack:    LatestStack,
+			SSHPass:  sshpass,
+			Color:    color.GreenString,
+			Details:  forwardConfig,
+			HostIP:   netConfig.HostIP,
+			HostPort: netConfig.HostPort,
+			Wait:     waiter,
 		})
 		if err != nil {
 			return err

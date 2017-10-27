@@ -12,8 +12,8 @@ import (
 	"github.com/sclevine/cflocal/cf/cmd/mocks"
 	sharedmocks "github.com/sclevine/cflocal/mocks"
 	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/service"
 )
 
 var _ = Describe("Export", func() {
@@ -63,13 +63,13 @@ var _ = Describe("Export", func() {
 		It("should export a droplet as a Docker image", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			launcher := sharedmocks.NewMockBuffer("some-launcher")
-			localYML := &forge.LocalYML{
+			localYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},
-						Services: service.Services{"some": {{Name: "services"}}},
+						Services: forge.Services{"some": {{Name: "services"}}},
 					},
 				},
 			}
@@ -85,7 +85,7 @@ var _ = Describe("Export", func() {
 					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},
-						Services: service.Services{"some": {{Name: "services"}}},
+						Services: forge.Services{"some": {{Name: "services"}}},
 					}))
 				},
 			).Return("some-id", nil)

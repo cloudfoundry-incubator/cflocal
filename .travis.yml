@@ -6,7 +6,7 @@ go:
 - 1.9.x
 install:
 - set -e
-- curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.3.1/dep-linux-amd64"
+- curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64"
 - chmod +x "$GOPATH/bin/dep"
 - curl -fsSL "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar -C "$GOPATH/bin" -xz cf
 - bin/vendor

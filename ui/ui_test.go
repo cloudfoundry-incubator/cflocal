@@ -115,10 +115,6 @@ type mockProgress struct {
 	err error
 }
 
-func (m mockProgress) Err() error {
-	return m.err
-}
-
-func (m mockProgress) Status() string {
-	return "some-progress"
+func (m mockProgress) Status() (string, error) {
+	return "some-progress", m.err
 }
