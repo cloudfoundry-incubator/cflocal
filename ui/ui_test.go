@@ -93,7 +93,6 @@ var _ = Describe("UI", func() {
 			close(progress)
 			Expect(ui.Loading("some-message", progress)).To(Succeed())
 			Expect(progress).To(BeClosed())
-
 		})
 
 		It("should return the last error sent", func() {
