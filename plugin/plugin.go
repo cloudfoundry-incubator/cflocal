@@ -18,10 +18,10 @@ import (
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
 
-	"github.com/sclevine/cflocal/cf"
-	"github.com/sclevine/cflocal/cf/cmd"
-	"github.com/sclevine/cflocal/fs"
-	"github.com/sclevine/cflocal/remote"
+	"code.cloudfoundry.org/cflocal/cf"
+	"code.cloudfoundry.org/cflocal/cf/cmd"
+	"code.cloudfoundry.org/cflocal/fs"
+	"code.cloudfoundry.org/cflocal/remote"
 )
 
 type Plugin struct {

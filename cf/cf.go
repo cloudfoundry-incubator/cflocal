@@ -15,13 +15,13 @@ type UI interface {
 	Error(err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf Help
+//go:generate mockgen -package mocks -destination mocks/help.go code.cloudfoundry.org/cflocal/cf Help
 type Help interface {
 	Short()
 	Long()
 }
 
-//go:generate mockgen -package mocks -destination mocks/cmd.go github.com/sclevine/cflocal/cf Cmd
+//go:generate mockgen -package mocks -destination mocks/cmd.go code.cloudfoundry.org/cflocal/cf Cmd
 type Cmd interface {
 	Match(args []string) bool
 	Run(args []string) error

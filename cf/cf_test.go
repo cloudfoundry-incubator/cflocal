@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	. "github.com/sclevine/cflocal/cf"
-	"github.com/sclevine/cflocal/cf/mocks"
-	sharedmocks "github.com/sclevine/cflocal/mocks"
+	. "code.cloudfoundry.org/cflocal/cf"
+	"code.cloudfoundry.org/cflocal/cf/mocks"
+	sharedmocks "code.cloudfoundry.org/cflocal/mocks"
 )
 
 var _ = Describe("CF", func() {

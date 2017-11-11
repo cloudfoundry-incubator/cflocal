@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
-	"github.com/sclevine/cflocal/mocks"
-	. "github.com/sclevine/cflocal/remote"
-	"github.com/sclevine/cflocal/testutil"
+	"code.cloudfoundry.org/cflocal/mocks"
+	. "code.cloudfoundry.org/cflocal/remote"
+	"code.cloudfoundry.org/cflocal/testutil"
 	"github.com/sclevine/forge"
 )
 

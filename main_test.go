@@ -40,7 +40,7 @@ var _ = BeforeSuite(func() {
 	set("CF_HOME", tempHome)
 	set("CF_PLUGIN_HOME", filepath.Join(tempHome, "plugins"))
 
-	pluginPath, err = gexec.Build("github.com/sclevine/cflocal", "-ldflags", "-X main.Version=100.200.300")
+	pluginPath, err = gexec.Build("code.cloudfoundry.org/cflocal", "-ldflags", "-X main.Version=100.200.300")
 	Expect(err).NotTo(HaveOccurred())
 
 	session, err := gexec.Start(exec.Command(pluginPath), GinkgoWriter, GinkgoWriter)

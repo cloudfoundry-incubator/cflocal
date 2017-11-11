@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/sclevine/cflocal/mocks"
-	. "github.com/sclevine/cflocal/plugin"
+	"code.cloudfoundry.org/cflocal/mocks"
+	. "code.cloudfoundry.org/cflocal/plugin"
 )
 
 var _ = Describe("Help", func() {

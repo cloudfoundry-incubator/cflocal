@@ -9,8 +9,8 @@ import (
 	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/sclevine/cflocal/plugin"
-	"github.com/sclevine/cflocal/ui"
+	"code.cloudfoundry.org/cflocal/plugin"
+	"code.cloudfoundry.org/cflocal/ui"
 )
 
 var Version = "0.0.0"

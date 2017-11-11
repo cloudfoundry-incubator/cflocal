@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin/models"
 
-	"github.com/sclevine/cflocal/mocks"
+	"code.cloudfoundry.org/cflocal/mocks"
 )
 
 type Request struct {

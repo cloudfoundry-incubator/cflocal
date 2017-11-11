@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/sclevine/cflocal/fs"
-	"github.com/sclevine/cflocal/remote"
+	"code.cloudfoundry.org/cflocal/fs"
+	"code.cloudfoundry.org/cflocal/remote"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
@@ -23,7 +23,7 @@ type UI interface {
 	Error(err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/remote_app.go github.com/sclevine/cflocal/cf/cmd RemoteApp
+//go:generate mockgen -package mocks -destination mocks/remote_app.go code.cloudfoundry.org/cflocal/cf/cmd RemoteApp
 type RemoteApp interface {
 	Command(name string) (string, error)
 	Droplet(name string) (droplet io.ReadCloser, size int64, err error)
@@ -35,29 +35,29 @@ type RemoteApp interface {
 	Forward(name string, services forge.Services) (forge.Services, *forge.ForwardDetails, error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/local_app.go github.com/sclevine/cflocal/cf/cmd LocalApp
+//go:generate mockgen -package mocks -destination mocks/local_app.go code.cloudfoundry.org/cflocal/cf/cmd LocalApp
 type LocalApp interface {
 	Tar(path string) (io.ReadCloser, error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/stager.go github.com/sclevine/cflocal/cf/cmd Stager
+//go:generate mockgen -package mocks -destination mocks/stager.go code.cloudfoundry.org/cflocal/cf/cmd Stager
 type Stager interface {
 	Stage(config *forge.StageConfig) (droplet engine.Stream, err error)
 	Download(path, stack string) (stream engine.Stream, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/runner.go github.com/sclevine/cflocal/cf/cmd Runner
+//go:generate mockgen -package mocks -destination mocks/runner.go code.cloudfoundry.org/cflocal/cf/cmd Runner
 type Runner interface {
 	Run(config *forge.RunConfig) (status int64, err error)
 	Export(config *forge.ExportConfig) (imageID string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/forwarder.go github.com/sclevine/cflocal/cf/cmd Forwarder
+//go:generate mockgen -package mocks -destination mocks/forwarder.go code.cloudfoundry.org/cflocal/cf/cmd Forwarder
 type Forwarder interface {
 	Forward(config *forge.ForwardConfig) (health <-chan string, done func(), id string, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/fs.go github.com/sclevine/cflocal/cf/cmd FS
+//go:generate mockgen -package mocks -destination mocks/fs.go code.cloudfoundry.org/cflocal/cf/cmd FS
 type FS interface {
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
@@ -67,12 +67,12 @@ type FS interface {
 	Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error)
 }
 
-//go:generate mockgen -package mocks -destination mocks/help.go github.com/sclevine/cflocal/cf/cmd Help
+//go:generate mockgen -package mocks -destination mocks/help.go code.cloudfoundry.org/cflocal/cf/cmd Help
 type Help interface {
 	Short()
 }
 
-//go:generate mockgen -package mocks -destination mocks/config.go github.com/sclevine/cflocal/cf/cmd Config
+//go:generate mockgen -package mocks -destination mocks/config.go code.cloudfoundry.org/cflocal/cf/cmd Config
 type Config interface {
 	Load() (*app.LocalYML, error)
 	Save(localYML *app.LocalYML) error
