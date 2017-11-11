@@ -1,6 +1,6 @@
 version: 1.0.{build}
 image: Visual Studio 2017
-clone_folder: c:\gopath\src\github.com\sclevine\cflocal
+clone_folder: c:\gopath\src\code.cloudfoundry.org\cflocal
 build: off
 environment:
   GOPATH: c:\gopath

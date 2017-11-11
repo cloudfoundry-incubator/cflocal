@@ -4,6 +4,7 @@ services:
 - docker
 go:
 - 1.9.x
+go_import_path: code.cloudfoundry.org/cflocal
 install:
 - set -e
 - curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64"
