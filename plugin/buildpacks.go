@@ -2,7 +2,6 @@ package plugin
 
 import "github.com/sclevine/forge"
 
-// TODO: merge the version URLs into a single JSON file with download URLs
 var SystemBuildpacks forge.Buildpacks = []forge.Buildpack{
 	{
 		Name:       "staticfile_buildpack",

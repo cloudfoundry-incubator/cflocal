@@ -62,7 +62,7 @@ var _ = Describe("Export", func() {
 	Describe("#Run", func() {
 		It("should export a droplet as a Docker image", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
-			launcher := sharedmocks.NewMockBuffer("some-launcher")
+			lifecycle := sharedmocks.NewMockBuffer("some-lifecycle")
 			localYML := &app.LocalYML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
@@ -75,11 +75,11 @@ var _ = Describe("Export", func() {
 			}
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockStager.EXPECT().Download("/tmp/lifecycle/launcher", LatestStack).Return(engine.NewStream(launcher, 200), nil)
+			mockStager.EXPECT().DownloadTar("/tmp/lifecycle", LatestStack).Return(engine.NewStream(lifecycle, 200), nil)
 			mockRunner.EXPECT().Export(gomock.Any()).Do(
 				func(config *forge.ExportConfig) {
 					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
-					Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+					Expect(ioutil.ReadAll(config.Lifecycle)).To(Equal([]byte("some-lifecycle")))
 					Expect(config.Stack).To(Equal(LatestStack))
 					Expect(config.Ref).To(Equal("some-reference"))
 					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
@@ -92,7 +92,7 @@ var _ = Describe("Export", func() {
 
 			Expect(cmd.Run([]string{"export", "some-app", "-r", "some-reference"})).To(Succeed())
 			Expect(droplet.Result()).To(BeEmpty())
-			Expect(launcher.Result()).To(BeEmpty())
+			Expect(lifecycle.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
 		})
 

@@ -71,7 +71,7 @@ var _ = Describe("Run", func() {
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
-			launcher := sharedmocks.NewMockBuffer("some-launcher")
+			lifecycle := sharedmocks.NewMockBuffer("some-lifecycle")
 			sshpass := sharedmocks.NewMockBuffer("some-sshpass")
 			services := forge.Services{"some": {{Name: "services"}}}
 			forwardedServices := forge.Services{"some": {{Name: "forwarded-services"}}}
@@ -96,7 +96,7 @@ var _ = Describe("Run", func() {
 			mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil)
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockStager.EXPECT().Download("/tmp/lifecycle/launcher", LatestStack).Return(engine.NewStream(launcher, 200), nil)
+			mockStager.EXPECT().DownloadTar("/tmp/lifecycle", LatestStack).Return(engine.NewStream(lifecycle, 200), nil)
 			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockRemoteApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockStager.EXPECT().Download("/usr/bin/sshpass", LatestStack).Return(engine.NewStream(sshpass, 300), nil)
@@ -119,7 +119,7 @@ var _ = Describe("Run", func() {
 				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
 					func(config *forge.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
-						Expect(ioutil.ReadAll(config.Launcher)).To(Equal([]byte("some-launcher")))
+						Expect(ioutil.ReadAll(config.Lifecycle)).To(Equal([]byte("some-lifecycle")))
 						Expect(config.Stack).To(Equal(LatestStack))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
 						Expect(config.RSync).To(BeTrue())
@@ -151,7 +151,7 @@ var _ = Describe("Run", func() {
 			})).To(Succeed())
 			Expect(forwardDoneCalls()).To(Equal(1))
 			Expect(droplet.Result()).To(BeEmpty())
-			Expect(launcher.Result()).To(BeEmpty())
+			Expect(lifecycle.Result()).To(BeEmpty())
 			Expect(sshpass.Result()).To(BeEmpty())
 			Expect(watchDone).To(BeClosed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))

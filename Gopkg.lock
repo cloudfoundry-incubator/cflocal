@@ -147,7 +147,7 @@
   branch = "master"
   name = "github.com/sclevine/forge"
   packages = [".","app","engine","fixtures","internal"]
-  revision = "11b46106a1c684f5b6e7643ed74b1fff75330d18"
+  revision = "d27bdc15298d6a587ccf18cad1abcb933aedc53d"
 
 [[projects]]
   name = "github.com/vito/go-interact"

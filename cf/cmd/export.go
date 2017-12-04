@@ -42,15 +42,15 @@ func (e *Export) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, err := e.Stager.Download("/tmp/lifecycle/launcher", LatestStack)
+	lifecycle, err := e.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
 	if err != nil {
 		return err
 	}
-	defer launcher.Close()
+	defer lifecycle.Close()
 
 	id, err := e.Runner.Export(&forge.ExportConfig{
 		Droplet:   engine.NewStream(droplet, dropletSize),
-		Launcher:  launcher,
+		Lifecycle:  lifecycle,
 		Stack:     LatestStack,
 		Ref:       options.reference,
 		AppConfig: getAppConfig(options.name, localYML),

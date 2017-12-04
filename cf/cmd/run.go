@@ -83,11 +83,11 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 	defer droplet.Close()
-	launcher, err := r.Stager.Download("/tmp/lifecycle/launcher", LatestStack)
+	lifecycle, err := r.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
 	if err != nil {
 		return err
 	}
-	defer launcher.Close()
+	defer lifecycle.Close()
 
 	appConfig := getAppConfig(options.name, localYML)
 	remoteServices, forwardConfig, err := getRemoteServices(r.RemoteApp, options.serviceApp, options.forwardApp)
@@ -133,7 +133,7 @@ func (r *Run) Run(args []string) error {
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&forge.RunConfig{
 		Droplet:       engine.NewStream(droplet, dropletSize),
-		Launcher:      launcher,
+		Lifecycle:     lifecycle,
 		Stack:         LatestStack,
 		AppDir:        appDir,
 		RSync:         options.rsync,

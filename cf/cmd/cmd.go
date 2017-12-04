@@ -44,6 +44,7 @@ type LocalApp interface {
 type Stager interface {
 	Stage(config *forge.StageConfig) (droplet engine.Stream, err error)
 	Download(path, stack string) (stream engine.Stream, err error)
+	DownloadTar(path, stack string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go code.cloudfoundry.org/cflocal/cf/cmd Runner
