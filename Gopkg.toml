@@ -20,6 +20,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/fsnotify/fsevents"
+  source = "https://github.com/elastic/fsevents.git"
   branch = "master"
 
 [[constraint]]

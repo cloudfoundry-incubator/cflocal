@@ -68,7 +68,8 @@
   branch = "master"
   name = "github.com/fsnotify/fsevents"
   packages = ["."]
-  revision = "3ceee05210c3babaa38cdc9181dabdcc83076a44"
+  revision = "690cb784149d5facd7fe613c52757445c43afcde"
+  source = "https://github.com/elastic/fsevents.git"
 
 [[projects]]
   branch = "master"
@@ -147,7 +148,7 @@
   branch = "master"
   name = "github.com/sclevine/forge"
   packages = [".","app","engine","fixtures","internal"]
-  revision = "d27bdc15298d6a587ccf18cad1abcb933aedc53d"
+  revision = "6c6933c947ab21626bf593478b3c15315372131c"
 
 [[projects]]
   name = "github.com/vito/go-interact"
@@ -184,6 +185,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1342b192f31bb1ff8636b788df0a7d559d4b2c717e8d6d7e8dbfd188a94fd9da"
+  inputs-digest = "9074ad1bce552bc48ecf982bbf8f73ac4f0477b0d6c601c37ebe77877e6a0107"
   solver-name = "gps-cdcl"
   solver-version = 1
