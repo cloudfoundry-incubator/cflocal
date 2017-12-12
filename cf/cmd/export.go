@@ -50,7 +50,7 @@ func (e *Export) Run(args []string) error {
 
 	id, err := e.Runner.Export(&forge.ExportConfig{
 		Droplet:   engine.NewStream(droplet, dropletSize),
-		Lifecycle:  lifecycle,
+		Lifecycle: lifecycle,
 		Stack:     LatestStack,
 		Ref:       options.reference,
 		AppConfig: getAppConfig(options.name, localYML),
