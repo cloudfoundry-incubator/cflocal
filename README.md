@@ -32,8 +32,8 @@ USAGE:
    cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
                            [ (-p <dir> | -p <zip>) (-d <dir> [-r]) -e ]
                            [ (-s <app> | -f <app>) ]
-   cf local run     <name> [ (-i <ip>) (-p <port>) (-d <dir> [-r -w]) ]
-                           [ (-s <app>) (-f <app>) ]
+   cf local run     <name> [ (-i <ip>) (-p <port>) (-s <app>) (-f <app>) ]
+                           [ (-d <dir> [-r -w] | (-d <dir> [-r]) [-t]) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
    cf local push    <name> [-e -k]
@@ -95,10 +95,12 @@ RUN OPTIONS:
    -r             When used with -d, rsync the contents of the specified
                      directory into the container app root. The directory is
                      mounted elsewhere in the container. No files are deleted.
-                     Default: false
+                     Default: false, Invalid: without -d
    -w             When used with -d, restart the app when the contents of the
                      specified directory are changed.
-                     Default: false
+                     Default: false, Invalid: with -t, without -d
+   -t             Start a shell (Bash) with the same environment as the app.
+                     Default: false, Invalid: with -w
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml or app provided by -f)

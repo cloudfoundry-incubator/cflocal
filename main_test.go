@@ -160,6 +160,25 @@ var _ = Describe("CF Local", func() {
 				kill(runCmd)
 				Eventually(session, "5s").Should(gexec.Exit(130))
 			})
+
+			By("running wih a shell", func() {
+				runCmd := exec.Command("cf", "local", "run", "some-name", "-t")
+				runCmd.Dir = filepath.Join(tempDir, "test-app")
+				in, err := runCmd.StdinPipe()
+				Expect(err).NotTo(HaveOccurred())
+				session, err := gexec.Start(runCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session, "10s").Should(gbytes.Say(`vcap@some-name:~\$ `))
+				_, err = fmt.Fprintln(in, "env|sort")
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "10s").Should(gbytes.Say(`env[|]sort\r\n`))
+
+				Eventually(session.Out.Contents, "5s").Should(ContainSubstring(strings.Join(fixtures.RunningEnv("LC_COLLATE=C", "SHLVL=2", "TERM=xterm"), "\r\n")))
+				_, err = fmt.Fprintln(in, "exit")
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "10s").Should(gexec.Exit(0))
+			})
 		})
 
 		It("should successfully stage and run apps with a variety of buildpacks", func() {

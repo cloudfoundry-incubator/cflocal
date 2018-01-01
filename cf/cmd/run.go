@@ -36,6 +36,7 @@ type runOptions struct {
 	port       uint
 	rsync      bool
 	watch      bool
+	term       bool
 }
 
 func (r *Run) Match(args []string) bool {
@@ -71,6 +72,10 @@ func (r *Run) Run(args []string) error {
 		return errors.New("-w is only valid with -d")
 	} else if options.rsync {
 		return errors.New("-r is only valid with -d")
+	}
+
+	if options.watch && options.term {
+		return errors.New("-w and -t may not be used together")
 	}
 
 	localYML, err := r.Config.Load()
@@ -137,6 +142,7 @@ func (r *Run) Run(args []string) error {
 		Stack:         LatestStack,
 		AppDir:        appDir,
 		RSync:         options.rsync,
+		Shell:         options.term,
 		Restart:       restart,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
@@ -161,6 +167,7 @@ func (*Run) options(args []string) (*runOptions, error) {
 		set.StringVar(&options.forwardApp, "f", "", "")
 		set.BoolVar(&options.rsync, "r", false, "")
 		set.BoolVar(&options.watch, "w", false, "")
+		set.BoolVar(&options.term, "t", false, "")
 	})
 }
 

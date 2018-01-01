@@ -13,6 +13,12 @@
   revision = "4d0c80011a0f37da1711c184028bc40137cd45af"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [".","winterm"]
+  revision = "388960b655244e76e24c75f48631564eaefade62"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "fff283ad5116362ca252298cfc9b95828956d85d"
@@ -46,7 +52,7 @@
 
 [[projects]]
   name = "github.com/docker/docker"
-  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/mount","api/types/network","api/types/reference","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/longpath","pkg/pools","pkg/promise","pkg/system","pkg/tlsconfig"]
+  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/mount","api/types/network","api/types/reference","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/longpath","pkg/pools","pkg/promise","pkg/system","pkg/term","pkg/term/windows","pkg/tlsconfig"]
   revision = "v17.03.2-ce"
 
 [[projects]]
@@ -147,8 +153,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/sclevine/forge"
-  packages = [".","app","engine","fixtures","internal"]
-  revision = "6c6933c947ab21626bf593478b3c15315372131c"
+  packages = [".","app","engine","fixtures","internal","term"]
+  revision = "03355ce24c1566f62d42bcf247c979ada9c134e8"
 
 [[projects]]
   name = "github.com/vito/go-interact"

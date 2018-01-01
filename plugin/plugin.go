@@ -50,7 +50,6 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 	defer client.Close()
-	client.UpdateClientVersion("")
 
 	ccSkipSSLVerify, err := cliConnection.IsSSLDisabled()
 	if err != nil {

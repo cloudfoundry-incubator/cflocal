@@ -165,5 +165,6 @@ var _ = Describe("Run", func() {
 		// TODO: test without -f
 		// TODO: test timeout
 		// TODO: test wait interval + done
+		// TODO: test with -t and with both -t and -w
 	})
 })
