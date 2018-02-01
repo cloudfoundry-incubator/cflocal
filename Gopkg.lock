@@ -3,7 +3,22 @@
 
 [[projects]]
   name = "code.cloudfoundry.org/cli"
-  packages = ["cf/appfiles","cf/errors","cf/formatters","cf/i18n","cf/models","command/translatableerror","plugin","plugin/models","types","util","util/configv3","util/glob","util/ui","version"]
+  packages = [
+    "cf/appfiles",
+    "cf/errors",
+    "cf/formatters",
+    "cf/i18n",
+    "cf/models",
+    "command/translatableerror",
+    "plugin",
+    "plugin/models",
+    "types",
+    "util",
+    "util/configv3",
+    "util/glob",
+    "util/ui",
+    "version"
+  ]
   revision = "829c87ef317ad6be9d73039934b9f1d82560c403"
   version = "v6.32.0"
 
@@ -15,7 +30,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/Azure/go-ansiterm"
-  packages = [".","winterm"]
+  packages = [
+    ".",
+    "winterm"
+  ]
   revision = "388960b655244e76e24c75f48631564eaefade62"
 
 [[projects]]
@@ -26,7 +44,12 @@
 
 [[projects]]
   name = "github.com/SermoDigital/jose"
-  packages = [".","crypto","jws","jwt"]
+  packages = [
+    ".",
+    "crypto",
+    "jws",
+    "jwt"
+  ]
   revision = "2bd9b81ac51d6d6134fcd4fd846bd2e7347a15f9"
 
 [[projects]]
@@ -47,17 +70,51 @@
 
 [[projects]]
   name = "github.com/docker/distribution"
-  packages = ["digest","reference"]
+  packages = [
+    "digest",
+    "reference"
+  ]
   revision = "28602af35aceda2f8d571bad7ca37a54cf0250bc"
 
 [[projects]]
   name = "github.com/docker/docker"
-  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/mount","api/types/network","api/types/reference","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/longpath","pkg/pools","pkg/promise","pkg/system","pkg/term","pkg/term/windows","pkg/tlsconfig"]
+  packages = [
+    "api/types",
+    "api/types/blkiodev",
+    "api/types/container",
+    "api/types/events",
+    "api/types/filters",
+    "api/types/mount",
+    "api/types/network",
+    "api/types/reference",
+    "api/types/registry",
+    "api/types/strslice",
+    "api/types/swarm",
+    "api/types/time",
+    "api/types/versions",
+    "api/types/volume",
+    "client",
+    "pkg/archive",
+    "pkg/fileutils",
+    "pkg/idtools",
+    "pkg/ioutils",
+    "pkg/longpath",
+    "pkg/pools",
+    "pkg/promise",
+    "pkg/system",
+    "pkg/term",
+    "pkg/term/windows",
+    "pkg/tlsconfig"
+  ]
   revision = "v17.03.2-ce"
 
 [[projects]]
   name = "github.com/docker/go-connections"
-  packages = ["nat","sockets","tlsconfig"]
+  packages = [
+    "nat",
+    "sockets",
+    "tlsconfig"
+  ]
   revision = "ecb4cb2dd420ada7df7f2593d6c25441f65f69f2"
 
 [[projects]]
@@ -86,7 +143,11 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/mock"
-  packages = ["gomock","mockgen","mockgen/model"]
+  packages = [
+    "gomock",
+    "mockgen",
+    "mockgen/model"
+  ]
   revision = "6e20fef50e74e443696bc32b693cf286b612d45b"
 
 [[projects]]
@@ -130,18 +191,62 @@
 [[projects]]
   branch = "master"
   name = "github.com/onsi/ginkgo"
-  packages = [".","config","ginkgo","ginkgo/convert","ginkgo/interrupthandler","ginkgo/nodot","ginkgo/testrunner","ginkgo/testsuite","ginkgo/watch","internal/codelocation","internal/containernode","internal/failer","internal/leafnodes","internal/remote","internal/spec","internal/spec_iterator","internal/specrunner","internal/suite","internal/testingtproxy","internal/writer","reporters","reporters/stenographer","reporters/stenographer/support/go-colorable","reporters/stenographer/support/go-isatty","types"]
+  packages = [
+    ".",
+    "config",
+    "ginkgo",
+    "ginkgo/convert",
+    "ginkgo/interrupthandler",
+    "ginkgo/nodot",
+    "ginkgo/testrunner",
+    "ginkgo/testsuite",
+    "ginkgo/watch",
+    "internal/codelocation",
+    "internal/containernode",
+    "internal/failer",
+    "internal/leafnodes",
+    "internal/remote",
+    "internal/spec",
+    "internal/spec_iterator",
+    "internal/specrunner",
+    "internal/suite",
+    "internal/testingtproxy",
+    "internal/writer",
+    "reporters",
+    "reporters/stenographer",
+    "reporters/stenographer/support/go-colorable",
+    "reporters/stenographer/support/go-isatty",
+    "types"
+  ]
   revision = "11459a886d9cd66b319dac7ef1e917ee221372c9"
 
 [[projects]]
   branch = "master"
   name = "github.com/onsi/gomega"
-  packages = [".","format","gbytes","gexec","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
+  packages = [
+    ".",
+    "format",
+    "gbytes",
+    "gexec",
+    "internal/assertion",
+    "internal/asyncassertion",
+    "internal/oraclematcher",
+    "internal/testingtsupport",
+    "matchers",
+    "matchers/support/goraph/bipartitegraph",
+    "matchers/support/goraph/edge",
+    "matchers/support/goraph/node",
+    "matchers/support/goraph/util",
+    "types"
+  ]
   revision = "283ed655c6b8238afecd5bea6434bc9b03129f2f"
 
 [[projects]]
   name = "github.com/opencontainers/runc"
-  packages = ["libcontainer/system","libcontainer/user"]
+  packages = [
+    "libcontainer/system",
+    "libcontainer/user"
+  ]
   revision = "54296cf40ad8143b62dbcaa1d90e520a2136ddfe"
   source = "https://github.com/docker/runc.git"
 
@@ -153,12 +258,22 @@
 [[projects]]
   branch = "master"
   name = "github.com/sclevine/forge"
-  packages = [".","app","engine","fixtures","internal","term"]
-  revision = "4fbdbee2b8c1791ff0d1abb1981efe7bb3b7a58c"
+  packages = [
+    ".",
+    "app",
+    "engine",
+    "fixtures",
+    "internal",
+    "term"
+  ]
+  revision = "1173b46a3c880e09c173b1f83f39542b7b6e1c5d"
 
 [[projects]]
   name = "github.com/vito/go-interact"
-  packages = ["interact","interact/terminal"]
+  packages = [
+    "interact",
+    "interact/terminal"
+  ]
   revision = "cbd56b28e8411a00fd4b7f92e8c870581558bf26"
 
 [[projects]]
@@ -168,18 +283,46 @@
 
 [[projects]]
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","html","html/atom","html/charset","proxy"]
+  packages = [
+    "context",
+    "context/ctxhttp",
+    "html",
+    "html/atom",
+    "html/charset",
+    "proxy"
+  ]
   revision = "2beffdc2e92c8a3027590f898fe88f69af48a3f8"
   source = "https://github.com/tonistiigi/net.git"
 
 [[projects]]
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
+  packages = [
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
+    "internal/gen",
+    "internal/tag",
+    "internal/utf8internal",
+    "language",
+    "runes",
+    "transform",
+    "unicode/cldr"
+  ]
   revision = "bd91bbf73e9a4a801adbfb97133c992678533126"
 
 [[projects]]

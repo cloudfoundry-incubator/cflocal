@@ -98,7 +98,7 @@ func (a *App) sshEndpoint() (host, port string, err error) {
 		return "", "", err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := a.HTTP.Do(request)
 	if err != nil {
 		return "", "", err
 	}
