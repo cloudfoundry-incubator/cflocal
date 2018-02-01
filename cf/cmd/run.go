@@ -83,11 +83,13 @@ func (r *Run) Run(args []string) error {
 		return err
 	}
 
-	droplet, dropletSize, err := r.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
+	dropletFile, dropletSize, err := r.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
 		return err
 	}
+	droplet := engine.NewStream(dropletFile, dropletSize)
 	defer droplet.Close()
+
 	lifecycle, err := r.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
 	if err != nil {
 		return err
@@ -137,7 +139,7 @@ func (r *Run) Run(args []string) error {
 
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&forge.RunConfig{
-		Droplet:       engine.NewStream(droplet, dropletSize),
+		Droplet:       droplet,
 		Lifecycle:     lifecycle,
 		Stack:         LatestStack,
 		AppDir:        appDir,

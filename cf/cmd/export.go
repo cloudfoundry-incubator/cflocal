@@ -37,11 +37,13 @@ func (e *Export) Run(args []string) error {
 		return err
 	}
 
-	droplet, dropletSize, err := e.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
+	dropletFile, dropletSize, err := e.FS.ReadFile(fmt.Sprintf("./%s.droplet", options.name))
 	if err != nil {
 		return err
 	}
+	droplet := engine.NewStream(dropletFile, dropletSize)
 	defer droplet.Close()
+
 	lifecycle, err := e.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
 	if err != nil {
 		return err
@@ -49,7 +51,7 @@ func (e *Export) Run(args []string) error {
 	defer lifecycle.Close()
 
 	id, err := e.Runner.Export(&forge.ExportConfig{
-		Droplet:   engine.NewStream(droplet, dropletSize),
+		Droplet:   droplet,
 		Lifecycle: lifecycle,
 		Stack:     LatestStack,
 		Ref:       options.reference,

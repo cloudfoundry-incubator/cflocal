@@ -84,7 +84,9 @@ func (s *Stage) Run(args []string) error {
 		if err != nil {
 			continue
 		}
-		buildpackZips[checksum] = engine.NewStream(zip, size)
+		buildpackZip := engine.NewStream(zip, size)
+		defer buildpackZip.Close()
+		buildpackZips[checksum] = buildpackZip
 	}
 
 	remoteServices, _, err := getRemoteServices(s.RemoteApp, options.serviceApp, options.forwardApp)
@@ -119,6 +121,7 @@ func (s *Stage) Run(args []string) error {
 	if err != nil {
 		return err
 	}
+	defer droplet.Close()
 
 	if err := s.streamOut(droplet, dropletPath); err != nil {
 		return err

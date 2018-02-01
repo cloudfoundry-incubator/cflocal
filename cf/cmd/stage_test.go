@@ -165,5 +165,6 @@ var _ = Describe("Stage", func() {
 		// TODO: test not mounting the app dir
 		// TODO: test error when attempting to mount a file
 		// TODO: test with empty cache
+		// TODO: make sure everything is closed in error cases
 	})
 })
