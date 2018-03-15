@@ -87,7 +87,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 
 	forwarder := forge.NewForwarder(engine)
 	forwarder.Logs = color.Output
-	stager.Loader = p.UI
+	forwarder.Loader = p.UI
 
 	remoteApp := &remote.App{
 		CLI:  cliConnection,
