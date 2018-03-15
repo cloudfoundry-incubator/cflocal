@@ -5,10 +5,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	cfplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh/terminal"
 
+	"code.cloudfoundry.org/cflocal/cfplugin"
 	"code.cloudfoundry.org/cflocal/plugin"
 	"code.cloudfoundry.org/cflocal/ui"
 )

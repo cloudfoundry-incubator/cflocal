@@ -34,9 +34,9 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 }
 
 // Load mocks base method
-func (m *MockConfig) Load() (*app.LocalYML, error) {
+func (m *MockConfig) Load() (*app.YAML, error) {
 	ret := m.ctrl.Call(m, "Load")
-	ret0, _ := ret[0].(*app.LocalYML)
+	ret0, _ := ret[0].(*app.YAML)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -47,7 +47,7 @@ func (mr *MockConfigMockRecorder) Load() *gomock.Call {
 }
 
 // Save mocks base method
-func (m *MockConfig) Save(arg0 *app.LocalYML) error {
+func (m *MockConfig) Save(arg0 *app.YAML) error {
 	ret := m.ctrl.Call(m, "Save", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0

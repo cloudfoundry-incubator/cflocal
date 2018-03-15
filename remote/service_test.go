@@ -3,16 +3,16 @@ package remote_test
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/sclevine/forge"
 
+	"code.cloudfoundry.org/cflocal/cfplugin/models"
 	"code.cloudfoundry.org/cflocal/mocks"
 	. "code.cloudfoundry.org/cflocal/remote"
 	"code.cloudfoundry.org/cflocal/testutil"
-	"github.com/sclevine/forge"
 )
 
 var _ = Describe("App - Service", func() {

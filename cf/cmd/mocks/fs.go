@@ -48,18 +48,6 @@ func (mr *MockFSMockRecorder) Abs(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Abs", reflect.TypeOf((*MockFS)(nil).Abs), arg0)
 }
 
-// MakeDirAll mocks base method
-func (m *MockFS) MakeDirAll(arg0 string) error {
-	ret := m.ctrl.Call(m, "MakeDirAll", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// MakeDirAll indicates an expected call of MakeDirAll
-func (mr *MockFSMockRecorder) MakeDirAll(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeDirAll", reflect.TypeOf((*MockFS)(nil).MakeDirAll), arg0)
-}
-
 // OpenFile mocks base method
 func (m *MockFS) OpenFile(arg0 string) (fs.ReadResetWriteCloser, int64, error) {
 	ret := m.ctrl.Call(m, "OpenFile", arg0)

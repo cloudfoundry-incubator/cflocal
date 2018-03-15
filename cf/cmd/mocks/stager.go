@@ -34,32 +34,6 @@ func (m *MockStager) EXPECT() *MockStagerMockRecorder {
 	return m.recorder
 }
 
-// Download mocks base method
-func (m *MockStager) Download(arg0, arg1 string) (engine.Stream, error) {
-	ret := m.ctrl.Call(m, "Download", arg0, arg1)
-	ret0, _ := ret[0].(engine.Stream)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Download indicates an expected call of Download
-func (mr *MockStagerMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockStager)(nil).Download), arg0, arg1)
-}
-
-// DownloadTar mocks base method
-func (m *MockStager) DownloadTar(arg0, arg1 string) (engine.Stream, error) {
-	ret := m.ctrl.Call(m, "DownloadTar", arg0, arg1)
-	ret0, _ := ret[0].(engine.Stream)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DownloadTar indicates an expected call of DownloadTar
-func (mr *MockStagerMockRecorder) DownloadTar(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTar", reflect.TypeOf((*MockStager)(nil).DownloadTar), arg0, arg1)
-}
-
 // Stage mocks base method
 func (m *MockStager) Stage(arg0 *forge.StageConfig) (engine.Stream, error) {
 	ret := m.ctrl.Call(m, "Stage", arg0)

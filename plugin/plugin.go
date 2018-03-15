@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	cfplugin "code.cloudfoundry.org/cli/plugin"
-	docker "github.com/docker/docker/client"
 	"github.com/fatih/color"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/kardianos/osext"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
+	"github.com/sclevine/forge/engine/docker"
 
+	"code.cloudfoundry.org/cflocal/cfplugin"
 	"code.cloudfoundry.org/cflocal/cf"
 	"code.cloudfoundry.org/cflocal/cf/cmd"
 	"code.cloudfoundry.org/cflocal/fs"
@@ -44,12 +44,12 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
-	client, err := docker.NewEnvClient()
+	engine, err := docker.New(p.Exit)
 	if err != nil {
 		p.RunErr = err
 		return
 	}
-	defer client.Close()
+	defer engine.Close()
 
 	ccSkipSSLVerify, err := cliConnection.IsSSLDisabled()
 	if err != nil {
@@ -74,17 +74,18 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	stager := forge.NewStager(client, &http.Client{}, p.Exit)
-	stager.ImageTag = "cflocal"
-	stager.SystemBuildpacks = SystemBuildpacks
+	stager := forge.NewStager(engine)
 	stager.Logs = color.Output
 	stager.Loader = p.UI
 
-	runner := forge.NewRunner(client, p.Exit)
+	runner := forge.NewRunner(engine)
 	runner.Logs = color.Output
 	runner.Loader = p.UI
 
-	forwarder := forge.NewForwarder(client)
+	exporter := forge.NewExporter(engine)
+	exporter.Loader = p.UI
+
+	forwarder := forge.NewForwarder(engine)
 	forwarder.Logs = color.Output
 
 	remoteApp := &remote.App{
@@ -105,12 +106,11 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		Help: help,
 		Cmds: []cf.Cmd{
 			&cmd.Export{
-				UI:     p.UI,
-				Stager: stager,
-				Runner: runner,
-				FS:     sysFS,
-				Help:   help,
-				Config: config,
+				UI:       p.UI,
+				Exporter: exporter,
+				FS:       sysFS,
+				Help:     help,
+				Config:   config,
 			},
 			&cmd.Pull{
 				UI:        p.UI,
@@ -128,7 +128,6 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			},
 			&cmd.Run{
 				UI:        p.UI,
-				Stager:    stager,
 				Runner:    runner,
 				Forwarder: forwarder,
 				RemoteApp: remoteApp,

@@ -63,7 +63,7 @@ var _ = Describe("Pull", func() {
 				Running: map[string]string{"c": "d"},
 				App:     map[string]string{"e": "f"},
 			}
-			oldLocalYML := &app.LocalYML{
+			oldLocalYML := &app.YAML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
@@ -75,7 +75,7 @@ var _ = Describe("Pull", func() {
 					},
 				},
 			}
-			newLocalYML := &app.LocalYML{
+			newLocalYML := &app.YAML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{

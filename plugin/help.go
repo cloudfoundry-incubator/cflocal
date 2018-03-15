@@ -1,6 +1,6 @@
 package plugin
 
-import cfplugin "code.cloudfoundry.org/cli/plugin"
+import "code.cloudfoundry.org/cflocal/cfplugin"
 
 type Help struct {
 	CLI cfplugin.CliConnection

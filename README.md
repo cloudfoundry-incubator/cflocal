@@ -29,11 +29,11 @@ Notably, CF Local:
 
 ```
 USAGE:
-   cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... ]
-                           [ (-p <dir> | -p <zip>) (-d <dir> [-r]) -e ]
+   cf local stage   <name> [ (-b <name> | -b <URL> | -b <zip>)... -e ]
+                           [ (-p <dir> | -p <zip>) (-s <app> | -f <app>) ]
                            [ (-s <app> | -f <app>) ]
    cf local run     <name> [ (-i <ip>) (-p <port>) (-s <app>) (-f <app>) ]
-                           [ (-d <dir> [-r -w] | (-d <dir> [-r]) [-t]) ]
+                           [ (-d <dir> [-w] | (-d <dir>) [-t]) ]
    cf local export  <name> [ (-r <ref>) ]
    cf local pull    <name>
    cf local push    <name> [-e -k]
@@ -53,25 +53,15 @@ STAGE OPTIONS:
                      Default: (uses detection)
    -b <zip>       Use one or more buildpacks specified by local zip file path.
                      Default: (uses detection)
-   -p <dir>       Use the specified directory as the app directory.
-                     Default: current working directory
-   -p <zip>       Use the specified zip file contents as the app directory.
-                     Default: current working directory
-   -d <dir>       Mount the provided directory into the app root before
-                     staging. Should be used with a VCS to track changes.
-                     Ideal for use with: cf local run <name> -d <dir>
-                     Use of -r is STRONGLY RECOMMENDED to avoid staging with
-                     files that should be ignored.
-                     Default: (not mounted)
-   -r             When used with -d, rsync any files that were created,
-                     modified, or moved during staging into the specified
-                     directory. The directory is mounted elsewhere in the
-                     container. No files are deleted.
-                     Default: false
    -e             If buildpacks are explicitly specified then select one of
                      them using the buildpack detection process instead of
                      applying all of them using the multi-buildpack process.
                      Default: false
+   -p <dir>       Use the specified directory as the app directory.
+                     Default: current working directory
+   -p <zip>       Use the specified ZIP file contents as the app directory.
+                     Note that JAR and WAR files use ZIP file format.
+                     Default: current working directory
    -s <app>       Use the service bindings from the specified remote CF app
                      instead of the service bindings in local.yml.
                      Default: (uses local.yml)
@@ -88,14 +78,9 @@ RUN OPTIONS:
                      Default: localhost
    -p <port>      Listen on the specified port
                      Default: (arbitrary free port)
-   -d <dir>       Mount the specified directory into the app root.
-                     If empty, the app root is copied into the directory.
-                     If not empty, the app root is replaced by the directory.
+   -d <dir>       Replace the app directory with the specified directory.
+                     The app directory from the droplet is ignored.
                      Default: (not mounted)
-   -r             When used with -d, rsync the contents of the specified
-                     directory into the container app root. The directory is
-                     mounted elsewhere in the container. No files are deleted.
-                     Default: false, Invalid: without -d
    -w             When used with -d, restart the app when the contents of the
                      specified directory are changed.
                      Default: false, Invalid: with -t, without -d

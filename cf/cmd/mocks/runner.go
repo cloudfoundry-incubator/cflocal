@@ -33,19 +33,6 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 	return m.recorder
 }
 
-// Export mocks base method
-func (m *MockRunner) Export(arg0 *forge.ExportConfig) (string, error) {
-	ret := m.ctrl.Call(m, "Export", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Export indicates an expected call of Export
-func (mr *MockRunnerMockRecorder) Export(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockRunner)(nil).Export), arg0)
-}
-
 // Run mocks base method
 func (m *MockRunner) Run(arg0 *forge.RunConfig) (int64, error) {
 	ret := m.ctrl.Call(m, "Run", arg0)

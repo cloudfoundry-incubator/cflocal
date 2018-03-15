@@ -1,0 +1,6 @@
+#!/bin/bash
+
+body=$(<file)
+while true; do
+  ( echo -ne "HTTP/1.0 200 OK\r\n\r\n" && echo "$body" ) | nc -l "$PORT"
+done

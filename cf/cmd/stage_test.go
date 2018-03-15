@@ -80,7 +80,7 @@ var _ = Describe("Stage", func() {
 				Host: "some-ssh-host",
 			}
 
-			localYML := &app.LocalYML{
+			localYML := &app.YAML{
 				Applications: []*forge.AppConfig{
 					{
 						Name: "some-other-app",
@@ -100,8 +100,6 @@ var _ = Describe("Stage", func() {
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockLocalApp.EXPECT().Tar("some-app-dir").Return(appTar, nil)
-			mockFS.EXPECT().Abs(".").Return("some-abs-app-dir", nil)
-			mockFS.EXPECT().MakeDirAll("some-abs-app-dir")
 			mockFS.EXPECT().ReadFile("some-buildpack-one").Return(buildpackZip1, int64(20), nil)
 			mockFS.EXPECT().ReadFile("some-buildpack-two").Return(buildpackZip2, int64(21), nil)
 			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
@@ -121,10 +119,8 @@ var _ = Describe("Stage", func() {
 						buildpackZipOut2 := &bytes.Buffer{}
 						Expect(config.BuildpackZips["ab534bf201740a2fa7300aa175acd98c"].Out(buildpackZipOut2)).To(Succeed())
 						Expect(buildpackZipOut2.String()).To(Equal("some-buildpack-zip-tw"))
-						Expect(config.Stack).To(Equal(LatestStack))
-						Expect(config.AppDir).To(Equal("some-abs-app-dir"))
+						Expect(config.Stack).To(Equal(BuildStack))
 						Expect(config.ForceDetect).To(BeTrue())
-						Expect(config.RSync).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 							Name:      "some-app",
@@ -142,11 +138,10 @@ var _ = Describe("Stage", func() {
 			)
 
 			Expect(cmd.Run([]string{
-				"stage", "some-app",
+				"stage", "some-app", "-e",
 				"-b", "some-buildpack-one",
 				"-b", "some-buildpack-two",
 				"-p", "some-app-dir",
-				"-d", ".", "-r", "-e",
 				"-s", "some-service-app",
 				"-f", "some-forward-app",
 			})).To(Succeed())
@@ -161,9 +156,6 @@ var _ = Describe("Stage", func() {
 		})
 
 		// TODO: test buildpack, buildpack zip combinations, and force-detect
-		// TODO: test not providing an app dir
-		// TODO: test not mounting the app dir
-		// TODO: test error when attempting to mount a file
 		// TODO: test with empty cache
 		// TODO: make sure everything is closed in error cases
 	})

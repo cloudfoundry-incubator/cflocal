@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/fatih/color"
+
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
 )
@@ -25,11 +26,9 @@ type stageOptions struct {
 	name        string
 	buildpacks  buildpacks
 	app         string
-	appDir      string
 	serviceApp  string
 	forwardApp  string
 	forceDetect bool
-	rsync       bool
 }
 
 func (s *Stage) Match(args []string) bool {
@@ -56,16 +55,6 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 	defer appTar.Close()
-
-	var appDir string
-	if options.appDir != "" {
-		if appDir, err = s.FS.Abs(options.appDir); err != nil {
-			return err
-		}
-		if err := s.FS.MakeDirAll(appDir); err != nil {
-			return err
-		}
-	}
 
 	appConfig := getAppConfig(options.name, localYML)
 
@@ -111,10 +100,8 @@ func (s *Stage) Run(args []string) error {
 		Cache:         cache,
 		CacheEmpty:    cacheSize == 0,
 		BuildpackZips: buildpackZips,
-		Stack:         LatestStack,
-		AppDir:        appDir,
+		Stack:         BuildStack,
 		ForceDetect:   options.forceDetect,
-		RSync:         options.rsync,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
 	})
@@ -147,11 +134,9 @@ func (*Stage) options(args []string) (*stageOptions, error) {
 		options.name = name
 		set.StringVar(&options.app, "p", ".", "")
 		set.Var(&options.buildpacks, "b", "")
-		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
 		set.BoolVar(&options.forceDetect, "e", false, "")
-		set.BoolVar(&options.rsync, "r", false, "")
 	})
 }
 

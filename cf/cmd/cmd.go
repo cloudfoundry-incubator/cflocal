@@ -14,7 +14,11 @@ import (
 	"github.com/sclevine/forge/engine"
 )
 
-const LatestStack = "cloudfoundry/cflinuxfs2:latest"
+const (
+	RunStack = "packs/cflinuxfs2:run"
+	BuildStack = "packs/cflinuxfs2:build"
+	NetworkStack = "packs/cflinuxfs2:network"
+)
 
 type UI interface {
 	Prompt(prompt string) string
@@ -43,13 +47,15 @@ type LocalApp interface {
 //go:generate mockgen -package mocks -destination mocks/stager.go code.cloudfoundry.org/cflocal/cf/cmd Stager
 type Stager interface {
 	Stage(config *forge.StageConfig) (droplet engine.Stream, err error)
-	Download(path, stack string) (stream engine.Stream, err error)
-	DownloadTar(path, stack string) (stream engine.Stream, err error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/runner.go code.cloudfoundry.org/cflocal/cf/cmd Runner
 type Runner interface {
 	Run(config *forge.RunConfig) (status int64, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/exporter.go code.cloudfoundry.org/cflocal/cf/cmd Exporter
+type Exporter interface {
 	Export(config *forge.ExportConfig) (imageID string, err error)
 }
 
@@ -63,7 +69,6 @@ type FS interface {
 	ReadFile(path string) (io.ReadCloser, int64, error)
 	WriteFile(path string) (io.WriteCloser, error)
 	OpenFile(path string) (fs.ReadResetWriteCloser, int64, error)
-	MakeDirAll(path string) error
 	Abs(path string) (string, error)
 	Watch(dir string, wait time.Duration) (change <-chan time.Time, done chan<- struct{}, err error)
 }
@@ -75,8 +80,8 @@ type Help interface {
 
 //go:generate mockgen -package mocks -destination mocks/config.go code.cloudfoundry.org/cflocal/cf/cmd Config
 type Config interface {
-	Load() (*app.LocalYML, error)
-	Save(localYML *app.LocalYML) error
+	Load() (*app.YAML, error)
+	Save(localYML *app.YAML) error
 }
 
 func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
@@ -95,7 +100,7 @@ func parseOptions(args []string, f func(name string, set *flag.FlagSet)) error {
 	return nil
 }
 
-func getAppConfig(name string, localYML *app.LocalYML) *forge.AppConfig {
+func getAppConfig(name string, localYML *app.YAML) *forge.AppConfig {
 	var app *forge.AppConfig
 	for _, appConfig := range localYML.Applications {
 		if appConfig.Name == name {

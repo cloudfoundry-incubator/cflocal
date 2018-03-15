@@ -9,12 +9,11 @@ import (
 )
 
 type Export struct {
-	UI     UI
-	Stager Stager
-	Runner Runner
-	FS     FS
-	Help   Help
-	Config Config
+	UI       UI
+	Exporter Exporter
+	FS       FS
+	Help     Help
+	Config   Config
 }
 
 type exportOptions struct {
@@ -44,16 +43,9 @@ func (e *Export) Run(args []string) error {
 	droplet := engine.NewStream(dropletFile, dropletSize)
 	defer droplet.Close()
 
-	lifecycle, err := e.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Close()
-
-	id, err := e.Runner.Export(&forge.ExportConfig{
+	id, err := e.Exporter.Export(&forge.ExportConfig{
 		Droplet:   droplet,
-		Lifecycle: lifecycle,
-		Stack:     LatestStack,
+		Stack:     RunStack,
 		Ref:       options.reference,
 		AppConfig: getAppConfig(options.name, localYML),
 	})

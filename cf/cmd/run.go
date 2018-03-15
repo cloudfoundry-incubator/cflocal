@@ -11,14 +11,12 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/docker/docker/api/types"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
 )
 
 type Run struct {
 	UI        UI
-	Stager    Stager
 	Runner    Runner
 	Forwarder Forwarder
 	RemoteApp RemoteApp
@@ -34,7 +32,6 @@ type runOptions struct {
 	forwardApp string
 	ip         string
 	port       uint
-	rsync      bool
 	watch      bool
 	term       bool
 }
@@ -57,9 +54,6 @@ func (r *Run) Run(args []string) error {
 		if appDir, err = r.FS.Abs(options.appDir); err != nil {
 			return err
 		}
-		if err := r.FS.MakeDirAll(appDir); err != nil {
-			return err
-		}
 		if options.watch {
 			var done chan<- struct{}
 			restart, done, err = r.FS.Watch(appDir, time.Second)
@@ -70,8 +64,6 @@ func (r *Run) Run(args []string) error {
 		}
 	} else if options.watch {
 		return errors.New("-w is only valid with -d")
-	} else if options.rsync {
-		return errors.New("-r is only valid with -d")
 	}
 
 	if options.watch && options.term {
@@ -90,12 +82,6 @@ func (r *Run) Run(args []string) error {
 	droplet := engine.NewStream(dropletFile, dropletSize)
 	defer droplet.Close()
 
-	lifecycle, err := r.Stager.DownloadTar("/tmp/lifecycle", LatestStack)
-	if err != nil {
-		return err
-	}
-	defer lifecycle.Close()
-
 	appConfig := getAppConfig(options.name, localYML)
 	remoteServices, forwardConfig, err := getRemoteServices(r.RemoteApp, options.serviceApp, options.forwardApp)
 	if err != nil {
@@ -110,17 +96,11 @@ func (r *Run) Run(args []string) error {
 		HostPort: strconv.FormatUint(uint64(options.port), 10),
 	}
 	if forwardConfig != nil {
-		sshpass, err := r.Stager.Download("/usr/bin/sshpass", LatestStack)
-		if err != nil {
-			return err
-		}
-		defer sshpass.Close()
 		waiter, waiterDone := newWaiter(5 * time.Second)
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
 			AppName:  appConfig.Name,
-			Stack:    LatestStack,
-			SSHPass:  sshpass,
+			Stack:    NetworkStack,
 			Color:    color.GreenString,
 			Details:  forwardConfig,
 			HostIP:   netConfig.HostIP,
@@ -140,10 +120,8 @@ func (r *Run) Run(args []string) error {
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&forge.RunConfig{
 		Droplet:       droplet,
-		Lifecycle:     lifecycle,
-		Stack:         LatestStack,
+		Stack:         RunStack,
 		AppDir:        appDir,
-		RSync:         options.rsync,
 		Shell:         options.term,
 		Restart:       restart,
 		Color:         color.GreenString,
@@ -167,7 +145,6 @@ func (*Run) options(args []string) (*runOptions, error) {
 		set.StringVar(&options.appDir, "d", "", "")
 		set.StringVar(&options.serviceApp, "s", "", "")
 		set.StringVar(&options.forwardApp, "f", "", "")
-		set.BoolVar(&options.rsync, "r", false, "")
 		set.BoolVar(&options.watch, "w", false, "")
 		set.BoolVar(&options.term, "t", false, "")
 	})
@@ -195,7 +172,7 @@ func waitForHealthy(health <-chan string) error {
 	for {
 		select {
 		case status := <-health:
-			if status == types.Healthy {
+			if status == "healthy" {
 				return nil
 			}
 		case <-timeout:

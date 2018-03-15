@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"path"
 
-	cfplugin "code.cloudfoundry.org/cli/plugin"
+	"code.cloudfoundry.org/cflocal/cfplugin"
 )
 
 type App struct {

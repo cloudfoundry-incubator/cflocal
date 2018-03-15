@@ -4,26 +4,23 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/app"
 
 	. "code.cloudfoundry.org/cflocal/cf/cmd"
 	"code.cloudfoundry.org/cflocal/cf/cmd/mocks"
 	sharedmocks "code.cloudfoundry.org/cflocal/mocks"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
-	"github.com/sclevine/forge/engine"
 )
 
 var _ = Describe("Run", func() {
 	var (
 		mockCtrl      *gomock.Controller
 		mockUI        *sharedmocks.MockUI
-		mockStager    *mocks.MockStager
 		mockRunner    *mocks.MockRunner
 		mockForwarder *mocks.MockForwarder
 		mockRemoteApp *mocks.MockRemoteApp
@@ -36,7 +33,6 @@ var _ = Describe("Run", func() {
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
-		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRunner = mocks.NewMockRunner(mockCtrl)
 		mockForwarder = mocks.NewMockForwarder(mockCtrl)
 		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
@@ -45,7 +41,6 @@ var _ = Describe("Run", func() {
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Run{
 			UI:        mockUI,
-			Stager:    mockStager,
 			Runner:    mockRunner,
 			Forwarder: mockForwarder,
 			RemoteApp: mockRemoteApp,
@@ -71,8 +66,6 @@ var _ = Describe("Run", func() {
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
-			lifecycle := sharedmocks.NewMockBuffer("some-lifecycle")
-			sshpass := sharedmocks.NewMockBuffer("some-sshpass")
 			services := forge.Services{"some": {{Name: "services"}}}
 			forwardedServices := forge.Services{"some": {{Name: "forwarded-services"}}}
 			restart := make(<-chan time.Time)
@@ -83,7 +76,7 @@ var _ = Describe("Run", func() {
 			forwardConfig := &forge.ForwardDetails{
 				Host: "some-ssh-host",
 			}
-			localYML := &app.LocalYML{
+			localYML := &app.YAML{
 				Applications: []*forge.AppConfig{
 					{Name: "some-other-app"},
 					{
@@ -96,19 +89,15 @@ var _ = Describe("Run", func() {
 			mockFS.EXPECT().Abs("some-dir").Return("some-abs-dir", nil)
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockStager.EXPECT().DownloadTar("/tmp/lifecycle", LatestStack).Return(engine.NewStream(lifecycle, 200), nil)
 			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
 			mockRemoteApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
-			mockStager.EXPECT().Download("/usr/bin/sshpass", LatestStack).Return(engine.NewStream(sshpass, 300), nil)
 
 			gomock.InOrder(
-				mockFS.EXPECT().MakeDirAll("some-abs-dir"),
 				mockFS.EXPECT().Watch("some-abs-dir", time.Second).Return(restart, watchDone, nil),
 				mockForwarder.EXPECT().Forward(gomock.Any()).Return(health, forwardDone, "some-container-id", nil).Do(
 					func(config *forge.ForwardConfig) {
-						Expect(ioutil.ReadAll(config.SSHPass)).To(Equal([]byte("some-sshpass")))
 						Expect(config.AppName).To(Equal("some-app"))
-						Expect(config.Stack).To(Equal(LatestStack))
+						Expect(config.Stack).To(Equal(NetworkStack))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.Details).To(Equal(forwardConfig))
 						Expect(config.HostIP).To(Equal("0.0.0.0"))
@@ -119,10 +108,8 @@ var _ = Describe("Run", func() {
 				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
 					func(config *forge.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
-						Expect(ioutil.ReadAll(config.Lifecycle)).To(Equal([]byte("some-lifecycle")))
-						Expect(config.Stack).To(Equal(LatestStack))
+						Expect(config.Stack).To(Equal(RunStack))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
-						Expect(config.RSync).To(BeTrue())
 						Expect(config.Restart).To(Equal(restart))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
@@ -138,28 +125,26 @@ var _ = Describe("Run", func() {
 					},
 				),
 			)
-			health <- types.Starting
-			health <- types.Starting
-			health <- types.Healthy
+			health <- "starting"
+			health <- "starting"
+			health <- "healthy"
 			Expect(cmd.Run([]string{
 				"run", "some-app",
 				"-i", "0.0.0.0",
 				"-p", "3000",
-				"-d", "some-dir", "-r", "-w",
+				"-d", "some-dir", "-w",
 				"-s", "some-service-app",
 				"-f", "some-forward-app",
 			})).To(Succeed())
 			Expect(forwardDoneCalls()).To(Equal(1))
 			Expect(droplet.Result()).To(BeEmpty())
-			Expect(lifecycle.Result()).To(BeEmpty())
-			Expect(sshpass.Result()).To(BeEmpty())
 			Expect(watchDone).To(BeClosed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
 		})
 
 		// TODO: test app dir when app dir is unspecified (currently tested by integration)
-		// TODO: test without watching / without rsync
-		// TODO: test -w / -r without -d
+		// TODO: test without watching
+		// TODO: test -w without -d
 		// TODO: test free port picker when port is unspecified (currently tested by integration)
 		// TODO: test different combinations of -s and -f
 		// TODO: test without -f

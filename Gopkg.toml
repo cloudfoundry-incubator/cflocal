@@ -2,25 +2,17 @@ required = [
   # Utilities
   "github.com/onsi/ginkgo/ginkgo",
   "github.com/golang/mock/mockgen",
-
-  # Transitive Forks
-  "github.com/opencontainers/runc/libcontainer/system",
-  "golang.org/x/net/context",
 ]
 
 ignored = [
-  "code.cloudfoundry.org/cli/cf/resources",
+  "github.com/sclevine/forge",
+  "github.com/sclevine/forge/*",
 ]
 
 # App
 
 [[constraint]]
-  name = "code.cloudfoundry.org/cli"
-  version = "=6.32.0"
-
-[[constraint]]
   name = "github.com/fsnotify/fsevents"
-  source = "https://github.com/elastic/fsevents.git"
   branch = "master"
 
 [[constraint]]
@@ -39,10 +31,6 @@ ignored = [
   name = "github.com/nu7hatch/gouuid"
   branch = "master"
 
-[[constraint]]
-  name = "github.com/sclevine/forge"
-  branch = "master"
-
 # Test
 
 [[constraint]]
@@ -57,12 +45,6 @@ ignored = [
   name = "github.com/golang/mock"
   branch = "master"
 
-# Transitive Forks
-
-[[constraint]]
-  name = "github.com/opencontainers/runc"
-  source = "https://github.com/docker/runc.git"
-
-[[constraint]]
-  name = "golang.org/x/net"
-  source = "https://github.com/tonistiigi/net.git"
+[prune]
+  go-tests = true
+  unused-packages = true
