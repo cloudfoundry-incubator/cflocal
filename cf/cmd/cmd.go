@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	RunStack = "packs/cflinuxfs2:run"
-	BuildStack = "packs/cflinuxfs2:build"
+	RunStack     = "packs/cflinuxfs2:run"
+	BuildStack   = "packs/cflinuxfs2:build"
 	NetworkStack = "packs/cflinuxfs2:network"
 )
 

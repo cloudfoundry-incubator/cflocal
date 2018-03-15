@@ -17,9 +17,9 @@ import (
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine/docker"
 
-	"code.cloudfoundry.org/cflocal/cfplugin"
 	"code.cloudfoundry.org/cflocal/cf"
 	"code.cloudfoundry.org/cflocal/cf/cmd"
+	"code.cloudfoundry.org/cflocal/cfplugin"
 	"code.cloudfoundry.org/cflocal/fs"
 	"code.cloudfoundry.org/cflocal/remote"
 )
