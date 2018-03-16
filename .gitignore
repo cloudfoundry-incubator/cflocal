@@ -1,10 +1,10 @@
-/cflocal
 /out
 /vendor
 .DS_Store
 .idea
 *.droplet
 .*.cache
+.test.tmp*
 *.coverprofile
 *.test
 *~

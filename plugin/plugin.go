@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
+	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/engine/docker"
 
 	"code.cloudfoundry.org/cflocal/cf"
@@ -44,7 +46,15 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
-	engine, err := docker.New(p.Exit)
+	engine, err := docker.New(&engine.EngineConfig{
+		Proxy: engine.ProxyConfig{
+			HTTPProxy:   firstEnv("HTTP_PROXY", "http_proxy"),
+			HTTPSProxy:  firstEnv("HTTPS_PROXY", "https_proxy"),
+			NoProxy:     firstEnv("NO_PROXY", "no_proxy"),
+			UseRemotely: boolEnv("CFL_FORCE_PROXY"),
+		},
+		Exit: p.Exit,
+	})
 	if err != nil {
 		p.RunErr = err
 		return
@@ -216,4 +226,21 @@ func cliVersion() (*goversion.Version, error) {
 		return nil, errors.New("cf CLI version too old")
 	}
 	return version, nil
+}
+
+func firstEnv(ks ...string) string {
+	for _, k := range ks {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func boolEnv(k string) bool {
+	switch strings.TrimSpace(strings.ToLower(os.Getenv(k))) {
+	case "true", "yes", "1":
+		return true
+	}
+	return false
 }
