@@ -99,6 +99,8 @@ PUSH OPTIONS:
                      Default: false
 
 ENVIRONMENT:
+   CFL_USE_PROXY  Always use or never use the environment's proxy settings.
+                     Default: (use only when DOCKER_HOST is not set)
    DOCKER_HOST    Docker daemon address
                      Default: /var/run/docker.sock
 
