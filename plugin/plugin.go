@@ -46,14 +46,21 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 		return
 	}
 
+	proxy := engine.ProxyConfig{
+		HTTPProxy:  firstEnv("HTTP_PROXY", "http_proxy"),
+		HTTPSProxy: firstEnv("HTTPS_PROXY", "https_proxy"),
+		NoProxy:    firstEnv("NO_PROXY", "no_proxy"),
+	}
+	if useProxy, ok := boolEnv("CFL_USE_PROXY"); ok {
+		if useProxy {
+			proxy.UseRemotely = true
+		} else {
+			proxy = engine.ProxyConfig{}
+		}
+	}
 	engine, err := docker.New(&engine.EngineConfig{
-		Proxy: engine.ProxyConfig{
-			HTTPProxy:   firstEnv("HTTP_PROXY", "http_proxy"),
-			HTTPSProxy:  firstEnv("HTTPS_PROXY", "https_proxy"),
-			NoProxy:     firstEnv("NO_PROXY", "no_proxy"),
-			UseRemotely: boolEnv("CFL_FORCE_PROXY"),
-		},
-		Exit: p.Exit,
+		Proxy: proxy,
+		Exit:  p.Exit,
 	})
 	if err != nil {
 		p.RunErr = err
@@ -237,10 +244,12 @@ func firstEnv(ks ...string) string {
 	return ""
 }
 
-func boolEnv(k string) bool {
+func boolEnv(k string) (v, ok bool) {
 	switch strings.TrimSpace(strings.ToLower(os.Getenv(k))) {
 	case "true", "yes", "1":
-		return true
+		return true, true
+	case "false", "no", "0":
+		return false, true
 	}
-	return false
+	return false, false
 }
