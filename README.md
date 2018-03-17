@@ -207,7 +207,3 @@ Plugin cflocal successfully uninstalled.
 * CF Local is not intended for production use and is offered without warranty.
 * CF Local distribution archives are [signed by me](https://keybase.io/sclevine).
 
-## TODO
-
-* Permit specification of cflinuxfs2 version
-* Add warnings about mismatched Docker client / server versions
