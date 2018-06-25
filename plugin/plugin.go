@@ -91,6 +91,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
+
 	stager := forge.NewStager(engine)
 	stager.Logs = color.Output
 
@@ -102,6 +103,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	forwarder := forge.NewForwarder(engine)
 	forwarder.Logs = color.Output
 
+	image := engine.NewImage()
 	remoteApp := &remote.App{
 		CLI:  cliConnection,
 		UI:   p.UI,
@@ -122,6 +124,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 			&cmd.Export{
 				UI:       p.UI,
 				Exporter: exporter,
+				Image:    image,
 				FS:       sysFS,
 				Help:     help,
 				Config:   config,
@@ -145,6 +148,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				Runner:    runner,
 				Forwarder: forwarder,
 				RemoteApp: remoteApp,
+				Image:     image,
 				FS:        sysFS,
 				Help:      help,
 				Config:    config,
@@ -153,6 +157,7 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 				UI:        p.UI,
 				Stager:    stager,
 				RemoteApp: remoteApp,
+				Image:     image,
 				TarApp:    app.Tar,
 				FS:        sysFS,
 				Help:      help,
