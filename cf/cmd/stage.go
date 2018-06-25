@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/fatih/color"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/engine"
+	"github.com/fatih/color"
 )
 
 type Stage struct {
