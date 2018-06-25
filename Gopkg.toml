@@ -5,8 +5,8 @@ required = [
 ]
 
 ignored = [
-  "github.com/sclevine/forge",
-  "github.com/sclevine/forge/*",
+  "github.com/buildpack/forge",
+  "github.com/buildpack/forge/*",
 ]
 
 # App
