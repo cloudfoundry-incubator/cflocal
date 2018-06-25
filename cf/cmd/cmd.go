@@ -41,7 +41,7 @@ type RemoteApp interface {
 
 //go:generate mockgen -package mocks -destination mocks/local_app.go code.cloudfoundry.org/cflocal/cf/cmd LocalApp
 type LocalApp interface {
-	Tar(path string) (io.ReadCloser, error)
+	Tar(path string, excludes ...string) (io.ReadCloser, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/stager.go code.cloudfoundry.org/cflocal/cf/cmd Stager

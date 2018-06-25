@@ -3,11 +3,11 @@ package remote_test
 import (
 	"net/http"
 
+	"github.com/buildpack/forge"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/buildpack/forge"
 
 	"code.cloudfoundry.org/cflocal/cfplugin/models"
 	"code.cloudfoundry.org/cflocal/mocks"

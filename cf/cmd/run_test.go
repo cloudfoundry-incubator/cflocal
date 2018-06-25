@@ -4,13 +4,13 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/buildpack/forge"
-	"github.com/buildpack/forge/app"
 
 	. "code.cloudfoundry.org/cflocal/cf/cmd"
 	"code.cloudfoundry.org/cflocal/cf/cmd/mocks"
@@ -110,6 +110,8 @@ var _ = Describe("Run", func() {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 						Expect(config.Stack).To(Equal(RunStack))
 						Expect(config.AppDir).To(Equal("some-abs-dir"))
+						Expect(config.OutputDir).To(Equal("/home/vcap"))
+						Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 						Expect(config.Restart).To(Equal(restart))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
@@ -118,9 +120,10 @@ var _ = Describe("Run", func() {
 							Services: forwardedServices,
 						}))
 						Expect(config.NetworkConfig).To(Equal(&forge.NetworkConfig{
-							ContainerID: "some-container-id",
-							HostIP:      "0.0.0.0",
-							HostPort:    "3000",
+							ContainerID:   "some-container-id",
+							ContainerPort: "8080",
+							HostIP:        "0.0.0.0",
+							HostPort:      "3000",
 						}))
 					},
 				),

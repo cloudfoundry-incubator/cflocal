@@ -5,6 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
+	"github.com/buildpack/forge/engine"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -14,9 +17,6 @@ import (
 	. "code.cloudfoundry.org/cflocal/cf/cmd"
 	"code.cloudfoundry.org/cflocal/cf/cmd/mocks"
 	sharedmocks "code.cloudfoundry.org/cflocal/mocks"
-	"github.com/buildpack/forge"
-	"github.com/buildpack/forge/app"
-	"github.com/buildpack/forge/engine"
 )
 
 var _ = Describe("Stage", func() {
@@ -99,7 +99,7 @@ var _ = Describe("Stage", func() {
 			}
 
 			mockConfig.EXPECT().Load().Return(localYML, nil)
-			mockLocalApp.EXPECT().Tar("some-app-dir").Return(appTar, nil)
+			mockLocalApp.EXPECT().Tar("some-app-dir", `^.+\.droplet$`, `^\..+\.cache$`).Return(appTar, nil)
 			mockFS.EXPECT().ReadFile("some-buildpack-one").Return(buildpackZip1, int64(20), nil)
 			mockFS.EXPECT().ReadFile("some-buildpack-two").Return(buildpackZip2, int64(21), nil)
 			mockRemoteApp.EXPECT().Services("some-service-app").Return(services, nil)
@@ -120,6 +120,7 @@ var _ = Describe("Stage", func() {
 						Expect(config.BuildpackZips["ab534bf201740a2fa7300aa175acd98c"].Out(buildpackZipOut2)).To(Succeed())
 						Expect(buildpackZipOut2.String()).To(Equal("some-buildpack-zip-tw"))
 						Expect(config.Stack).To(Equal(BuildStack))
+						Expect(config.OutputPath).To(Equal("/out/droplet.tgz"))
 						Expect(config.ForceDetect).To(BeTrue())
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.AppConfig).To(Equal(&forge.AppConfig{

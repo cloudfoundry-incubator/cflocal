@@ -5,8 +5,8 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	forge "github.com/buildpack/forge"
+	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
 

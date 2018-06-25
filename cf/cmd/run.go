@@ -92,8 +92,9 @@ func (r *Run) Run(args []string) error {
 	}
 
 	netConfig := &forge.NetworkConfig{
-		HostIP:   options.ip,
-		HostPort: strconv.FormatUint(uint64(options.port), 10),
+		ContainerPort: "8080",
+		HostIP:        options.ip,
+		HostPort:      strconv.FormatUint(uint64(options.port), 10),
 	}
 	if forwardConfig != nil {
 		waiter, waiterDone := newWaiter(5 * time.Second)
@@ -122,6 +123,8 @@ func (r *Run) Run(args []string) error {
 		Droplet:       droplet,
 		Stack:         RunStack,
 		AppDir:        appDir,
+		OutputDir:     "/home/vcap",
+		WorkingDir:    "/home/vcap/app",
 		Shell:         options.term,
 		Restart:       restart,
 		Color:         color.GreenString,

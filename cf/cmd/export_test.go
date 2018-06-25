@@ -77,6 +77,8 @@ var _ = Describe("Export", func() {
 					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
 					Expect(config.Stack).To(Equal(RunStack))
 					Expect(config.Ref).To(Equal("some-reference"))
+					Expect(config.OutputDir).To(Equal("/home/vcap"))
+					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
 					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
 						Name:     "some-app",
 						Env:      map[string]string{"a": "b"},

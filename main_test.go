@@ -11,12 +11,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/buildpack/forge/engine/docker/archive"
 	gouuid "github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"github.com/buildpack/forge/engine/docker/archive"
 
 	"code.cloudfoundry.org/cflocal/fixtures"
 )

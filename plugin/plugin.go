@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
-	goversion "github.com/hashicorp/go-version"
-	"github.com/kardianos/osext"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/app"
 	"github.com/buildpack/forge/engine"
 	"github.com/buildpack/forge/engine/docker"
+	"github.com/fatih/color"
+	goversion "github.com/hashicorp/go-version"
+	"github.com/kardianos/osext"
 
 	"code.cloudfoundry.org/cflocal/cf"
 	"code.cloudfoundry.org/cflocal/cf/cmd"
@@ -93,18 +93,14 @@ func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {
 	}
 	stager := forge.NewStager(engine)
 	stager.Logs = color.Output
-	stager.Loader = p.UI
 
 	runner := forge.NewRunner(engine)
 	runner.Logs = color.Output
-	runner.Loader = p.UI
 
 	exporter := forge.NewExporter(engine)
-	exporter.Loader = p.UI
 
 	forwarder := forge.NewForwarder(engine)
 	forwarder.Logs = color.Output
-	forwarder.Loader = p.UI
 
 	remoteApp := &remote.App{
 		CLI:  cliConnection,

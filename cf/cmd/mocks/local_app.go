@@ -34,14 +34,19 @@ func (m *MockLocalApp) EXPECT() *MockLocalAppMockRecorder {
 }
 
 // Tar mocks base method
-func (m *MockLocalApp) Tar(arg0 string) (io.ReadCloser, error) {
-	ret := m.ctrl.Call(m, "Tar", arg0)
+func (m *MockLocalApp) Tar(arg0 string, arg1 ...string) (io.ReadCloser, error) {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Tar", varargs...)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Tar indicates an expected call of Tar
-func (mr *MockLocalAppMockRecorder) Tar(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tar", reflect.TypeOf((*MockLocalApp)(nil).Tar), arg0)
+func (mr *MockLocalAppMockRecorder) Tar(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tar", reflect.TypeOf((*MockLocalApp)(nil).Tar), varargs...)
 }

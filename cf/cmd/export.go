@@ -44,10 +44,12 @@ func (e *Export) Run(args []string) error {
 	defer droplet.Close()
 
 	id, err := e.Exporter.Export(&forge.ExportConfig{
-		Droplet:   droplet,
-		Stack:     RunStack,
-		Ref:       options.reference,
-		AppConfig: getAppConfig(options.name, localYML),
+		Droplet:    droplet,
+		Stack:      RunStack,
+		Ref:        options.reference,
+		OutputDir:  "/home/vcap",
+		WorkingDir: "/home/vcap/app",
+		AppConfig:  getAppConfig(options.name, localYML),
 	})
 	if err != nil {
 		return err

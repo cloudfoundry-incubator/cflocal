@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/buildpack/forge/engine"
+	"github.com/fatih/color"
 )
 
 var spinner = []string{". ", "o ", "O ", "8 ", "oo", "OO", "88"}

@@ -16,7 +16,7 @@ type Stage struct {
 	UI        UI
 	Stager    Stager
 	RemoteApp RemoteApp
-	TarApp    func(string) (io.ReadCloser, error)
+	TarApp    func(string, ...string) (io.ReadCloser, error)
 	FS        FS
 	Help      Help
 	Config    Config
@@ -50,7 +50,7 @@ func (s *Stage) Run(args []string) error {
 		return err
 	}
 
-	appTar, err := s.TarApp(options.app)
+	appTar, err := s.TarApp(options.app, `^.+\.droplet$`, `^\..+\.cache$`)
 	if err != nil {
 		return err
 	}
@@ -101,6 +101,7 @@ func (s *Stage) Run(args []string) error {
 		CacheEmpty:    cacheSize == 0,
 		BuildpackZips: buildpackZips,
 		Stack:         BuildStack,
+		OutputPath:    "/out/droplet.tgz",
 		ForceDetect:   options.forceDetect,
 		Color:         color.GreenString,
 		AppConfig:     appConfig,
