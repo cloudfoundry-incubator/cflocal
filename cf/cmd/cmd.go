@@ -25,6 +25,7 @@ type UI interface {
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
+	Loading(message string, progress <-chan engine.Progress) error
 }
 
 //go:generate mockgen -package mocks -destination mocks/remote_app.go code.cloudfoundry.org/cflocal/cf/cmd RemoteApp
@@ -62,6 +63,11 @@ type Exporter interface {
 //go:generate mockgen -package mocks -destination mocks/forwarder.go code.cloudfoundry.org/cflocal/cf/cmd Forwarder
 type Forwarder interface {
 	Forward(config *forge.ForwardConfig) (health <-chan string, done func(), id string, err error)
+}
+
+//go:generate mockgen -package mocks -destination mocks/image.go code.cloudfoundry.org/cflocal/cf/cmd Image
+type Image interface {
+	Pull(stack string) <-chan engine.Progress
 }
 
 //go:generate mockgen -package mocks -destination mocks/fs.go code.cloudfoundry.org/cflocal/cf/cmd FS

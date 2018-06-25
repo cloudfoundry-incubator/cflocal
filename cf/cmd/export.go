@@ -11,6 +11,7 @@ import (
 type Export struct {
 	UI       UI
 	Exporter Exporter
+	Image    Image
 	FS       FS
 	Help     Help
 	Config   Config
@@ -43,6 +44,9 @@ func (e *Export) Run(args []string) error {
 	droplet := engine.NewStream(dropletFile, dropletSize)
 	defer droplet.Close()
 
+	if err := e.UI.Loading("Image", e.Image.Pull(RunStack)); err != nil {
+		return err
+	}
 	id, err := e.Exporter.Export(&forge.ExportConfig{
 		Droplet:    droplet,
 		Stack:      RunStack,

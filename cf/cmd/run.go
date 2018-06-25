@@ -20,6 +20,7 @@ type Run struct {
 	Runner    Runner
 	Forwarder Forwarder
 	RemoteApp RemoteApp
+	Image     Image
 	FS        FS
 	Help      Help
 	Config    Config
@@ -97,6 +98,9 @@ func (r *Run) Run(args []string) error {
 		HostPort:      strconv.FormatUint(uint64(options.port), 10),
 	}
 	if forwardConfig != nil {
+		if err := r.UI.Loading("Image", r.Image.Pull(NetworkStack)); err != nil {
+			return err
+		}
 		waiter, waiterDone := newWaiter(5 * time.Second)
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
@@ -118,6 +122,9 @@ func (r *Run) Run(args []string) error {
 		netConfig.ContainerID = id
 	}
 
+	if err := r.UI.Loading("Image", r.Image.Pull(RunStack)); err != nil {
+		return err
+	}
 	r.UI.Output("Running %s on port %d...", options.name, options.port)
 	_, err = r.Runner.Run(&forge.RunConfig{
 		Droplet:       droplet,

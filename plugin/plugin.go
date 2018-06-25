@@ -34,11 +34,11 @@ type Plugin struct {
 }
 
 type UI interface {
-	forge.Loader
 	Prompt(prompt string) string
 	Output(format string, a ...interface{})
 	Warn(format string, a ...interface{})
 	Error(err error)
+	Loading(message string, progress <-chan engine.Progress) error
 }
 
 func (p *Plugin) Run(cliConnection cfplugin.CliConnection, args []string) {

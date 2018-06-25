@@ -13,6 +13,7 @@ import (
 	sharedmocks "code.cloudfoundry.org/cflocal/mocks"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/app"
+	"github.com/buildpack/forge/engine"
 )
 
 var _ = Describe("Export", func() {
@@ -20,6 +21,7 @@ var _ = Describe("Export", func() {
 		mockCtrl     *gomock.Controller
 		mockUI       *sharedmocks.MockUI
 		mockExporter *mocks.MockExporter
+		mockImage    *mocks.MockImage
 		mockFS       *mocks.MockFS
 		mockHelp     *mocks.MockHelp
 		mockConfig   *mocks.MockConfig
@@ -30,12 +32,14 @@ var _ = Describe("Export", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockUI = sharedmocks.NewMockUI()
 		mockExporter = mocks.NewMockExporter(mockCtrl)
+		mockImage = mocks.NewMockImage(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
 		cmd = &Export{
 			UI:       mockUI,
 			Exporter: mockExporter,
+			Image:    mockImage,
 			FS:       mockFS,
 			Help:     mockHelp,
 			Config:   mockConfig,
@@ -57,6 +61,9 @@ var _ = Describe("Export", func() {
 
 	Describe("#Run", func() {
 		It("should export a droplet as a Docker image", func() {
+			progress := make(chan engine.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			localYML := &app.YAML{
 				Applications: []*forge.AppConfig{
@@ -72,24 +79,28 @@ var _ = Describe("Export", func() {
 			}
 			mockConfig.EXPECT().Load().Return(localYML, nil)
 			mockFS.EXPECT().ReadFile("./some-app.droplet").Return(droplet, int64(100), nil)
-			mockExporter.EXPECT().Export(gomock.Any()).Do(
-				func(config *forge.ExportConfig) {
-					Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
-					Expect(config.Stack).To(Equal(RunStack))
-					Expect(config.Ref).To(Equal("some-reference"))
-					Expect(config.OutputDir).To(Equal("/home/vcap"))
-					Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
-					Expect(config.AppConfig).To(Equal(&forge.AppConfig{
-						Name:     "some-app",
-						Env:      map[string]string{"a": "b"},
-						Services: forge.Services{"some": {{Name: "services"}}},
-					}))
-				},
-			).Return("some-id", nil)
+			gomock.InOrder(
+				mockImage.EXPECT().Pull(RunStack).Return(progress),
+				mockExporter.EXPECT().Export(gomock.Any()).Do(
+					func(config *forge.ExportConfig) {
+						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
+						Expect(config.Stack).To(Equal(RunStack))
+						Expect(config.Ref).To(Equal("some-reference"))
+						Expect(config.OutputDir).To(Equal("/home/vcap"))
+						Expect(config.WorkingDir).To(Equal("/home/vcap/app"))
+						Expect(config.AppConfig).To(Equal(&forge.AppConfig{
+							Name:     "some-app",
+							Env:      map[string]string{"a": "b"},
+							Services: forge.Services{"some": {{Name: "services"}}},
+						}))
+					},
+				).Return("some-id", nil),
+			)
 
 			Expect(cmd.Run([]string{"export", "some-app", "-r", "some-reference"})).To(Succeed())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Exported some-app as some-reference with ID: some-id"))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
 		// TODO: test without reference

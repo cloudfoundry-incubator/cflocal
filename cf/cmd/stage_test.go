@@ -26,6 +26,7 @@ var _ = Describe("Stage", func() {
 		mockStager    *mocks.MockStager
 		mockRemoteApp *mocks.MockRemoteApp
 		mockLocalApp  *mocks.MockLocalApp
+		mockImage     *mocks.MockImage
 		mockFS        *mocks.MockFS
 		mockHelp      *mocks.MockHelp
 		mockConfig    *mocks.MockConfig
@@ -38,6 +39,7 @@ var _ = Describe("Stage", func() {
 		mockStager = mocks.NewMockStager(mockCtrl)
 		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
 		mockLocalApp = mocks.NewMockLocalApp(mockCtrl)
+		mockImage = mocks.NewMockImage(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
@@ -45,6 +47,7 @@ var _ = Describe("Stage", func() {
 			UI:        mockUI,
 			Stager:    mockStager,
 			RemoteApp: mockRemoteApp,
+			Image:     mockImage,
 			TarApp:    mockLocalApp.Tar,
 			FS:        mockFS,
 			Help:      mockHelp,
@@ -67,6 +70,9 @@ var _ = Describe("Stage", func() {
 
 	Describe("#Run", func() {
 		It("should build a droplet", func() {
+			progress := make(chan engine.Progress, 1)
+			progress <- mockProgress{Value: "some-progress"}
+			close(progress)
 			appTar := sharedmocks.NewMockBuffer("some-app-tar")
 			buildpackZip1 := sharedmocks.NewMockBuffer("some-buildpack-zip-one")
 			buildpackZip2 := sharedmocks.NewMockBuffer("some-buildpack-zip-two")
@@ -106,6 +112,7 @@ var _ = Describe("Stage", func() {
 			mockRemoteApp.EXPECT().Forward("some-forward-app", services).Return(forwardedServices, forwardConfig, nil)
 			mockFS.EXPECT().OpenFile("./.some-app.cache").Return(cache, int64(100), nil)
 			gomock.InOrder(
+				mockImage.EXPECT().Pull(BuildStack).Return(progress),
 				mockStager.EXPECT().Stage(gomock.Any()).Do(
 					func(config *forge.StageConfig) {
 						Expect(ioutil.ReadAll(config.AppTar)).To(Equal([]byte("some-app-tar")))
@@ -154,6 +161,7 @@ var _ = Describe("Stage", func() {
 			Expect(dropletFile.Result()).To(Equal("some-droplet"))
 			Expect(mockUI.Out).To(gbytes.Say("Warning: 'some-forward-app' app selected for service forwarding will not be used"))
 			Expect(mockUI.Out).To(gbytes.Say("Successfully staged: some-app"))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress"})))
 		})
 
 		// TODO: test buildpack, buildpack zip combinations, and force-detect

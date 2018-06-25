@@ -9,15 +9,17 @@ import (
 )
 
 type MockUI struct {
-	Err   error
-	Out   *gbytes.Buffer
-	Reply map[string]string
+	Err      error
+	Out      *gbytes.Buffer
+	Reply    map[string]string
+	Progress chan engine.Progress
 }
 
 func NewMockUI() *MockUI {
 	return &MockUI{
-		Out:   gbytes.NewBuffer(),
-		Reply: map[string]string{},
+		Out:      gbytes.NewBuffer(),
+		Reply:    map[string]string{},
+		Progress: make(chan engine.Progress, 1),
 	}
 }
 
@@ -42,6 +44,9 @@ func (m *MockUI) Error(err error) {
 }
 
 func (m *MockUI) Loading(message string, progress <-chan engine.Progress) error {
-	ginkgo.Fail("UI mock does not support Loading method.")
-	return nil
+	fmt.Fprintln(m.Out, "Loading: "+message)
+	for p := range progress {
+		m.Progress <- p
+	}
+	return m.Err
 }

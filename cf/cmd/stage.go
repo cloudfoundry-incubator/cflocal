@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/fatih/color"
-
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/engine"
 )
@@ -16,6 +15,7 @@ type Stage struct {
 	UI        UI
 	Stager    Stager
 	RemoteApp RemoteApp
+	Image     Image
 	TarApp    func(string, ...string) (io.ReadCloser, error)
 	FS        FS
 	Help      Help
@@ -95,6 +95,9 @@ func (s *Stage) Run(args []string) error {
 	}
 	defer cache.Close()
 
+	if err := s.UI.Loading("Image", s.Image.Pull(BuildStack)); err != nil {
+		return err
+	}
 	droplet, err := s.Stager.Stage(&forge.StageConfig{
 		AppTar:        appTar,
 		Cache:         cache,

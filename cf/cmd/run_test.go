@@ -6,6 +6,7 @@ import (
 
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/app"
+	"github.com/buildpack/forge/engine"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -24,6 +25,7 @@ var _ = Describe("Run", func() {
 		mockRunner    *mocks.MockRunner
 		mockForwarder *mocks.MockForwarder
 		mockRemoteApp *mocks.MockRemoteApp
+		mockImage     *mocks.MockImage
 		mockFS        *mocks.MockFS
 		mockHelp      *mocks.MockHelp
 		mockConfig    *mocks.MockConfig
@@ -36,6 +38,7 @@ var _ = Describe("Run", func() {
 		mockRunner = mocks.NewMockRunner(mockCtrl)
 		mockForwarder = mocks.NewMockForwarder(mockCtrl)
 		mockRemoteApp = mocks.NewMockRemoteApp(mockCtrl)
+		mockImage = mocks.NewMockImage(mockCtrl)
 		mockFS = mocks.NewMockFS(mockCtrl)
 		mockHelp = mocks.NewMockHelp(mockCtrl)
 		mockConfig = mocks.NewMockConfig(mockCtrl)
@@ -44,6 +47,7 @@ var _ = Describe("Run", func() {
 			Runner:    mockRunner,
 			Forwarder: mockForwarder,
 			RemoteApp: mockRemoteApp,
+			Image:     mockImage,
 			FS:        mockFS,
 			Help:      mockHelp,
 			Config:    mockConfig,
@@ -65,6 +69,11 @@ var _ = Describe("Run", func() {
 
 	Describe("#Run", func() {
 		It("should run a droplet", func() {
+			mockUI.Progress = make(chan engine.Progress, 2)
+			progress := make(chan engine.Progress, 2)
+			progress <- mockProgress{Value: "some-progress-forward"}
+			progress <- mockProgress{Value: "some-progress-run"}
+			close(progress)
 			droplet := sharedmocks.NewMockBuffer("some-droplet")
 			services := forge.Services{"some": {{Name: "services"}}}
 			forwardedServices := forge.Services{"some": {{Name: "forwarded-services"}}}
@@ -94,6 +103,7 @@ var _ = Describe("Run", func() {
 
 			gomock.InOrder(
 				mockFS.EXPECT().Watch("some-abs-dir", time.Second).Return(restart, watchDone, nil),
+				mockImage.EXPECT().Pull(NetworkStack).Return(progress),
 				mockForwarder.EXPECT().Forward(gomock.Any()).Return(health, forwardDone, "some-container-id", nil).Do(
 					func(config *forge.ForwardConfig) {
 						Expect(config.AppName).To(Equal("some-app"))
@@ -105,6 +115,7 @@ var _ = Describe("Run", func() {
 						Eventually(config.Wait).Should(Receive())
 					},
 				),
+				mockImage.EXPECT().Pull(RunStack).Return(progress),
 				mockRunner.EXPECT().Run(gomock.Any()).Return(int64(0), nil).Do(
 					func(config *forge.RunConfig) {
 						Expect(ioutil.ReadAll(config.Droplet)).To(Equal([]byte("some-droplet")))
@@ -143,6 +154,8 @@ var _ = Describe("Run", func() {
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(watchDone).To(BeClosed())
 			Expect(mockUI.Out).To(gbytes.Say("Running some-app on port 3000..."))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress-forward"})))
+			Expect(mockUI.Progress).To(Receive(Equal(mockProgress{Value: "some-progress-run"})))
 		})
 
 		// TODO: test app dir when app dir is unspecified (currently tested by integration)
