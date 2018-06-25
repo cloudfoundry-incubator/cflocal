@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sclevine/forge"
+	"github.com/buildpack/forge"
 )
 
 const firstForwardedServicePort uint = 40000

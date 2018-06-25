@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
 
 	. "code.cloudfoundry.org/cflocal/cf/cmd"
 	"code.cloudfoundry.org/cflocal/cf/cmd/mocks"

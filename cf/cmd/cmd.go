@@ -9,9 +9,9 @@ import (
 
 	"code.cloudfoundry.org/cflocal/fs"
 	"code.cloudfoundry.org/cflocal/remote"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
-	"github.com/sclevine/forge/engine"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
+	"github.com/buildpack/forge/engine"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	. "code.cloudfoundry.org/cflocal/ui"
-	"github.com/sclevine/forge/engine"
+	"github.com/buildpack/forge/engine"
 )
 
 var _ = Describe("UI", func() {

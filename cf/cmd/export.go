@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/engine"
 )
 
 type Export struct {

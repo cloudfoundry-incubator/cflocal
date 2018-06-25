@@ -7,7 +7,7 @@ package mocks
 import (
 	remote "code.cloudfoundry.org/cflocal/remote"
 	gomock "github.com/golang/mock/gomock"
-	forge "github.com/sclevine/forge"
+	forge "github.com/buildpack/forge"
 	io "io"
 	reflect "reflect"
 )

@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"github.com/sclevine/forge/engine/docker/archive"
+	"github.com/buildpack/forge/engine/docker/archive"
 
 	"code.cloudfoundry.org/cflocal/fixtures"
 )

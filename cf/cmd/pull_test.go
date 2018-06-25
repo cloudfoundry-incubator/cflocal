@@ -10,8 +10,8 @@ import (
 	"code.cloudfoundry.org/cflocal/cf/cmd/mocks"
 	sharedmocks "code.cloudfoundry.org/cflocal/mocks"
 	"code.cloudfoundry.org/cflocal/remote"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
 )
 
 var _ = Describe("Pull", func() {
