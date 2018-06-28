@@ -104,13 +104,14 @@ func (r *Run) Run(args []string) error {
 		waiter, waiterDone := newWaiter(5 * time.Second)
 		defer waiterDone()
 		health, done, id, err := r.Forwarder.Forward(&forge.ForwardConfig{
-			AppName:  appConfig.Name,
-			Stack:    NetworkStack,
-			Color:    color.GreenString,
-			Details:  forwardConfig,
-			HostIP:   netConfig.HostIP,
-			HostPort: netConfig.HostPort,
-			Wait:     waiter,
+			AppName:       appConfig.Name,
+			Stack:         NetworkStack,
+			Color:         color.GreenString,
+			Details:       forwardConfig,
+			ContainerPort: netConfig.ContainerPort,
+			HostIP:        netConfig.HostIP,
+			HostPort:      netConfig.HostPort,
+			Wait:          waiter,
 		})
 		if err != nil {
 			return err

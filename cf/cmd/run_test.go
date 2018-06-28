@@ -110,6 +110,7 @@ var _ = Describe("Run", func() {
 						Expect(config.Stack).To(Equal(NetworkStack))
 						Expect(config.Color("some-text")).To(Equal(color.GreenString("some-text")))
 						Expect(config.Details).To(Equal(forwardConfig))
+						Expect(config.ContainerPort).To(Equal("8080"))
 						Expect(config.HostIP).To(Equal("0.0.0.0"))
 						Expect(config.HostPort).To(Equal("3000"))
 						Eventually(config.Wait).Should(Receive())
