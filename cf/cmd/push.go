@@ -3,6 +3,7 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"os"
 )
 
 type Push struct {
@@ -48,8 +49,12 @@ func (p *Push) Run(args []string) error {
 }
 
 func (p *Push) pushDroplet(name string) error {
-	droplet, size, err := p.FS.ReadFile(fmt.Sprintf("./%s.droplet", name))
+	filename := fmt.Sprintf("./%s.droplet", name)
+	droplet, size, err := p.FS.ReadFile(filename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file does not exist: %s: Did you provide a filepath instead of an app name?", filename)
+		}
 		return err
 	}
 	defer droplet.Close()

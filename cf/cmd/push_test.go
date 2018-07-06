@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"io"
 	"io/ioutil"
+	"os"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -80,6 +81,14 @@ var _ = Describe("Push", func() {
 			Expect(cmd.Run([]string{"push", "some-app", "-e"})).To(Succeed())
 			Expect(droplet.Result()).To(BeEmpty())
 			Expect(mockUI.Out).To(gbytes.Say("Successfully pushed: some-app"))
+		})
+
+		Context("app name is set as droplet file path", func() {
+			It("has a specific error message", func() {
+				mockFS.EXPECT().ReadFile("././some-app.droplet.droplet").Return(nil, int64(0), os.ErrNotExist)
+				err := cmd.Run([]string{"push", "./some-app.droplet"})
+				Expect(err).To(MatchError("file does not exist: ././some-app.droplet.droplet: Did you provide a filepath instead of an app name?"))
+			})
 		})
 
 		// TODO: test without setting env or restarting
