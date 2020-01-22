@@ -66,7 +66,7 @@ func stagingEnv(name string, mem int64, service string) map[string]string {
 		"CF_INSTANCE_IP":          ipv4Regexp,
 		"CF_INSTANCE_PORT":        "",
 		"CF_INSTANCE_PORTS":       qm("[]"),
-		"CF_STACK":                "cflinuxfs2",
+		"CF_STACK":                "cflinuxfs3",
 		"HOME":                    "/home/vcap",
 		"LANG":                    qm("en_US.UTF-8"),
 		"MEMORY_LIMIT":            fmt.Sprintf("%dm", mem),

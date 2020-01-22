@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	RunStack     = "packs/cflinuxfs2:run"
-	BuildStack   = "packs/cflinuxfs2:build"
-	NetworkStack = "packs/cflinuxfs2:network"
+	RunStack     = "packs/cflinuxfs3:run"
+	BuildStack   = "packs/cflinuxfs3:build"
+	NetworkStack = "packs/cflinuxfs3:network"
 )
 
 type UI interface {

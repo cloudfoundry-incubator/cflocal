@@ -23,7 +23,7 @@ Notably, CF Local:
 * Does not require the Docker CLI
 * Can run against a remote Docker daemon
 * Uses the latest official Cloud Foundry buildpack releases by default
-* Always uses the latest Cloud Foundry rootfs (cflinuxfs2) release
+* Always uses the latest Cloud Foundry rootfs (cflinuxfs3) release
 * Includes multi-buildpack support
 * Supports specifying buildpacks by name, zip URL, git URL, and local zip path
 
