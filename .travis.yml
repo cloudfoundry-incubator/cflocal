@@ -11,7 +11,7 @@ install:
 - chmod +x "$GOPATH/bin/dep"
 - dep ensure
 - go get github.com/buildpack/forge
-- ( cd "$GOPATH/src/github.com/buildpack/forge" && dep ensure )
+- ( cd "$GOPATH/src/github.com/buildpack/forge" && git checkout 54ae137 && dep ensure )
 - curl -fsSL "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar -C "$GOPATH/bin" -xz cf
 script:
 - test -z "$(bin/format | tee >(cat >&2))"
